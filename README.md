@@ -1,6 +1,5 @@
 # Project_WebCK
-# Hệ thống giao đặt hàng đồ ăn và thực phẩm
-Ý tưởng
+# Topic: Hệ thống giao đặt hàng đồ ăn và thực phẩm
 Trước tiên, website cho phép khách hàng tìm kiếm sản phẩm dễ dàng. Khách hàng có thể nhập từ khóa hoặc chọn theo loại sản phẩm để tìm đúng món mình cần. Khi nhấp vào một sản phẩm, họ thấy thông tin chi tiết như mô tả, giá cả, hình ảnh và các tùy chọn số lượng khi đặt hàng.
 
 Website có chức năng đặt hàng trực tuyến. Khách hàng có một giỏ hàng để thêm hoặc chỉnh sửa sản phẩm, và thấy tổng chi phí bao gồm phí vận chuyển trước khi thanh toán. Hệ thống sẽ hỗ trợ các phương thức thanh toán trực tuyến như chuyển khoản qua mã QR, ví điện tử, và tự động tính phí vận chuyển dựa trên địa chỉ giao hàng ( So sánh khoảng cách từ nhà hàng đến vị trí khách hàng). 
