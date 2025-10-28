@@ -1,44 +1,54 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from datetime import datetime
+from db.models.user import GenderEnum, Role
 
-# Các Role được hỗ trợ
-ROLES = ["User", "Admin", "Shipper", "Kitchen", "SuperAdmin"]
-
-# -----------------------------
-# Schema dùng khi đăng ký (public)
-# -----------------------------
-class UserRegisterSchema(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=6)
-    fullName: str
-    phone: str
+class UserLoginRequest(BaseModel):
+    """Schema cho đăng nhập"""
     email: EmailStr
-    address: Optional[str] = None
-
-    class Config:
-        orm_mode = True
-
-
-# -----------------------------
-# Schema login
-# -----------------------------
-class UserLoginSchema(BaseModel):
-    username: str
     password: str
 
-
-# -----------------------------
-# Schema cho Admin tạo nhân sự (Admin/Shipper/Kitchen)
-# -----------------------------
-class AdminCreateUserSchema(BaseModel):
-    username: str
-    password: str
-    fullName: str
-    phone: str
-    email: EmailStr
-    address: Optional[str] = None
-    role: str = Field(..., pattern="^(User|Admin|Shipper|Kitchen|SuperAdmin)$")
-    branchId: Optional[str] = None  # SuperAdmin phải truyền khi tạo Admin
-
+class UserRegisterRequest(BaseModel):
+    """Schema cho đăng ký user"""
+    fullname: str = Field(..., min_length=2, max_length=100, description="Tên người dùng")
+    email: EmailStr = Field(..., description="Email")
+    password: str = Field(..., min_length=6, description="Mật khẩu")
+    phone_number: Optional[str] = Field(..., min_length=10, max_length=11, description="Số điện thoại")
+    birthday: Optional[datetime] = Field(None, description="Ngày sinh")
+    gender: Optional[GenderEnum] = Field(..., description="Giới tính")
+    
     class Config:
-        orm_mode = True
+        json_schema_extra = {
+            "example": {
+                "fullname": "John Doe",
+                "email": "john@example.com",
+                "password": "password123",
+                "phone_number": "0909090909",
+                "birthday": "1990-01-01",
+                "gender": "Male"
+            }
+        }
+
+class UserUpdateRequest(BaseModel):
+    """Schema cho cập nhật thông tin user""" #form tương tự với form đăng kí
+    fullname: Optional[str] = Field(None, min_length=2, max_length=100, description="Tên người dùng")
+    email: Optional[EmailStr] = Field(None, description="Email")
+    phone_number: Optional[str] = Field(None, min_length=10, max_length=11, description="Số điện thoại")
+    birthday: Optional[datetime] = Field(None, description="Ngày sinh")
+    gender: Optional[GenderEnum] = Field(None, description="Giới tính")
+
+class UserResponse(BaseModel):
+    """Schema cho response (không có password)""" #form in ra khi tìm kiếm
+    user_id: str = Field(..., alias='_id')
+    fullname: str
+    email: EmailStr
+    phone_number: Optional[str] = None
+    birthday: Optional[datetime] = None    
+    gender: Optional[GenderEnum] = None
+    created_at: datetime
+    role: Role
+
+class UserLoginResponse(BaseModel):
+    """Schema cho response đăng nhập""" #form khi đăng nhập thành công, có thêm token
+    user: UserResponse
+    token: str

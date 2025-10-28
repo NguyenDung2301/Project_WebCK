@@ -1,0 +1,113 @@
+# middlewares/auth_middleware.py
+from flask import request, jsonify
+from functools import wraps
+from core.security import security
+
+def auth_required(f):
+    """Decorator để bảo vệ routes cần authentication"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            # Lấy Authorization header
+            auth_header = request.headers.get('Authorization')
+            
+            if not auth_header:
+                return jsonify({'success': False,'message': 'Không tìm thấy token xác thực'}), 401
+            
+            # Extract token từ header
+            token = security.extract_token_from_header(auth_header)
+            
+            if not token:
+                return jsonify({'success': False,'message': 'Format token không hợp lệ. Sử dụng: Bearer <token>'}), 401
+            
+            # Verify token
+            payload = security.verify_token(token)
+            
+            # Validate payload
+            if not security.validate_token_payload(payload):
+                return jsonify({'success': False,'message': 'Token không chứa đủ thông tin cần thiết'}), 401
+            
+            # Gắn user info vào request
+            request.user_id = payload['user_id']
+            request.user_email = payload['email']
+            request.token_payload = payload  # Có thể cần thêm thông tin khác
+            
+            return f(*args, **kwargs)
+            
+        except ValueError as e:
+            # Lỗi từ security.verify_token()
+            return jsonify({'success': False,'message': str(e)}), 401  
+        except Exception as e:
+            # Lỗi không mong muốn
+            return jsonify({'success': False,'message': 'Xác thực thất bại'}), 401
+    return decorated_function
+
+
+def optional_auth(f):
+    """
+    Decorator cho routes có thể có hoặc không có authentication
+    Nếu có token hợp lệ → gắn user info vào request
+    Nếu không có token hoặc token invalid → vẫn cho phép truy cập
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            auth_header = request.headers.get('Authorization')
+            
+            if auth_header:
+                token = security.extract_token_from_header(auth_header)
+                
+                if token:
+                    payload = security.verify_token(token)
+                    
+                    if security.validate_token_payload(payload):
+                        request.user_id = payload['user_id']
+                        request.user_email = payload['email']
+                        request.token_payload = payload
+            
+        except Exception:
+            # Nếu có lỗi, vẫn cho phép truy cập nhưng không có user info
+            pass
+        
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+
+def admin_required(f):
+    """
+    Decorator cho routes chỉ admin mới truy cập được
+    Yêu cầu token phải có role='admin'
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            auth_header = request.headers.get('Authorization')
+            
+            if not auth_header:
+                return jsonify({'success': False,'message': 'Không tìm thấy token xác thực'}), 401
+            
+            token = security.extract_token_from_header(auth_header)
+            
+            if not token:
+                return jsonify({'success': False,'message': 'Format token không hợp lệ'}), 401
+            
+            payload = security.verify_token(token)
+            
+            # Check role
+            if payload.get('role') != 'admin':
+                return jsonify({'success': False,'message': 'Bạn không có quyền truy cập'}), 403
+            
+            request.user_id = payload['user_id']
+            request.user_email = payload['email']
+            request.token_payload = payload
+            
+            return f(*args, **kwargs)
+            
+        except ValueError as e:
+            return jsonify({'success': False,'message': str(e)}), 401
+        except Exception as e:
+            return jsonify({'success': False,'message': 'Xác thực thất bại'}), 401
+    return decorated_function
+
+    

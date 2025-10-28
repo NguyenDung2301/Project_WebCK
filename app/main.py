@@ -1,33 +1,44 @@
-from flask import Flask
+# app.py
+from flask import Flask, jsonify
 from flask_cors import CORS
-from app.core.config import Config
-from app.database.connection import mongo
-from app.routers.auth_router import auth_router
-from app.routers.user_router import user_router
+from routes.user_route import user_router
+from routes.auth_route import auth_router
+from core.config import config
+from db.connection import ping_db, init_indexes
+from datetime import datetime
+import os
 
-def create_app():
-    app = Flask(__name__)
-    app.config.from_object(Config)
+# Khởi tạo Flask app
+app = Flask(__name__)
 
-    # Bật CORS
-    CORS(app)  # cho phép tất cả origin
-    # Nếu muốn giới hạn origin:
-    # CORS(app, origins=["http://localhost:5500"])
+# Cấu hình CORS
+CORS(app)
 
-    # Kết nối MongoDB
-    mongo.init_app(app)
-    
-    app.register_blueprint(auth_router, url_prefix="/auth")
-    app.register_blueprint(user_router, url_prefix="/users")
+# Config
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
 
-    @app.route("/health")
-    def health_check():
-        return {"status": "ok", "message": "Flask + MongoDB is running"}
+# Initialize indexes
+with app.app_context():
+    init_indexes()
 
-    return app
+# Register routes
+app.register_blueprint(auth_router, url_prefix='/api/auth')
+app.register_blueprint(user_router, url_prefix='/api/users')
 
-if __name__ == "__main__":
-    app = create_app()
-    app.run(debug=True)
-    
-#python -m http.server 5500    
+@app.route('/')
+def home():
+    return jsonify({
+        'message': 'Food Delivery API',
+        'version': '1.0.0',
+        'status': 'running'
+    })
+
+@app.route('/health')
+def health():
+    return jsonify({
+        'status': 'healthy' if ping_db() else 'unhealthy',
+        'timestamp': datetime.now().isoformat()
+    })
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)

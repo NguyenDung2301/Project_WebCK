@@ -1,51 +1,77 @@
 import jwt
 from datetime import datetime, timedelta
-from flask import request, jsonify
-from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
+from typing import Dict, Optional
+from core.config import config
 
-SECRET_KEY = "nguyenkien0912"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+class Security:
+    """Security liên quan đến JWT, Token, Password"""
+    
+    def __init__(self):
+        self.secret_key = config.JWT_SECRET
+        self.algorithm = config.JWT_ALGORITHM
+        self.access_token_expire_minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES
 
+    @staticmethod
+    def hash_password(password: str) -> str:
+        return generate_password_hash(password)
+    
+    @staticmethod
+    def verify_password(plain_password: str, hashed_password: str) -> bool:
+        return check_password_hash(hashed_password, plain_password)
 
-def create_access_token(data: dict, expires_delta: int = ACCESS_TOKEN_EXPIRE_MINUTES):
-    """Tạo JWT access token"""
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=expires_delta)
-    to_encode.update({"exp": expire})
-    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    # PyJWT 2.x trả về string, không cần decode thêm
-    return token
-
-
-def login_required(f):
-    """Decorator kiểm tra token và gắn current_user"""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            return jsonify({"message": "Missing or invalid token"}), 401
-        token = auth_header.split(" ")[1]
+    def create_access_token(self, data: Dict, expires_delta: Optional[timedelta] = None) -> str:
+        
+        to_encode = data.copy()
+        
+        # Set expiration time
+        if expires_delta:
+            expire = datetime.now() + expires_delta
+        else:
+            expire = datetime.now() + timedelta(minutes=self.access_token_expire_minutes)
+        
+        to_encode.update({
+            'exp': expire,
+            'iat': datetime.now()  # issued at
+        })
+        
+        # Encode JWT
+        encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        return encoded_jwt
+    
+    def decode_token(self, token: str) -> Dict:
         try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            return payload
         except jwt.ExpiredSignatureError:
-            return jsonify({"message": "Token expired"}), 401
+            raise ValueError('Token đã hết hạn')
         except jwt.InvalidTokenError:
-            return jsonify({"message": "Invalid token"}), 401
+            raise ValueError('Token không hợp lệ')
+        except Exception as e:
+            raise ValueError(f'Lỗi xác thực token: {str(e)}')
+    
+    def verify_token(self, token: str) -> Dict:
+        return self.decode_token(token)
 
-        kwargs["current_user"] = payload
-        return f(*args, **kwargs)
+    def create_user_token(self, user_id: str, email: str, **kwargs) -> str:
+        payload = {
+            'user_id': user_id,
+            'email': email,
+            **kwargs
+        }
+        return self.create_access_token(payload)
 
-    return decorated
+    def extract_token_from_header(self, auth_header: str) -> Optional[str]:
+        if not auth_header:
+            return None
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0].lower() != 'bearer':
+            return None
+        return parts[1]
+    
+    def validate_token_payload(self, payload: Dict, required_fields: list = None) -> bool:
+        if required_fields is None:
+            required_fields = ['user_id', 'email']
+        return all(field in payload for field in required_fields)
 
-
-def admin_required(f):
-    """Decorator kiểm tra role Admin"""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        user = kwargs.get("current_user")
-        if not user or user.get("role") != "Admin":
-            return jsonify({"message": "Admin access required"}), 403
-        return f(*args, **kwargs)
-
-    return decorated
+security = Security()
