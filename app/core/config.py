@@ -7,8 +7,8 @@ class Config:
     """Config class chứa tất cả environment variables"""
     
     # MongoDB settings
-    MONGO_URI = os.getenv('MONGO_URI', 'mongodb+srv://23001508:23012005@cluster0.3g2rojb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
-    MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'fooddelivery')
+    MONGO_URI = os.getenv('MONGO_URI', 'mongodb+srv://23001530:23001530@cluster0.08jxb6t.mongodb.net/?appName=Cluster0')
+    MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'webck')
     
     #JWT 
     JWT_SECRET = os.getenv('JWT_SECRET')
