@@ -1,6 +1,11 @@
 from flask import request, jsonify
 from services.user_service import user_service
-from schemas.user_schema import UserRegisterRequest, UserLoginRequest, UserUpdateRequest
+from schemas.user_schema import (
+    UserRegisterRequest,
+    UserLoginRequest,
+    UserUpdateRequest,
+    UserRoleUpdateRequest,
+)
 from pydantic import ValidationError
 
 class UserController:
@@ -82,6 +87,36 @@ class UserController:
             return jsonify({'success': True,'data': result}), 200            
         except ValueError as e:
             return jsonify({'success': False,'message': str(e)}), 404
+
+    def get_user_by_email(self):
+        """API lấy user theo email (chỉ admin)"""
+        try:
+            email = request.args.get('email')
+            if not email:
+                return jsonify({'success': False, 'message': 'Thiếu tham số email'}), 400
+
+            result = user_service.get_user_by_email(email)
+            return jsonify({'success': True, 'data': result}), 200
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 404
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def update_user_role(self, user_id: str):
+        """API cập nhật vai trò user (chỉ admin)"""
+        try:
+            if not request.json:
+                return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
+
+            role_data = UserRoleUpdateRequest(**request.json)
+            result = user_service.update_user_role(user_id, role_data)
+            return jsonify({'success': True, 'message': 'Cập nhật vai trò thành công', 'data': result}), 200
+        except ValidationError as e:
+            return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
 # Khởi tạo controller instance
 user_controller = UserController()

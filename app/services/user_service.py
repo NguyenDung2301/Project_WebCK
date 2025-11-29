@@ -6,7 +6,14 @@ from pymongo.errors import DuplicateKeyError
 from core.security import security
 from db.connection import users_collection
 from db.models.user import User
-from schemas.user_schema import UserLoginRequest, UserRegisterRequest, UserUpdateRequest, UserResponse, UserLoginResponse
+from schemas.user_schema import (
+    UserLoginRequest,
+    UserRegisterRequest,
+    UserUpdateRequest,
+    UserResponse,
+    UserLoginResponse,
+    UserRoleUpdateRequest,
+)
 from utils.roles import Role
 
 class UserService:
@@ -154,5 +161,33 @@ class UserService:
             raise ValueError('Không tìm thấy user')
         
         return UserResponse(**user.to_dict()).model_dump()
+
+    def get_user_by_email(self, email: str) -> Dict:
+        """Lấy thông tin user theo email (chỉ dùng trong các API yêu cầu quyền phù hợp)"""
+        user = self.find_by_email(email)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+
+        return UserResponse(**user.to_dict()).model_dump()
+
+    def update_user_role(self, user_id: str, role_data: UserRoleUpdateRequest) -> Dict:
+        """Cập nhật vai trò user (chỉ admin được phép gọi API)"""
+        # Kiểm tra user tồn tại
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+
+        new_role = role_data.role
+
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$set': {'role': new_role}}
+        )
+
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật vai trò user')
+
+        updated_user = self.find_by_id(user_id)
+        return UserResponse(**updated_user.to_dict()).model_dump()
 
 user_service = UserService()

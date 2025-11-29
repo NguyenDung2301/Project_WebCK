@@ -5,10 +5,8 @@ class Role(str, Enum):
     SUPERADMIN = "superadmin"
     USER = "user"
     SHIPPER = "shipper"
-    CHEF = 'chef'
     
 class LimitedRole(str, Enum): 
     USER = "user" 
     SHIPPER = "shipper"
-    CHEF = 'chef'  
     ADMIN = "admin"

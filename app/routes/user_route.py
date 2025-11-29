@@ -27,3 +27,17 @@ def get_user(user_id):
 def delete_user(user_id):
     """DELETE /api/users/:id - Xóa user"""
     return user_controller.delete_user(user_id)
+
+
+@user_router.route('/by_email', methods=['GET'])
+@admin_required
+def get_user_by_email():
+    """GET /api/users/by_email?email=... - Lấy thông tin user theo email (chỉ admin)"""
+    return user_controller.get_user_by_email()
+
+
+@user_router.route('/role/<user_id>', methods=['PUT'])
+@admin_required
+def update_user_role(user_id):
+    """PUT /api/users/role/<user_id> - Cập nhật vai trò user (chỉ admin)"""
+    return user_controller.update_user_role(user_id)
