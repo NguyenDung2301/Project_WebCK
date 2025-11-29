@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông tin người dùng</title>
+    <style>
+        :root{
+            --color3 : #120a0a;
+            --color2 : #f9f5f5;
+            --color1: #f96b40;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Inter", sans-serif;
+        }
+
+        body {
+            background: #111;
+        }
+        a{
+            text-decoration: none;
+            color: var(--color3);
+        }
+
+        .overlay {
+            width: 100%;
+            height: 100vh;
+            background: var(--color2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            width: 430px;
+            background: var(--color2);
+            border: 2px solid;
+            border-radius: 12px;
+            padding: 24px;
+            color: var(--color3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+        }
+        .close-btn a{
+            color: var(--color3);
+        }
+
+        .close-btn a:hover {
+            color: red;
+        }
+
+
+        .profile {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .avatar {
+            width: 70px;
+            height: 70px;
+            background: palegoldenrod;
+            border-radius: 50%;
+        }
+
+        .profile-info {
+            margin-left: 14px;
+        }
+
+        .profile-info h3 {
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+        .profile-info span {
+            font-size: 14px;
+            color: var(--color3);
+        }
+
+        .info-list {
+            border-top: 1px solid #3a342f;
+            border-bottom: 1px solid #3a342f;
+            padding: 10px 0;
+        }
+
+        .info-row {
+            padding: 12px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            border-bottom: 1px solid #3a342f;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }   
+
+        .info-row label {
+            font-size: 13px;
+            color: var(--color3);
+        }
+
+        .info-row p {
+            font-size: 15px;
+            color: var(--color3);
+        }
+
+
+        .footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: red;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .btn a{
+            color: var(--color3);
+        }
+
+        .btn a:hover {
+            background: green;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>Chi tiết người dùng</h2>
+            <button class="close-btn">
+                <a href="">✕</a>
+            </button>
+        </div>
+
+        <div class="profile">
+            <div class="avatar"></div>
+            <div class="profile-info">
+                <h3></h3>
+                <span>User</span>
+            </div>
+        </div>
+
+        <div class="info-list">
+
+            <div class="info-row">
+                <label>User ID</label>
+                <p></p>
+            </div>
+
+            <div class="info-row">
+                <label>Email</label>
+                <p></p>
+            </div>
+
+            <div class="info-row">
+                <label>Số điện thoại</label>
+
+            </div>
+
+            <div class="info-row">
+                <label>Ngày sinh</label>
+
+            </div>
+
+            <div class="info-row">
+                <label>Giới tính</label>
+            </div>
+
+            <div class="info-row">
+                <label>Ngày đăng ký</label>
+            </div>
+
+            <div class="info-row">
+                <label>Vai trò</label>
+            </div>
+
+        </div>
+
+        <div class="footer">
+            <button class="btn">
+                <a href="">Đóng</a>
+            </button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
