@@ -150,7 +150,7 @@ export const useUserManagement = () => {
         const newRole = roleMap[formData.get('role') as string];
         if (newRole) {
           const currentUser = users.find(u => u.id === modal.data!.id);
-          const currentRole = currentUser?.role === 'User' ? 'user' : currentUser?.role === 'Shipper' ? 'shipper' : 'admin';
+          const currentRole = currentUser?.role === 'User' ? 'user' : 'shipper';//currentUser?.role === 'Shipper' ? 'shipper' : 'admin';
           if (newRole !== currentRole) {
             await updateUserRole(modal.data!.id, newRole);
           }

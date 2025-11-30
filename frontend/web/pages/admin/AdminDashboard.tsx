@@ -148,7 +148,7 @@ export const AdminDashboard: React.FC = () => {
                     <option value="All">Tất cả vai trò</option>
                     <option value="User">User</option>
                     <option value="Shipper">Shipper</option>
-                    <option value="Admin">Admin</option>
+                    
                 </select>
                 <Button 
                     onClick={() => openModal('ADD')} 

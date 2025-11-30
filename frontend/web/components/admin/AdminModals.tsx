@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Modal } from '../Modal';
 import { Button } from '../Button';
 import { ModalState } from '../../types/admin';
@@ -30,6 +30,20 @@ export const AdminModals: React.FC<AdminModalsProps> = ({ modal, onClose, onSave
     dob: modal.data?.dob || '',
     role: modal.data?.role || 'User',
   });
+
+  // Reset formData whenever modal opens or modal.data changes
+  useEffect(() => {
+    setFormData({
+      name: modal.data?.name || '',
+      email: modal.data?.email || '',
+      phone: modal.data?.phone || '',
+      password: '',
+      gender: modal.data?.gender || 'Nam',
+      dob: modal.data?.dob || '',
+      role: modal.data?.role || 'User',
+    });
+    setFormErrors({});
+  }, [modal.type, modal.data]);
   
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   
