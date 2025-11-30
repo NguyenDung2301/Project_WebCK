@@ -2,16 +2,16 @@ import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const categories = [
-  { id: 1, name: 'Rice', img: 'https://images.unsplash.com/photo-1516684732162-798a0062be99?q=80&w=300&auto=format&fit=crop' },
-  { id: 2, name: 'Broken rice', img: 'https://res.cloudinary.com/duihxp9f2/image/upload/v1764383746/com_ga13dp.jpg' },
-  { id: 3, name: 'Salad', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=300&auto=format&fit=crop' },
-  { id: 4, name: 'Chicken', img: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?q=80&w=300&auto=format&fit=crop' },
-  { id: 5, name: 'Noodles', img: 'https://images.unsplash.com/photo-1552611052-33e04de081de?q=80&w=300&auto=format&fit=crop' },
-  { id: 6, name: 'Drinks', img: 'https://images.unsplash.com/photo-1497534446932-c925b458314e?q=80&w=300&auto=format&fit=crop' },
-  { id: 7, name: 'Burger', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=300&auto=format&fit=crop' },
-  { id: 8, name: 'Pizza', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=300&auto=format&fit=crop' },
-  { id: 9, name: 'Sushi', img: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=300&auto=format&fit=crop' },
-  { id: 10, name: 'Dessert', img: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?q=80&w=300&auto=format&fit=crop' },
+  { id: 1, name: 'Rice', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764460831/Screenshot_2025-11-30_070009_s8hzez.png' },
+  { id: 2, name: 'Broken rice', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462147/Screenshot_2025-11-30_072211_d5q9hq.png' },
+  { id: 3, name: 'Salad', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070736_u2xuvc.png' },
+  { id: 4, name: 'Chicken', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070813_ldmmy9.png' },
+  { id: 5, name: 'Noodles', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070845_fcckkb.png' },
+  { id: 6, name: 'Drinks', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070905_sde2iv.png' },
+  { id: 7, name: 'Burger', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461748/Screenshot_2025-11-30_070923_miqawt.png' },
+  { id: 8, name: 'Pizza', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461747/Screenshot_2025-11-30_070938_y9i2od.png' },
+  { id: 9, name: 'Sushi', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070951_rsrpt1.png' },
+  { id: 10, name: 'Dessert', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461748/Screenshot_2025-11-30_071007_euepva.png' },
 ];
 
 const CategorySection: React.FC = () => {

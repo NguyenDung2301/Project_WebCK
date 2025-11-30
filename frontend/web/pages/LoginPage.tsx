@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
 
 import AuthLayout from '../components/AuthLayout';
 import { buildNetworkErrorMessage, getAuthApiBaseUrl, requestJson } from '../utils/api';
@@ -14,7 +15,15 @@ const initialState: LoginForm = {
   password: '',
 };
 
+interface TokenPayload {
+  user_id: string;
+  email: string;
+  role?: string;
+  exp?: number;
+}
+
 const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
   const [form, setForm] = useState<LoginForm>(initialState);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [message, setMessage] = useState<string | null>(null);
@@ -48,6 +57,17 @@ const LoginPage: React.FC = () => {
       const token = data?.data?.token;
       if (token) {
         localStorage.setItem('token', token);
+        
+        // Check if user is admin and redirect
+        try {
+          const decoded = jwtDecode<TokenPayload>(token);
+          if (decoded.role === 'admin') {
+            navigate('/admin');
+            return;
+          }
+        } catch (error) {
+          console.error('Error decoding token:', error);
+        }
       }
 
       setStatus('success');
@@ -63,12 +83,19 @@ const LoginPage: React.FC = () => {
       title="Đăng nhập"
       subtitle="Truy cập tài khoản FoodDelivery của bạn"
       helper={
-        <p>
-          Chưa có tài khoản?{' '}
-          <Link to="/register" className="font-semibold text-primary hover:text-primary/80">
-            Đăng ký ngay
-          </Link>
-        </p>
+        <div className="space-y-3">
+          <p>
+            Chưa có tài khoản?{' '}
+            <Link to="/register" className="font-semibold text-primary hover:text-primary/80">
+              Đăng ký ngay
+            </Link>
+          </p>
+          <p>
+            <Link to="/" className="text-sm font-medium text-gray-600 hover:text-primary">
+              ← Quay lại trang chủ
+            </Link>
+          </p>
+        </div>
       }
     >
       <form className="space-y-5" onSubmit={handleSubmit}>

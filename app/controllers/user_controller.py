@@ -102,6 +102,16 @@ class UserController:
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
+    def get_all_users(self):
+        """API lấy danh sách tất cả users (chỉ admin)"""
+        try:
+            result = user_service.get_all_users()
+            return jsonify({'success': True, 'data': result}), 200
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
     def update_user_role(self, user_id: str):
         """API cập nhật vai trò user (chỉ admin)"""
         try:

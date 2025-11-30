@@ -27,7 +27,18 @@ export const requestJson = async <T>(input: RequestInfo | URL, init?: RequestIni
 
   const envelope = (isRecord(data) ? (data as ApiEnvelope) : undefined) ?? {};
 
-  if (!response.ok || envelope.success === false) {
+  if (!response.ok) {
+    const message = typeof envelope.message === 'string'
+      ? envelope.message
+      : response.status === 401 
+        ? 'Token không hợp lệ'
+        : response.status === 403
+          ? 'Bạn không có quyền truy cập'
+          : `Đã xảy ra lỗi (${response.status}). Vui lòng thử lại.`;
+    throw new Error(message);
+  }
+
+  if (envelope.success === false) {
     const message = typeof envelope.message === 'string'
       ? envelope.message
       : 'Đã xảy ra lỗi, vui lòng thử lại.';

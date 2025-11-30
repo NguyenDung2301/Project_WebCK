@@ -2,18 +2,18 @@ import React, { useRef } from 'react';
 import { Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const promotions = [
-  { id: 1, name: 'Popeyes - Nhà Chung', img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=600&auto=format&fit=crop', deal: 'Mua 1 tặng 1' },
-  { id: 2, name: "McDonald's - Hồ Gươm", img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600&auto=format&fit=crop', deal: 'Giảm 50% đơn đầu' },
-  { id: 3, name: 'Cheese Coffee - Lê Đại Hành', img: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=600&auto=format&fit=crop', deal: 'Đồng giá 29k' },
-  { id: 4, name: 'KFC - Vạn Phúc', img: 'https://res.cloudinary.com/duihxp9f2/image/upload/v1764383746/ga_r95lr5.jpg', deal: 'Tặng Pepsi tươi' },
-  { id: 5, name: 'Bakery - Lý Thái Tổ', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600&auto=format&fit=crop', deal: 'Hoàn tiền 15%' },
-  { id: 6, name: 'Burger King - Cầu Giấy', img: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=600&auto=format&fit=crop', deal: 'Combo trưa 39k' },
-  { id: 7, name: 'Highlands Coffee - Tây Hồ', img: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=600&auto=format&fit=crop', deal: 'Freeship đơn 0đ' },
-  { id: 8, name: 'Pizza Hut - Kim Mã', img: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?q=80&w=600&auto=format&fit=crop', deal: 'Giảm 35k đơn 150k' },
-  { id: 9, name: 'The Coffee House - Hai Bà Trưng', img: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop', deal: 'Tặng bánh ngọt' },
-  { id: 10, name: 'Jollibee - Phạm Ngọc Thạch', img: 'https://images.unsplash.com/photo-1586816001966-79b736744398?q=80&w=600&auto=format&fit=crop', deal: 'Mỳ Ý sốt bò 25k' },
-  { id: 11, name: 'Starbucks - Bà Triệu', img: 'https://res.cloudinary.com/duihxp9f2/image/upload/v1764383746/nuoc_aepzva.jpg', deal: 'Upsize miễn phí' },
-  { id: 12, name: 'Domino\'s Pizza - Giảng Võ', img: 'https://images.unsplash.com/photo-1590947132387-155cc02f3212?q=80&w=600&auto=format&fit=crop', deal: 'Giảm 70% pizza thứ 2' },
+  { id: 1, name: 'Popeyes - Nhà Chung', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462283/Screenshot_2025-11-30_072347_zzyj7x.png', deal: 'Mua 1 tặng 1' },
+  { id: 2, name: "McDonald's - Hồ Gươm", img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462710/Screenshot_2025-11-30_072620_ak9ylz.png', deal: 'Giảm 50% đơn đầu' },
+  { id: 3, name: 'Cheese Coffee - Lê Đại Hành', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462711/Screenshot_2025-11-30_072802_awjybq.png', deal: 'Đồng giá 29k' },
+  { id: 4, name: 'KFC - Vạn Phúc', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462793/Screenshot_2025-11-29_092812_fgyur2.png', deal: 'Tặng Pepsi tươi' },
+  { id: 5, name: 'Bakery - Lý Thái Tổ', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462711/Screenshot_2025-11-30_072835_srq2ga.png', deal: 'Hoàn tiền 15%' },
+  { id: 6, name: 'Burger King - Cầu Giấy', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462711/Screenshot_2025-11-30_072850_owrzpt.png', deal: 'Combo trưa 39k' },
+  { id: 7, name: 'Highlands Coffee - Tây Hồ', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072914_omsuvg.png', deal: 'Freeship đơn 0đ' },
+  { id: 8, name: 'Pizza Hut - Kim Mã', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462713/Screenshot_2025-11-30_072927_meztye.png', deal: 'Giảm 35k đơn 150k' },
+  { id: 9, name: 'The Coffee House - Hai Bà Trưng', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072942_aah5pc.png', deal: 'Tặng bánh ngọt' },
+  { id: 10, name: 'Jollibee - Phạm Ngọc Thạch', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_073059_amopcl.png', deal: 'Mỳ Ý sốt bò 25k' },
+  { id: 11, name: 'Starbucks - Bà Triệu', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462794/Screenshot_2025-11-29_093114_pqnet4.png', deal: 'Upsize miễn phí' },
+  { id: 12, name: 'Domino\'s Pizza - Giảng Võ', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462716/Screenshot_2025-11-30_073114_iewzdj.png', deal: 'Giảm 70% pizza thứ 2' },
 ];
 
 const PromoSection: React.FC = () => {

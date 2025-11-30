@@ -102,7 +102,7 @@ class UserService:
         user = self.create_user(user_data) #gọi hàm create_user bên trên
         
         # Generate JWT token
-        token = security.create_user_token(user_id=str(user.id),email=user.email)
+        token = security.create_user_token(user_id=str(user.id), email=user.email, role=user.role.value)
         
         # Return response
         return UserLoginResponse(
@@ -122,7 +122,7 @@ class UserService:
             raise ValueError('Email hoặc mật khẩu không đúng')
         
         # Generate token
-        token = security.create_user_token(user_id=str(user.id),email=user.email)
+        token = security.create_user_token(user_id=str(user.id), email=user.email, role=user.role.value)
         
         return UserLoginResponse(
             user=UserResponse(**user.to_dict()),
@@ -169,6 +169,18 @@ class UserService:
             raise ValueError('Không tìm thấy user')
 
         return UserResponse(**user.to_dict()).model_dump()
+
+    def get_all_users(self) -> List[Dict]:
+        """Lấy danh sách tất cả users (chỉ admin được phép gọi API)"""
+        try:
+            users = self.collection.find({'role': {'$ne': 'admin'}})
+            result = []
+            for doc in users:
+                user = User(**doc)
+                result.append(UserResponse(**user.to_dict()).model_dump())
+            return result
+        except Exception as e:
+            raise ValueError(f'Lỗi khi lấy danh sách users: {str(e)}')
 
     def update_user_role(self, user_id: str, role_data: UserRoleUpdateRequest) -> Dict:
         """Cập nhật vai trò user (chỉ admin được phép gọi API)"""

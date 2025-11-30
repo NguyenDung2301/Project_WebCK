@@ -91,12 +91,19 @@ const RegisterPage: React.FC = () => {
       title="Đăng ký"
       subtitle="Tạo tài khoản FoodDelivery trong vài bước đơn giản"
       helper={
-        <p>
-          Đã có tài khoản?{' '}
-          <Link to="/login" className="font-semibold text-primary hover:text-primary/80">
-            Đăng nhập
-          </Link>
-        </p>
+        <div className="space-y-3">
+          <p>
+            Đã có tài khoản?{' '}
+            <Link to="/login" className="font-semibold text-primary hover:text-primary/80">
+              Đăng nhập
+            </Link>
+          </p>
+          <p>
+            <Link to="/" className="text-sm font-medium text-gray-600 hover:text-primary">
+              ← Quay lại trang chủ
+            </Link>
+          </p>
+        </div>
       }
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
@@ -111,7 +118,7 @@ const RegisterPage: React.FC = () => {
             required
             value={form.fullname}
             onChange={handleChange}
-            placeholder="Nguyễn Văn A"
+            //placeholder="Nguyễn Văn A"
             className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
@@ -127,7 +134,7 @@ const RegisterPage: React.FC = () => {
             required
             value={form.email}
             onChange={handleChange}
-            placeholder="email@example.com"
+            //placeholder="email@example.com"
             className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
@@ -143,7 +150,7 @@ const RegisterPage: React.FC = () => {
             required
             value={form.password}
             onChange={handleChange}
-            placeholder="••••••••"
+            placeholder="Yêu cầu ít nhất 6 ký tự"
             className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
@@ -159,7 +166,7 @@ const RegisterPage: React.FC = () => {
             pattern="\d{10,11}"
             value={form.phoneNumber}
             onChange={handleChange}
-            placeholder="0912345678"
+            //placeholder="0912345678"
             className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>

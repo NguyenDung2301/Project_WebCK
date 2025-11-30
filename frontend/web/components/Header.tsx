@@ -7,10 +7,10 @@ const Header: React.FC = () => {
     <header className="fixed top-0 left-0 z-50 flex h-[80px] w-full items-center justify-center bg-white px-4 shadow-sm md:px-10">
       <div className="flex w-full max-w-[1280px] items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
-          <div className="rounded-full bg-primary p-2 text-white">
+          <div className="rounded-full bg-[#EE501C] p-2 text-white">
             <Utensils size={24} strokeWidth={2.5} />
           </div>
-          <span className="text-xl font-bold tracking-tight text-gray-800 md:text-2xl">
+          <span className="text-xl font-bold tracking-tight text-[#EE501C] md:text-2xl">
             FoodDelivery
           </span>
         </Link>
@@ -24,13 +24,13 @@ const Header: React.FC = () => {
           </Link>
           <Link
             to="/register"
-            className="rounded-md border border-primary bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#d43f0f]"
+            className="rounded-md border border-[#EE501C] bg-[#EE501C] px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#d43f0f]"
           >
             Sign up
           </Link>
           <button
             type="button"
-            className="flex items-center gap-1 text-sm font-medium text-gray-500 transition-colors hover:text-primary"
+            className="flex items-center gap-1 text-sm font-medium text-gray-500 transition-colors hover:text-[#EE501C]"
           >
             <Globe size={16} />
             <span>VIE</span>
