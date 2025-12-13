@@ -3,8 +3,6 @@ from typing import Optional, List
 from db.models.restaurants import FoodMenuItem
 
 
-# ============== REQUEST SCHEMAS ==============
-
 class AddFoodToMenuRequest(BaseModel):
     """Request thêm food vào menu của restaurant"""
     food_id: str = Field(..., alias="foodId")
@@ -26,7 +24,6 @@ class UpdateFoodInMenuRequest(BaseModel):
     description: Optional[str] = None
     image: Optional[str] = None
     status: Optional[bool] = None
-    # ĐIỀU CHỈNH: Category chỉ là một chuỗi (tên category)
     category: Optional[str] = None
 
     class Config:
@@ -72,7 +69,6 @@ class RestaurantResponse(BaseModel):
     close_time: Optional[str] = Field(default=None, alias="closeTime")
     map_link: Optional[str] = Field(default=None, alias="mapLink")
     menu: Optional[List[FoodMenuItem]] = Field(default_factory=list)
-    menu_count: int = Field(default=0)  # Số lượng food trong menu
 
     class Config:
         populate_by_name = True

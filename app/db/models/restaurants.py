@@ -4,7 +4,6 @@ from .common import PyObjectId
 
 
 class FoodMenuItem(BaseModel):
-    """Food item nhúng trong menu của Restaurant"""
     food_id: str = Field(..., alias="foodId")
     food_name: str
     price: float
@@ -29,7 +28,6 @@ class FoodMenuItem(BaseModel):
 
 
 class Restaurant(BaseModel):
-    """Restaurant Model với menu nhúng"""
     restaurant_id: Optional[PyObjectId] = Field(default=None, alias="_id")
     restaurant_name: str
     address: Optional[str] = None
@@ -41,7 +39,6 @@ class Restaurant(BaseModel):
 
     class Config:
         populate_by_name = True
-
     @property
     def id(self):
         return self.restaurant_id
