@@ -7,18 +7,23 @@ class Config:
     """Config class chứa tất cả environment variables"""
     
     # MongoDB settings
-    MONGO_URI = os.getenv('MONGO_URI', 'mongodb+srv://23001530:23001530@cluster0.08jxb6t.mongodb.net/?appName=Cluster0')
-    MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'webck')
+    MONGO_URI = os.getenv('MONGO_URI', 'mongodb+srv://23001508:23012005@cluster0.3g2rojb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+    MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'fooddelivery')
     
     #JWT 
     JWT_SECRET = os.getenv('JWT_SECRET')
-    JWT_ALGORITHM = os.getenv('JWT_ALGORITHM')
-    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
+    JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', '1440'))  # default 1 day
+    
+    # Validate required config
+    if not JWT_SECRET:
+        print("[WARNING] JWT_SECRET is not set in environment variables!")
+        print("[WARNING] This will cause authentication to fail!")
 
     # Flask settings
-    SECRET_KEY = os.getenv('SECRET_KEY')
-    DEBUG = os.getenv('DEBUG').lower() == 'true'
-    HOST = os.getenv('HOST')
-    PORT = int(os.getenv('PORT'))
+    SECRET_KEY = os.getenv('SECRET_KEY', 'flask-secret-key-default')
+    DEBUG = os.getenv('DEBUG', 'true').lower() == 'true'
+    HOST = os.getenv('HOST', '127.0.0.1')
+    PORT = int(os.getenv('PORT', '5000'))
     
 config = Config()

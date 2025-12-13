@@ -52,3 +52,8 @@ class UserLoginResponse(BaseModel):
     """Schema cho response đăng nhập""" #form khi đăng nhập thành công, có thêm token
     user: UserResponse
     token: str
+
+
+class UserRoleUpdateRequest(BaseModel):
+    """Schema cho cập nhật vai trò user (chỉ dành cho admin)"""
+    role: Role

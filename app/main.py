@@ -1,14 +1,14 @@
 # app.py
-from flask import Flask, jsonify
-from flask_cors import CORS
-from routes.user_route import user_router
-from routes.auth_route import auth_router
-from core.config import config
-from db.connection import ping_db, init_indexes
 from datetime import datetime
 import os
 
-# Khởi tạo Flask app
+from flask import Flask, jsonify
+from flask_cors import CORS
+
+from routes.user_route import user_router
+from routes.auth_route import auth_router
+from db.connection import ping_db, init_indexes
+
 app = Flask(__name__)
 
 # Cấu hình CORS
@@ -25,13 +25,19 @@ with app.app_context():
 app.register_blueprint(auth_router, url_prefix='/api/auth')
 app.register_blueprint(user_router, url_prefix='/api/users')
 
+
 @app.route('/')
 def home():
+    """Simple landing response so backend can run standalone."""
     return jsonify({
-        'message': 'Food Delivery API',
-        'version': '1.0.0',
-        'status': 'running'
+        'message': 'Food Delivery API is running',
+        'frontend': {
+            'devServer': 'http://localhost:3000',
+            'description': 'Start Vite from frontend/web for the UI'
+        },
+        'status': 'ok'
     })
+
 
 @app.route('/health')
 def health():
@@ -39,6 +45,7 @@ def health():
         'status': 'healthy' if ping_db() else 'unhealthy',
         'timestamp': datetime.now().isoformat()
     })
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

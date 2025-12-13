@@ -85,18 +85,24 @@ def admin_required(f):
             auth_header = request.headers.get('Authorization')
             
             if not auth_header:
+                print("[DEBUG] admin_required: No Authorization header")
                 return jsonify({'success': False,'message': 'Không tìm thấy token xác thực'}), 401
             
             token = security.extract_token_from_header(auth_header)
             
             if not token:
+                print("[DEBUG] admin_required: Invalid token format")
                 return jsonify({'success': False,'message': 'Format token không hợp lệ'}), 401
             
             payload = security.verify_token(token)
+            print(f"[DEBUG] admin_required: Token payload: {payload}")
+            print(f"[DEBUG] admin_required: Role in token: {payload.get('role')}")
             
             # Check role
-            if payload.get('role') != 'admin':
-                return jsonify({'success': False,'message': 'Bạn không có quyền truy cập'}), 403
+            token_role = payload.get('role')
+            if token_role != 'admin':
+                print(f"[DEBUG] admin_required: Access denied. Token role: {token_role}, required: admin")
+                return jsonify({'success': False,'message': f'Bạn không có quyền truy cập. Role hiện tại: {token_role}'}), 403
             
             request.user_id = payload['user_id']
             request.user_email = payload['email']
@@ -105,8 +111,12 @@ def admin_required(f):
             return f(*args, **kwargs)
             
         except ValueError as e:
+            print(f"[DEBUG] admin_required: ValueError: {str(e)}")
             return jsonify({'success': False,'message': str(e)}), 401
         except Exception as e:
+            print(f"[DEBUG] admin_required: Exception: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return jsonify({'success': False,'message': 'Xác thực thất bại'}), 401
     return decorated_function
 

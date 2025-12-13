@@ -24,15 +24,20 @@ class Security:
         
         to_encode = data.copy()
         
+        # Get current time
+        now = datetime.utcnow()
+        
         # Set expiration time
         if expires_delta:
-            expire = datetime.now() + expires_delta
+            expire = now + expires_delta
         else:
-            expire = datetime.now() + timedelta(minutes=self.access_token_expire_minutes)
+            expire = now + timedelta(minutes=self.access_token_expire_minutes)
         
+        # JWT library can handle datetime objects, but to avoid timezone issues,
+        # we'll ensure we're using UTC and let the library convert
         to_encode.update({
             'exp': expire,
-            'iat': datetime.now()  # issued at
+            'iat': now  # issued at - datetime object will be converted by jwt.encode
         })
         
         # Encode JWT
@@ -41,13 +46,46 @@ class Security:
     
     def decode_token(self, token: str) -> Dict:
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            print(f"[DEBUG] decode_token: Secret key exists: {self.secret_key is not None}")
+            print(f"[DEBUG] decode_token: Algorithm: {self.algorithm}")
+            print(f"[DEBUG] decode_token: Token (first 20 chars): {token[:20]}...")
+            
+            if not self.secret_key:
+                raise ValueError('JWT_SECRET không được cấu hình')
+            
+            # Decode with leeway to handle clock skew (60 seconds)
+            payload = jwt.decode(
+                token, 
+                self.secret_key, 
+                algorithms=[self.algorithm],
+                options={"verify_signature": True, "verify_exp": True, "verify_iat": True},
+                leeway=60  # Allow 60 seconds clock skew
+            )
+            print(f"[DEBUG] decode_token: Successfully decoded. Payload: {payload}")
             return payload
         except jwt.ExpiredSignatureError:
+            print("[DEBUG] decode_token: Token expired")
             raise ValueError('Token đã hết hạn')
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as e:
+            print(f"[DEBUG] decode_token: Invalid token error: {str(e)}")
+            # Check if it's an iat issue
+            if 'iat' in str(e).lower() or 'not yet valid' in str(e).lower():
+                print("[DEBUG] decode_token: Token iat issue - trying with leeway")
+                try:
+                    # Try again with larger leeway
+                    payload = jwt.decode(
+                        token, 
+                        self.secret_key, 
+                        algorithms=[self.algorithm],
+                        options={"verify_signature": True, "verify_exp": True, "verify_iat": False}  # Disable iat check
+                    )
+                    print(f"[DEBUG] decode_token: Successfully decoded (iat check disabled). Payload: {payload}")
+                    return payload
+                except Exception as e2:
+                    print(f"[DEBUG] decode_token: Still failed: {str(e2)}")
             raise ValueError('Token không hợp lệ')
         except Exception as e:
+            print(f"[DEBUG] decode_token: Exception: {type(e).__name__}: {str(e)}")
             raise ValueError(f'Lỗi xác thực token: {str(e)}')
     
     def verify_token(self, token: str) -> Dict:

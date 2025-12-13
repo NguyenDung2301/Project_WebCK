@@ -6,7 +6,14 @@ from pymongo.errors import DuplicateKeyError
 from core.security import security
 from db.connection import users_collection
 from db.models.user import User
-from schemas.user_schema import UserLoginRequest, UserRegisterRequest, UserUpdateRequest, UserResponse, UserLoginResponse
+from schemas.user_schema import (
+    UserLoginRequest,
+    UserRegisterRequest,
+    UserUpdateRequest,
+    UserResponse,
+    UserLoginResponse,
+    UserRoleUpdateRequest,
+)
 from utils.roles import Role
 
 class UserService:
@@ -95,7 +102,7 @@ class UserService:
         user = self.create_user(user_data) #gọi hàm create_user bên trên
         
         # Generate JWT token
-        token = security.create_user_token(user_id=str(user.id),email=user.email)
+        token = security.create_user_token(user_id=str(user.id), email=user.email, role=user.role.value)
         
         # Return response
         return UserLoginResponse(
@@ -115,7 +122,7 @@ class UserService:
             raise ValueError('Email hoặc mật khẩu không đúng')
         
         # Generate token
-        token = security.create_user_token(user_id=str(user.id),email=user.email)
+        token = security.create_user_token(user_id=str(user.id), email=user.email, role=user.role.value)
         
         return UserLoginResponse(
             user=UserResponse(**user.to_dict()),
@@ -154,5 +161,45 @@ class UserService:
             raise ValueError('Không tìm thấy user')
         
         return UserResponse(**user.to_dict()).model_dump()
+
+    def get_user_by_email(self, email: str) -> Dict:
+        """Lấy thông tin user theo email (chỉ dùng trong các API yêu cầu quyền phù hợp)"""
+        user = self.find_by_email(email)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+
+        return UserResponse(**user.to_dict()).model_dump()
+
+    def get_all_users(self) -> List[Dict]:
+        """Lấy danh sách tất cả users (chỉ admin được phép gọi API)"""
+        try:
+            users = self.collection.find({'role': {'$ne': 'admin'}})
+            result = []
+            for doc in users:
+                user = User(**doc)
+                result.append(UserResponse(**user.to_dict()).model_dump())
+            return result
+        except Exception as e:
+            raise ValueError(f'Lỗi khi lấy danh sách users: {str(e)}')
+
+    def update_user_role(self, user_id: str, role_data: UserRoleUpdateRequest) -> Dict:
+        """Cập nhật vai trò user (chỉ admin được phép gọi API)"""
+        # Kiểm tra user tồn tại
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+
+        new_role = role_data.role
+
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$set': {'role': new_role}}
+        )
+
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật vai trò user')
+
+        updated_user = self.find_by_id(user_id)
+        return UserResponse(**updated_user.to_dict()).model_dump()
 
 user_service = UserService()

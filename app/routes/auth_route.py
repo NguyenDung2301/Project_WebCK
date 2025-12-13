@@ -10,5 +10,5 @@ def register():
 
 @auth_router.route("/login", methods=["POST"])
 def login():
-    """POST /api/users/login - Đăng nhập"""
+    """POST /api/auth/login - Đăng nhập"""
     return user_controller.login()
