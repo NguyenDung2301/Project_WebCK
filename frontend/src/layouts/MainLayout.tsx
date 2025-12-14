@@ -11,7 +11,7 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-white text-gray-800">
       <Header />
@@ -25,4 +25,3 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   );
 };
 
-export default MainLayout;

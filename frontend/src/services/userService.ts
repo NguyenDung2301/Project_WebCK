@@ -13,7 +13,7 @@ import {
 } from '../api/userApi';
 import { buildNetworkErrorMessage } from '../api/axiosClient';
 import { User } from '@/types/user';
-import { formatDateISO } from '@/utils/formatters';
+import { mapRole, mapGender, mapRoleToBackend, mapGenderToBackend, formatDateISO } from '@/utils';
 
 /**
  * Map backend user format to frontend User type
@@ -33,38 +33,12 @@ export const mapBackendUserToFrontend = (backendUser: AdminUser | Record<string,
     name: user.fullname || (backendUser as Record<string, unknown>).name as string || '',
     email: user.email || '',
     phone: user.phone_number || (backendUser as Record<string, unknown>).phone as string || '',
-    role: user.role === 'user' ? 'User' : 
-          user.role === 'shipper' ? 'Shipper' : 
-          user.role === 'admin' ? 'Admin' : 'User',
+    role: mapRole(user.role),
     status: 'Active' as const, // Backend doesn't have status field yet
     joinDate: formatDateISO(user.created_at) || new Date().toISOString().split('T')[0],
-    gender: (user.gender === 'Male' ? 'Nam' : 
-            user.gender === 'Female' ? 'Nữ' : 'Khác') as 'Nam' | 'Nữ' | 'Khác',
+    gender: mapGender(user.gender),
     dob: formatDateISO(user.birthday) || undefined,
   };
-};
-
-/**
- * Map frontend role to backend role
- */
-export const mapRoleToBackend = (role: string): 'admin' | 'user' | 'shipper' => {
-  const roleMap: Record<string, 'admin' | 'user' | 'shipper'> = {
-    'User': 'user',
-    'Shipper': 'shipper',
-    'Admin': 'admin',
-  };
-  return roleMap[role] || 'user';
-};
-
-/**
- * Map frontend gender to backend gender
- */
-export const mapGenderToBackend = (gender: string): 'Male' | 'Female' | undefined => {
-  const genderMap: Record<string, 'Male' | 'Female'> = {
-    'Nam': 'Male',
-    'Nữ': 'Female',
-  };
-  return genderMap[gender];
 };
 
 /**

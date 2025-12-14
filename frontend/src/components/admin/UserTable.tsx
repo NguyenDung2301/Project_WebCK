@@ -2,8 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { User } from '@/types/user';
 import { Status } from '@/types/common';
 import { UserTableProps } from '@/types/admin';
-import { paginate } from '@/utils/pagination';
-import { formatDateVN } from '@/utils/formatters';
+import { paginate, formatDateVN } from '@/utils';
 import { Search, Edit2, Trash2, Lock, Unlock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 7;

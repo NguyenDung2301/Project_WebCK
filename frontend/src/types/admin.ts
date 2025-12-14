@@ -3,15 +3,10 @@
  * Các types dành riêng cho Admin Dashboard UI
  */
 
-import { User, BackendUser, CreateUserRequest, UpdateUserRequest } from './user';
-import { Status } from './common';
+import type { User } from './user';
 
-// Re-export for backward compatibility
-export type { User, BackendUser, CreateUserRequest, UpdateUserRequest } from './user';
-export type { Role, BackendRole, Status, Gender } from './common';
-
-// Alias for backward compatibility
-export type AdminUser = BackendUser;
+// Note: Import types directly from './user' or './common' instead of re-exporting
+// This avoids potential circular dependency issues
 
 // Modal state for Admin UI
 export interface ModalState {

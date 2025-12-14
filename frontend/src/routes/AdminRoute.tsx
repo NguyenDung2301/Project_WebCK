@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { isTokenValid, isAdmin, logout } from '../../services/authService';
+import { isTokenValid, isAdmin, logout } from '../services/authService';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -45,4 +45,3 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
 
   return <>{children}</>;
 };
-

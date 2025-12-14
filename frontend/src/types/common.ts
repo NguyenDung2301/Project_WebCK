@@ -3,16 +3,21 @@
  * Các types dùng chung trong toàn bộ ứng dụng
  */
 
-// Roles
+// ============ Role Types ============
+
 export type Role = 'Admin' | 'User' | 'Shipper';
 export type BackendRole = 'admin' | 'user' | 'shipper';
 
-// Status
+// ============ Status Types ============
+
 export type Status = 'Active' | 'Inactive' | 'Banned';
 
-// Gender
+// ============ Gender Types ============
+
 export type Gender = 'Male' | 'Female';
 export type GenderVN = 'Nam' | 'Nữ' | 'Khác';
+
+// ============ API Types ============
 
 // API Response
 export interface ApiResponse<T> {

@@ -4,7 +4,8 @@
  */
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { User, ModalState } from '../types/admin';
+import { User } from '../types/user';
+import { ModalState } from '../types/admin';
 import { 
   getAllUsers, 
   deleteUser, 
@@ -13,7 +14,7 @@ import {
   buildNetworkErrorMessage 
 } from '../services/userService';
 import { useAuth } from './useAuth';
-import { filterBySearch, filterByField, applyFilters } from '@/utils/filters';
+import { filterBySearch, filterByField, applyFilters } from '@/utils';
 
 export const useUser = () => {
   // Auth hook

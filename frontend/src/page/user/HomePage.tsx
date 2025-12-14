@@ -5,7 +5,7 @@ import { SearchSection } from '@/components/user/SearchSection';
 import { CategorySection } from '@/components/user/CategorySection';
 import { PromoSection } from '@/components/user/PromoSection';
 
-const HomePage: React.FC = () => {
+export const HomePage: React.FC = () => {
   return (
     <main className="bg-white text-gray-800">
       <HeroCarousel />
@@ -16,5 +16,4 @@ const HomePage: React.FC = () => {
   );
 };
 
-export default HomePage;
 

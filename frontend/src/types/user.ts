@@ -5,6 +5,8 @@
 
 import { Role, BackendRole, Status, Gender, GenderVN } from './common';
 
+// ============ Frontend User Model ============
+
 // Frontend User model (for UI display)
 export interface User {
   id: string;
@@ -19,7 +21,7 @@ export interface User {
   dob?: string;
 }
 
-// Backend User model (from API response)
+// ============ Backend User Model ============
 export interface BackendUser {
   user_id: string;
   fullname: string;

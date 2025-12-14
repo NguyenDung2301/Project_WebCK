@@ -14,7 +14,7 @@ const initialState: LoginForm = {
   password: '',
 };
 
-const LoginPage: React.FC = () => {
+export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState<LoginForm>(initialState);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
@@ -130,5 +130,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage;
 

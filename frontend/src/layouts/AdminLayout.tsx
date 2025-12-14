@@ -6,6 +6,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/admin/Sidebar';
+import { logout } from '@/services/authService';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -13,13 +14,11 @@ interface AdminLayoutProps {
   setActiveTab: (tab: string) => void;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, setActiveTab }) => {
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, setActiveTab }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('adminEmail');
-    localStorage.removeItem('adminName');
+    logout();
     navigate('/');
   };
 
@@ -35,4 +34,3 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, setActiv
   );
 };
 
-export default AdminLayout;

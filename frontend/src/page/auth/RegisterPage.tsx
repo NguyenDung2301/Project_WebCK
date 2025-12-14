@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { AuthLayout } from '@/components/common/AuthLayout';
 import { register } from '@/services/authService';
-import { isValidPhone, validatePassword } from '@/utils/validation';
+import { isValidPhone, validatePassword } from '@/utils';
 
 type RegisterForm = {
   fullname: string;
@@ -23,7 +23,7 @@ const initialState: RegisterForm = {
   gender: '',
 };
 
-const RegisterPage: React.FC = () => {
+export const RegisterPage: React.FC = () => {
   const [form, setForm] = useState<RegisterForm>(initialState);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [message, setMessage] = useState<string | null>(null);
@@ -213,5 +213,4 @@ const RegisterPage: React.FC = () => {
   );
 };
 
-export default RegisterPage;
 

@@ -1,13 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sidebar } from '../../components/admin/Sidebar';
-import { Button } from '../../components/common/Button';
+import { Sidebar } from '@/components/admin/Sidebar';
+import { Button } from '@/components/common/Button';
 import { Search, Plus } from 'lucide-react';
-import { useUser } from '../../hooks/useUser';
-import { UserTable } from '../../components/admin/UserTable';
-import { AdminModals } from '../../components/admin/AdminModals';
+import { useUser } from '@/hooks/useUser';
+import { UserTable } from '@/components/admin/UserTable';
+import { AdminModals } from '@/components/admin/AdminModals';
+import { logout } from '@/services/authService';
+import { formatDateVN } from '@/utils';
 
-export const AdminDashboard: React.FC = () => {
+export const UsersManagement: React.FC = () => {
   const navigate = useNavigate();
   
   // Use custom hook to handle business logic
@@ -31,13 +33,13 @@ export const AdminDashboard: React.FC = () => {
   } = useUser();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    logout();
     navigate('/');
   };
 
   if (loading) {
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EE501C] mx-auto"></div>
           <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
@@ -59,7 +61,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="flex items-center space-x-4">
              <div className="hidden md:flex items-center text-sm text-gray-500">
                 <span className="mr-2">Hôm nay:</span>
-                <span className="font-medium text-[#EE501C]">{new Date().toLocaleDateString('vi-VN')}</span>
+                <span className="font-medium text-[#EE501C]">{formatDateVN(new Date())}</span>
              </div>
           </div>
         </header>
@@ -148,7 +150,6 @@ export const AdminDashboard: React.FC = () => {
                     <option value="All">Tất cả vai trò</option>
                     <option value="User">User</option>
                     <option value="Shipper">Shipper</option>
-                    
                 </select>
                 <Button 
                     onClick={() => openModal('ADD')} 
@@ -185,4 +186,3 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 };
-

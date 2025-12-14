@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { AuthLayout } from '@/components/common/AuthLayout';
 
-const ForgotPasswordPage: React.FC = () => {
+export const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'submitted'>('idle');
 
@@ -64,5 +64,4 @@ const ForgotPasswordPage: React.FC = () => {
   );
 };
 
-export default ForgotPasswordPage;
 

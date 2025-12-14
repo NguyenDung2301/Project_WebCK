@@ -13,12 +13,12 @@ import {
   clearAuthData, 
   getAdminInfo as getStoredAdminInfo,
   setAdminInfo 
-} from '@/utils/storage';
+} from '@/utils';
 
 // Re-export types for backward compatibility
 export type { TokenPayload, LoginResult, RegisterResult, CurrentUser } from '@/types/auth';
 // Re-export setAdminInfo for external use
-export { setAdminInfo } from '@/utils/storage';
+export { setAdminInfo } from '@/utils';
 
 /**
  * Đăng nhập và lưu token

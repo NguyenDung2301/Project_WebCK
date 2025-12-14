@@ -8,9 +8,9 @@ import {
   isValidPhone, 
   validatePassword, 
   validateName, 
-  validateDob 
-} from '@/utils/validation';
-import { formatDateVN } from '@/utils/formatters';
+  validateDob,
+  formatDateVN 
+} from '@/utils';
 import { AlertTriangle, AlertCircle } from 'lucide-react';
 
 export const AdminModals: React.FC<AdminModalsProps> = ({ modal, onClose, onSave, onDelete, existingUsers = [] }) => {

@@ -1,15 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Globe, Utensils } from 'lucide-react';
+import { Globe } from 'lucide-react';
+import logo from '@/assets/images/logo.svg';
 
 export const Header: React.FC = () => {
   return (
     <header className="fixed top-0 left-0 z-50 flex h-[80px] w-full items-center justify-center bg-white px-4 shadow-sm md:px-10">
       <div className="flex w-full max-w-[1280px] items-center justify-between">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="rounded-full bg-[#EE501C] p-2 text-white">
-            <Utensils size={24} strokeWidth={2.5} />
-          </div>
+        <Link to="/" className="flex items-center gap-2">
+          {/* Logo từ file SVG */}
+          <img src={logo} alt="FoodDelivery Logo" className="h-10 w-10" />
           <span className="text-xl font-bold tracking-tight text-[#EE501C] md:text-2xl">
             FoodDelivery
           </span>

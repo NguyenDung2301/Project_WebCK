@@ -10,7 +10,7 @@ import {
   logout as authLogout,
   getCurrentUser 
 } from '../services/authService';
-import { setAdminInfo } from '@/utils/storage';
+import { setAdminInfo } from '@/utils';
 import { TokenPayload, CurrentUser } from '@/types/auth';
 
 interface UseAuthReturn {

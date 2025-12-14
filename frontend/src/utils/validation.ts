@@ -1,7 +1,34 @@
 /**
  * Validation Utils
- * Các hàm tiện ích để validate dữ liệu
+ * Các hàm tiện ích để validate dữ liệu và type guards
  */
+
+import { Role, BackendRole, Gender } from '@/types/common';
+
+// ============ Type Guards ============
+
+/**
+ * Kiểm tra role có hợp lệ (frontend format)
+ */
+export const isValidRole = (role: string): role is Role => {
+  return ['Admin', 'User', 'Shipper'].includes(role);
+};
+
+/**
+ * Kiểm tra role có hợp lệ (backend format)
+ */
+export const isValidBackendRole = (role: string): role is BackendRole => {
+  return ['admin', 'user', 'shipper'].includes(role);
+};
+
+/**
+ * Kiểm tra gender có hợp lệ
+ */
+export const isValidGender = (gender: string): gender is Gender => {
+  return ['Male', 'Female'].includes(gender);
+};
+
+// ============ Field Validators ============
 
 /**
  * Validate email format

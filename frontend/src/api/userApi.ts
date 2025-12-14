@@ -4,10 +4,10 @@
  */
 
 import { getBackendBaseUrl, getUsersApiBaseUrl, requestJson, getAuthHeaders } from './axiosClient';
-import { AdminUser, CreateUserRequest, UpdateUserRequest } from '@/types/admin';
+import { BackendUser as AdminUser, CreateUserRequest, UpdateUserRequest } from '@/types/user';
 
-// Re-export types for backward compatibility
-export type { AdminUser, CreateUserRequest, UpdateUserRequest } from '@/types/admin';
+// Re-export for backward compatibility
+export type { BackendUser as AdminUser, CreateUserRequest, UpdateUserRequest } from '@/types/user';
 
 /**
  * Get all users (Admin only)
