@@ -1,12 +1,15 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from db.models.restaurants import FoodMenuItem
+from db.models.restaurants import FoodMenuItem, MenuCategory
 
 
 class AddFoodToMenuRequest(BaseModel):
-    """Request thêm food vào menu của restaurant"""
-    food_id: str = Field(..., alias="foodId")
-    food_name: str
+    """
+    Request thêm món. 
+    Không có food_id.
+    Backend sẽ dùng 'category' để tìm nhóm và append vào danh sách items.
+    """
+    name: str
     price: float
     description: Optional[str] = None
     image: Optional[str] = None
@@ -18,35 +21,38 @@ class AddFoodToMenuRequest(BaseModel):
 
 
 class UpdateFoodInMenuRequest(BaseModel):
-    """Request cập nhật food trong menu"""
-    food_name: Optional[str] = None
+    """
+    Vì không có ID, khi update bạn sẽ cần truyền 'old_name' hoặc tìm cách định danh khác.
+    Ở đây mình để schema cơ bản để update các trường.
+    """
+    name: Optional[str] = None
     price: Optional[float] = None
     description: Optional[str] = None
     image: Optional[str] = None
     status: Optional[bool] = None
-    category: Optional[str] = None
+    category: Optional[str] = None # Dùng nếu muốn chuyển món sang category khác
 
     class Config:
         populate_by_name = True
 
 
 class CreateRestaurantRequest(BaseModel):
-    """Request tạo restaurant mới"""
-    restaurant_name: str
+    restaurant_name: str = Field(..., alias="name")
     address: Optional[str] = None
     hotline: Optional[str] = None
     open_time: Optional[str] = Field(default=None, alias="openTime")
     close_time: Optional[str] = Field(default=None, alias="closeTime")
     map_link: Optional[str] = Field(default=None, alias="mapLink")
-    menu: Optional[List[FoodMenuItem]] = Field(default_factory=list)
+    
+    # Input menu lồng nhau: [{category: "Pizza", items: [...]}, ...]
+    menu: Optional[List[MenuCategory]] = Field(default_factory=list)
 
     class Config:
         populate_by_name = True
 
 
 class UpdateRestaurantRequest(BaseModel):
-    """Request cập nhật thông tin restaurant"""
-    restaurant_name: Optional[str] = None
+    restaurant_name: Optional[str] = Field(None, alias="name")
     address: Optional[str] = None
     hotline: Optional[str] = None
     open_time: Optional[str] = Field(default=None, alias="openTime")
@@ -59,25 +65,40 @@ class UpdateRestaurantRequest(BaseModel):
 
 # ============== RESPONSE SCHEMAS ==============
 
-class RestaurantResponse(BaseModel):
-    """Response trả về restaurant với menu"""
-    restaurant_id: str = Field(..., alias="restaurantId")
-    restaurant_name: str
+class RestaurantSimpleResponse(BaseModel):
+    """
+    Response rút gọn: Chỉ chứa thông tin cơ bản, KHÔNG CÓ MENU.
+    Dùng để nhúng vào kết quả tìm kiếm cho nhẹ.
+    """
+    restaurant_id: str = Field(..., alias="_id") 
+    restaurant_name: str = Field(..., alias="name")
     address: Optional[str] = None
     hotline: Optional[str] = None
     open_time: Optional[str] = Field(default=None, alias="openTime")
     close_time: Optional[str] = Field(default=None, alias="closeTime")
     map_link: Optional[str] = Field(default=None, alias="mapLink")
-    menu: Optional[List[FoodMenuItem]] = Field(default_factory=list)
 
     class Config:
         populate_by_name = True
 
 
+class RestaurantResponse(RestaurantSimpleResponse):
+    """
+    Response đầy đủ: Kế thừa từ bản rút gọn và thêm MENU.
+    Dùng khi lấy chi tiết 1 nhà hàng.
+    """
+    menu: Optional[List[MenuCategory]] = Field(default_factory=list)
+
+
 class SearchFoodResponse(BaseModel):
-    """Response khi tìm kiếm food - hiển thị food + restaurant info"""
+    """
+    Response tìm kiếm: Trả về món ăn + thông tin nhà hàng (Rút gọn).
+    """
     food: FoodMenuItem
-    restaurant: RestaurantResponse
+    category: str # Trả thêm tên category để biết món nằm ở đâu
+    
+    # SỬA: Dùng bản rút gọn để ẩn menu
+    restaurant: RestaurantSimpleResponse
 
     class Config:
         populate_by_name = True

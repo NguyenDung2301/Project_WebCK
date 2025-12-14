@@ -2,68 +2,84 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from .common import PyObjectId
 
-
+# 1. Class Món ăn (Cấp thấp nhất)
 class FoodMenuItem(BaseModel):
-    food_id: str = Field(..., alias="foodId")
-    food_name: str
+    name: str 
     price: float
     description: Optional[str] = None
     image: Optional[str] = None
     status: Optional[bool] = True
-    category: str = Field(...) 
+    
+    class Config:
+        populate_by_name = True
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "price": self.price,
+            "description": self.description,
+            "image": self.image,
+            "status": self.status
+        }
+
+# 2. Class Category (Cấp giữa - chứa danh sách món)
+class MenuCategory(BaseModel):
+    category: str 
+    items: List[FoodMenuItem] = Field(default_factory=list)
 
     class Config:
         populate_by_name = True
 
     def to_dict(self):
         return {
-            "foodId": self.food_id,
-            "food_name": self.food_name,
-            "price": self.price,
-            "description": self.description,
-            "image": self.image,
-            "status": self.status,
-            "category": self.category 
+            "category": self.category,
+            "items": [item.to_dict() for item in self.items]
         }
 
-
+# 3. Class Restaurant (Cấp cao nhất - chứa menu)
 class Restaurant(BaseModel):
     restaurant_id: Optional[PyObjectId] = Field(default=None, alias="_id")
-    restaurant_name: str
+    restaurant_name: str = Field(..., alias="name") 
     address: Optional[str] = None
     hotline: Optional[str] = None
     open_time: Optional[str] = Field(default=None, alias="openTime")
     close_time: Optional[str] = Field(default=None, alias="closeTime")
     map_link: Optional[str] = Field(default=None, alias="mapLink")
-    menu: Optional[List[FoodMenuItem]] = Field(default_factory=list)
+    
+    # Menu là list các Category
+    menu: Optional[List[MenuCategory]] = Field(default_factory=list)
 
     class Config:
         populate_by_name = True
+    
     @property
     def id(self):
         return self.restaurant_id
 
     def to_dict(self):
+        """Dùng để trả về JSON cho API"""
         return {
             "_id": str(self.restaurant_id) if self.restaurant_id else None,
-            "restaurant_name": self.restaurant_name,
+            "name": self.restaurant_name,
             "address": self.address,
             "hotline": self.hotline,
             "openTime": self.open_time,
             "closeTime": self.close_time,
             "mapLink": self.map_link,
-            "menu": [item.to_dict() for item in self.menu] if self.menu else []
+            "menu": [cat.to_dict() for cat in self.menu] if self.menu else []
         }
 
     def to_mongo(self):
+        """Dùng để lưu vào MongoDB"""
         doc = {
-            "restaurant_name": self.restaurant_name,
+            "name": self.restaurant_name,
             "address": self.address,
             "hotline": self.hotline,
             "openTime": self.open_time,
             "closeTime": self.close_time,
             "mapLink": self.map_link,
-            "menu": [item.to_dict() for item in self.menu] if self.menu else []
+            # Lưu menu dưới dạng dict lồng nhau
+            "menu": [cat.to_dict() for cat in self.menu] if self.menu else []
         }
         if self.restaurant_id:
             doc["_id"] = self.restaurant_id
