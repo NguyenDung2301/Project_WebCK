@@ -7,6 +7,7 @@ from flask_cors import CORS
 
 from routes.user_route import user_router
 from routes.auth_route import auth_router
+from routes.restaurant_route import restaurant_router
 from db.connection import ping_db, init_indexes
 
 app = Flask(__name__)
@@ -24,6 +25,7 @@ with app.app_context():
 # Register routes
 app.register_blueprint(auth_router, url_prefix='/api/auth')
 app.register_blueprint(user_router, url_prefix='/api/users')
+app.register_blueprint(restaurant_router, url_prefix='/api/restaurants')
 
 
 @app.route('/')

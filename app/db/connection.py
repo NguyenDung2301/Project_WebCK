@@ -10,6 +10,7 @@ db = client[config.MONGO_DB_NAME]
 # Thêm các collections vào đây
 users_collection = db['users']
 branches_collection = db['branches']
+restaurants_collection = db['restaurants']
 
 def get_db():
     """Trả về database instance"""
@@ -42,6 +43,11 @@ def init_indexes():
     try:
         # Index cho users collection
         users_collection.create_index('email', unique=True)
+        # Index cho restaurants collection
+        # Text index trên tên nhà hàng để hỗ trợ search theo tên
+        restaurants_collection.create_index([('name', 'text')])
+        # Index trên trường lồng nhau menu.items.name để hỗ trợ tìm món theo tên
+        restaurants_collection.create_index('menu.items.name')
         print("MongoDB indexes created successfully")
     except Exception as e:
         print(f"Error creating indexes: {e}")
