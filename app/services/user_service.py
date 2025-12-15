@@ -45,6 +45,8 @@ class UserService:
                 email=user_data.email,
                 password=security.hash_password(user_data.password),
                 phone_number=user_data.phone_number,
+                address=user_data.address,
+                balance=user_data.balance or 0,
                 birthday=user_data.birthday,
                 gender=user_data.gender,
                 created_at=datetime.now(),

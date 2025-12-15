@@ -16,6 +16,8 @@ class User(BaseModel):
     email: Optional[EmailStr] = None
     password: str  
     phone_number: Optional[str] = None
+    address: Optional[str] = None
+    balance: float = 0.0
     birthday: Optional[datetime] = None
     gender: Optional[GenderEnum] = None
     created_at: datetime = Field(default_factory=datetime.now)
@@ -33,6 +35,8 @@ class User(BaseModel):
             'fullname': self.fullname,
             'email': self.email,
             'phone_number': self.phone_number,
+            'address': self.address,
+            'balance': float(self.balance),
             'birthday': self.birthday.isoformat() if self.birthday else None,
             'gender': self.gender.value if self.gender else None,
             'created_at': self.created_at.isoformat(),
@@ -46,6 +50,8 @@ class User(BaseModel):
             'email': self.email,
             'password': self.password,
             'phone_number': self.phone_number,
+            'address': self.address,
+            'balance': float(self.balance),
             'birthday': self.birthday,
             'gender': self.gender.value if self.gender else None,
             'created_at': self.created_at,

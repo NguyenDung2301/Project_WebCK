@@ -14,6 +14,8 @@ class UserRegisterRequest(BaseModel):
     email: EmailStr = Field(..., description="Email")
     password: str = Field(..., min_length=6, description="Mật khẩu")
     phone_number: Optional[str] = Field(..., min_length=10, max_length=11, description="Số điện thoại")
+    address: Optional[str] = Field(None, description="Địa chỉ")
+    balance: Optional[float] = Field(0, description="Số dư tài khoản")
     birthday: Optional[datetime] = Field(None, description="Ngày sinh")
     gender: Optional[GenderEnum] = Field(..., description="Giới tính")
     
@@ -24,6 +26,8 @@ class UserRegisterRequest(BaseModel):
                 "email": "john@example.com",
                 "password": "password123",
                 "phone_number": "0909090909",
+                "address": "123 Main St",
+                "balance": 0,
                 "birthday": "1990-01-01",
                 "gender": "Male"
             }
@@ -34,6 +38,8 @@ class UserUpdateRequest(BaseModel):
     fullname: Optional[str] = Field(None, min_length=2, max_length=100, description="Tên người dùng")
     email: Optional[EmailStr] = Field(None, description="Email")
     phone_number: Optional[str] = Field(None, min_length=10, max_length=11, description="Số điện thoại")
+    address: Optional[str] = Field(None, description="Địa chỉ")
+    balance: Optional[float] = Field(None, description="Số dư tài khoản")
     birthday: Optional[datetime] = Field(None, description="Ngày sinh")
     gender: Optional[GenderEnum] = Field(None, description="Giới tính")
 
@@ -43,6 +49,8 @@ class UserResponse(BaseModel):
     fullname: str
     email: EmailStr
     phone_number: Optional[str] = None
+    address: Optional[str] = None
+    balance: float
     birthday: Optional[datetime] = None    
     gender: Optional[GenderEnum] = None
     created_at: datetime
