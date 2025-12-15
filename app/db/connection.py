@@ -43,11 +43,17 @@ def init_indexes():
     try:
         # Index cho users collection
         users_collection.create_index('email', unique=True)
+        
         # Index cho restaurants collection
+        # Unique index trên (name, address) combo - enforce logic trùng lặp
+        restaurants_collection.create_index([('name', 1), ('address', 1)], unique=True)
+        
         # Text index trên tên nhà hàng để hỗ trợ search theo tên
         restaurants_collection.create_index([('name', 'text')])
+        
         # Index trên trường lồng nhau menu.items.name để hỗ trợ tìm món theo tên
         restaurants_collection.create_index('menu.items.name')
+        
         print("MongoDB indexes created successfully")
     except Exception as e:
         print(f"Error creating indexes: {e}")

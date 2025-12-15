@@ -11,17 +11,17 @@ class RestaurantController:
 
     def list_all(self):
         try:
-            data = restaurant_service.list_all()
+            data = restaurant_service.get_all_restaurants()
             return jsonify({'success': True, 'data': data}), 200
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
     def get_by_id(self, restaurant_id: str):
         try:
-            restaurant = restaurant_service.find_by_id(restaurant_id)
-            if not restaurant:
-                return jsonify({'success': False, 'message': 'Không tìm thấy nhà hàng'}), 404
-            return jsonify({'success': True, 'data': restaurant_service._to_full_response(restaurant)}), 200
+            data = restaurant_service.get_restaurant_by_id(restaurant_id)
+            return jsonify({'success': True, 'data': data}), 200
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 404
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
@@ -30,7 +30,7 @@ class RestaurantController:
             if not request.json:
                 return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
             req = CreateRestaurantRequest(**request.json)
-            result = restaurant_service.create(req)
+            result = restaurant_service.create_restaurant(req)
             return jsonify({'success': True, 'message': 'Tạo nhà hàng thành công', 'data': result}), 201
         except ValidationError as e:
             return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
@@ -44,7 +44,7 @@ class RestaurantController:
             if not request.json:
                 return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
             req = UpdateRestaurantRequest(**request.json)
-            result = restaurant_service.update(restaurant_id, req)
+            result = restaurant_service.update_restaurant(restaurant_id, req)
             return jsonify({'success': True, 'message': 'Cập nhật nhà hàng thành công', 'data': result}), 200
         except ValidationError as e:
             return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
@@ -55,7 +55,7 @@ class RestaurantController:
 
     def delete(self, restaurant_id: str):
         try:
-            result = restaurant_service.delete(restaurant_id)
+            result = restaurant_service.delete_restaurant(restaurant_id)
             return jsonify({'success': True, 'message': result['message']}), 200
         except ValueError as e:
             return jsonify({'success': False, 'message': str(e)}), 400

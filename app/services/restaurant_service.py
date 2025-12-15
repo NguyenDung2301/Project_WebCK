@@ -1,4 +1,5 @@
 from typing import Optional, List, Dict
+import re
 from bson import ObjectId
 from pymongo.collection import Collection
 from db.connection import restaurants_collection
@@ -20,94 +21,105 @@ class RestaurantService:
         return Restaurant(**doc)
 
     def _to_simple_response(self, restaurant: Restaurant) -> Dict:
-        return RestaurantSimpleResponse(**restaurant.to_dict()).model_dump()
+        return RestaurantSimpleResponse(**restaurant.to_dict()).model_dump(by_alias=True)
 
     def _to_full_response(self, restaurant: Restaurant) -> Dict:
-        return RestaurantResponse(**restaurant.to_dict()).model_dump()
+        return RestaurantResponse(**restaurant.to_dict()).model_dump(by_alias=True)
 
-    # ==================== CRUD ====================
+    # ==================== LAYER 1: MongoDB CRUD Operations (Data Access) ====================
+
     def find_by_id(self, restaurant_id: str) -> Optional[Restaurant]:
-        doc = self.collection.find_one({'_id': ObjectId(restaurant_id)})
-        return self._to_model(doc) if doc else None
+        """Tìm nhà hàng theo ID - Trả về Model"""
+        try:
+            doc = self.collection.find_one({'_id': ObjectId(restaurant_id)})
+            return self._to_model(doc) if doc else None
+        except Exception as e:
+            print(f"Error finding restaurant by id: {e}")
+            return None
 
-    def list_all(self) -> List[Dict]:
-        result: List[Dict] = []
-        for doc in self.collection.find():
-            restaurant = self._to_model(doc)
-            result.append(self._to_simple_response(restaurant))
-        return result
+    def find_all(self) -> List[Restaurant]:
+        """Lấy tất cả nhà hàng - Trả về List Model"""
+        try:
+            result = []
+            for doc in self.collection.find():
+                result.append(self._to_model(doc))
+            return result
+        except Exception as e:
+            print(f"Error finding all restaurants: {e}")
+            return []
 
-    def create(self, req: CreateRestaurantRequest) -> Dict:
-        # Dùng alias khi dump để đúng field lưu trong Mongo (name, openTime,...)
-        data = req.model_dump(by_alias=True, exclude_none=True)
-        # Chuẩn hóa menu nếu có
-        menu_list: List[MenuCategory] = []
-        for cat in data.get('menu', []) or []:
-            # Pydantic đã validate kiểu MenuCategory; lưu nguyên dict
-            if isinstance(cat, dict):
-                menu_list.append(MenuCategory(**cat))
-            else:
-                menu_list.append(cat)
-        restaurant = Restaurant(
-            restaurant_name=req.restaurant_name,
-            address=req.address,
-            hotline=req.hotline,
-            open_time=req.open_time,
-            close_time=req.close_time,
-            map_link=req.map_link,
-            menu=menu_list
-        )
-        insert_result = self.collection.insert_one(restaurant.to_mongo())
-        created = self.find_by_id(str(insert_result.inserted_id))
-        return self._to_full_response(created)
+    def create_restaurant_in_db(self, req: CreateRestaurantRequest) -> Optional[Restaurant]:
+        """Tạo document mới - Input là Schema (để lấy data), Output là Model"""
+        try:
+            # Chuẩn hóa menu
+            menu_list: List[MenuCategory] = []
+            for cat in req.menu or []:
+                if isinstance(cat, dict):
+                    menu_list.append(MenuCategory(**cat))
+                else:
+                    menu_list.append(cat)
+            
+            restaurant = Restaurant(
+                restaurant_name=req.restaurant_name,
+                address=req.address,
+                hotline=req.hotline,
+                open_time=req.open_time,
+                close_time=req.close_time,
+                map_link=req.map_link,
+                menu=menu_list
+            )
+            insert_result = self.collection.insert_one(restaurant.to_mongo())
+            return self.find_by_id(str(insert_result.inserted_id))
+        except Exception as e:
+            print(f"Error creating restaurant: {e}")
+            # Lớp data nên raise error để lớp business biết
+            raise ValueError(f'Lỗi DB khi tạo nhà hàng: {str(e)}')
 
-    def update(self, restaurant_id: str, req: UpdateRestaurantRequest) -> Dict:
-        update_data = req.model_dump(by_alias=True, exclude_none=True)
-        if not update_data:
-            raise ValueError('Không có dữ liệu để cập nhật')
-        result = self.collection.update_one({'_id': ObjectId(restaurant_id)}, {'$set': update_data})
-        if result.matched_count == 0:
-            raise ValueError('Không tìm thấy nhà hàng')
-        updated = self.find_by_id(restaurant_id)
-        return self._to_full_response(updated)
+    def update_restaurant_in_db(self, restaurant_id: str, req: UpdateRestaurantRequest) -> Optional[Restaurant]:
+        """Update document - Output là Model"""
+        try:
+            update_data = req.model_dump(by_alias=True, exclude_none=True)
+            if not update_data:
+                raise ValueError('Không có dữ liệu để cập nhật')
+            
+            result = self.collection.update_one(
+                {'_id': ObjectId(restaurant_id)},
+                {'$set': update_data}
+            )
+            return self.find_by_id(restaurant_id) if result.matched_count > 0 else None
+        except Exception as e:
+            raise ValueError(f'Lỗi DB khi cập nhật nhà hàng: {str(e)}')
 
-    def delete(self, restaurant_id: str) -> Dict:
-        result = self.collection.delete_one({'_id': ObjectId(restaurant_id)})
-        if result.deleted_count == 0:
-            raise ValueError('Không tìm thấy nhà hàng hoặc không thể xóa')
-        return {'message': 'Xóa nhà hàng thành công'}
+    def delete_restaurant_from_db(self, restaurant_id: str) -> bool:
+        """Xóa document - Output là Bool"""
+        try:
+            result = self.collection.delete_one({'_id': ObjectId(restaurant_id)})
+            return result.deleted_count > 0
+        except Exception as e:
+            print(f"Error deleting restaurant: {e}")
+            return False
 
-    # ==================== Search ====================
-    
-    def search_for_users(self, query: str) -> List[Dict]:
-        """
-        Search cho USER: Tìm theo food name và category.
-        Trả về danh sách món ăn + thông tin nhà hàng.
-        """
+    def search_foods_by_name_and_category(self, query: str) -> List[Dict]:
+        """Tìm món ăn (Aggregation phức tạp) - Trả về List Dict (đã format sẵn để dùng)"""
         results: List[Dict] = []
         
-        # 1. Search món ăn theo tên
+        # 1. Pipeline Search món ăn
         pipeline_food = [
             {'$unwind': {'path': '$menu', 'preserveNullAndEmptyArrays': False}},
             {'$unwind': {'path': '$menu.items', 'preserveNullAndEmptyArrays': False}},
             {'$match': {'menu.items.name': {'$regex': query, '$options': 'i'}}},
             {
                 '$project': {
-                    '_id': 1,
-                    'name': 1,
-                    'address': 1,
-                    'hotline': 1,
-                    'openTime': 1,
-                    'closeTime': 1,
-                    'mapLink': 1,
-                    'category': '$menu.category',
-                    'food': '$menu.items'
+                    '_id': 1, 'name': 1, 'address': 1, 'hotline': 1, 
+                    'openTime': 1, 'closeTime': 1, 'mapLink': 1, 
+                    'category': '$menu.category', 'food': '$menu.items'
                 }
             }
         ]
         food_results = list(self.collection.aggregate(pipeline_food))
         
-        for item in food_results:
+        # Helper function để format kết quả search
+        def _format_item(item):
             food_data = FoodMenuItem(**{
                 'name': item['food'].get('name'),
                 'price': float(item['food'].get('price', 0)),
@@ -124,90 +136,142 @@ class RestaurantService:
                 'closeTime': item.get('closeTime'),
                 'mapLink': item.get('mapLink'),
             })
-            results.append(
-                SearchFoodResponse(
-                    food=food_data,
-                    category=item.get('category'),
-                    restaurant=restaurant_simple
-                ).model_dump()
-            )
+            return SearchFoodResponse(
+                food=food_data,
+                category=item.get('category'),
+                restaurant=restaurant_simple
+            ).model_dump()
+
+        for item in food_results:
+            results.append(_format_item(item))
         
-        # 2. Search theo category
+        # 2. Pipeline Search Category
         pipeline_category = [
             {'$unwind': {'path': '$menu', 'preserveNullAndEmptyArrays': False}},
             {'$match': {'menu.category': {'$regex': query, '$options': 'i'}}},
             {'$unwind': {'path': '$menu.items', 'preserveNullAndEmptyArrays': False}},
             {
                 '$project': {
-                    '_id': 1,
-                    'name': 1,
-                    'address': 1,
-                    'hotline': 1,
-                    'openTime': 1,
-                    'closeTime': 1,
-                    'mapLink': 1,
-                    'category': '$menu.category',
-                    'food': '$menu.items'
+                    '_id': 1, 'name': 1, 'address': 1, 'hotline': 1, 
+                    'openTime': 1, 'closeTime': 1, 'mapLink': 1, 
+                    'category': '$menu.category', 'food': '$menu.items'
                 }
             }
         ]
         category_results = list(self.collection.aggregate(pipeline_category))
         
-        # Tránh trùng lặp: track các món đã thêm
-        added_items = set()
-        for item in food_results:
-            key = f"{item['_id']}_{item['category']}_{item['food']['name']}"
-            added_items.add(key)
+        # Tránh trùng lặp
+        added_keys = set(f"{item['_id']}_{item['category']}_{item['food']['name']}" for item in food_results)
         
         for item in category_results:
             key = f"{item['_id']}_{item['category']}_{item['food']['name']}"
-            if key not in added_items:
-                food_data = FoodMenuItem(**{
-                    'name': item['food'].get('name'),
-                    'price': float(item['food'].get('price', 0)),
-                    'description': item['food'].get('description'),
-                    'image': item['food'].get('image'),
-                    'status': item['food'].get('status', True)
-                })
-                restaurant_simple = RestaurantSimpleResponse(**{
-                    '_id': str(item['_id']),
-                    'name': item.get('name'),
-                    'address': item.get('address'),
-                    'hotline': item.get('hotline'),
-                    'openTime': item.get('openTime'),
-                    'closeTime': item.get('closeTime'),
-                    'mapLink': item.get('mapLink'),
-                })
-                results.append(
-                    SearchFoodResponse(
-                        food=food_data,
-                        category=item.get('category'),
-                        restaurant=restaurant_simple
-                    ).model_dump()
-                )
-                added_items.add(key)
+            if key not in added_keys:
+                results.append(_format_item(item))
+                added_keys.add(key)
         
         return results
+
+    def search_restaurants_by_name(self, query: str) -> List[Dict]:
+        """Tìm nhà hàng theo tên - Trả về List Simple Response Dict"""
+        restaurants_cursor = self.collection.find({'name': {'$regex': query, '$options': 'i'}})
+        return [self._to_simple_response(self._to_model(doc)) for doc in restaurants_cursor]
+
+    def _exists_by_name_address(self, name: Optional[str], address: Optional[str], exclude_id: Optional[str] = None) -> bool:
+        """Kiểm tra nhà hàng trùng theo (name + address) - không phân biệt hoa thường"""
+        name = (name or '').strip()
+        address = (address or '').strip() if address else None
+        if not name:
+            return False
+        query: Dict = {
+            'name': {'$regex': f'^{re.escape(name)}$', '$options': 'i'}
+        }
+        if address:
+            query['address'] = {'$regex': f'^{re.escape(address)}$', '$options': 'i'}
+        if exclude_id:
+            query['_id'] = {'$ne': ObjectId(exclude_id)}
+        return self.collection.find_one(query) is not None
+
+    # ==================== LAYER 2: Business Logic (Service Layer) ====================
+
+    def get_all_restaurants(self) -> List[Dict]:
+        """Lấy danh sách tất cả nhà hàng (rút gọn)"""
+        try:
+            restaurants = self.find_all() # Gọi CRUD
+            return [self._to_simple_response(r) for r in restaurants] # Format
+        except Exception as e:
+            raise ValueError(f'Lỗi khi lấy danh sách nhà hàng: {str(e)}')
+
+    def get_restaurant_by_id(self, restaurant_id: str) -> Dict:
+        """Lấy thông tin nhà hàng đầy đủ theo ID"""
+        restaurant = self.find_by_id(restaurant_id) # Gọi CRUD
+        if not restaurant: # Logic kiểm tra
+            raise ValueError('Không tìm thấy nhà hàng')
+        return self._to_full_response(restaurant) # Format
+
+    def create_restaurant(self, req: CreateRestaurantRequest) -> Dict:
+        """Tạo nhà hàng mới - Kiểm tra trùng theo (name + address)"""
+        # Kiểm tra trùng (name + address)
+        if self._exists_by_name_address(req.restaurant_name, req.address):
+            raise ValueError('Nhà hàng đã tồn tại (cùng tên và địa chỉ)')
+        created = self.create_restaurant_in_db(req)
+        if not created:
+            raise ValueError('Không thể tạo nhà hàng')
+        return self._to_full_response(created)
+
+    def update_restaurant(self, restaurant_id: str, req: UpdateRestaurantRequest) -> Dict:
+        """Cập nhật nhà hàng - Kiểm tra trùng theo (name + address) nếu có thay đổi"""
+        # Lấy dữ liệu hiện tại
+        current = self.find_by_id(restaurant_id)
+        if not current:
+            raise ValueError('Không tìm thấy nhà hàng')
+        
+        # Xác định giá trị sau cập nhật
+        new_name = req.restaurant_name if req.restaurant_name is not None else current.restaurant_name
+        new_address = req.address if req.address is not None else current.address
+        
+        # Kiểm tra nếu tên hoặc địa chỉ thay đổi
+        name_changed = (new_name or '').strip().lower() != (current.restaurant_name or '').strip().lower()
+        addr_changed = (new_address or '').strip().lower() != (current.address or '').strip().lower()
+        
+        if name_changed or addr_changed:
+            # Nếu có thay đổi → kiểm tra trùng (loại trừ chính bản ghi)
+            if self._exists_by_name_address(new_name, new_address, exclude_id=restaurant_id):
+                raise ValueError('Nhà hàng đã tồn tại (cùng tên và địa chỉ)')
+        
+        updated = self.update_restaurant_in_db(restaurant_id, req)
+        if not updated:
+            raise ValueError('Không thể cập nhật nhà hàng')
+        
+        return self._to_full_response(updated)
+
+    def delete_restaurant(self, restaurant_id: str) -> Dict:
+        """Xóa nhà hàng"""
+        if not self.find_by_id(restaurant_id):
+            raise ValueError('Không tìm thấy nhà hàng')
+        
+        deleted = self.delete_restaurant_from_db(restaurant_id) # Gọi CRUD
+        if not deleted:
+            raise ValueError('Không thể xóa nhà hàng')
+        
+        return {'message': 'Xóa nhà hàng thành công'}
+
+    def search_for_users(self, query: str) -> List[Dict]:
+        """Search cho USER: Chỉ cần gọi CRUD food search"""
+        try:
+            return self.search_foods_by_name_and_category(query)
+        except Exception as e:
+            raise ValueError(f'Lỗi khi tìm kiếm: {str(e)}')
     
     def search_for_admin(self, query: str) -> Dict:
-        """
-        Search cho ADMIN: Tìm theo restaurant name, food name, và category.
-        Trả về object chứa restaurants và foods riêng biệt.
-        """
-        result = {
-            'restaurants': [],
-            'foods': []
-        }
-        
-        # 1. Search nhà hàng theo tên
-        restaurants_cursor = self.collection.find({'name': {'$regex': query, '$options': 'i'}})
-        for doc in restaurants_cursor:
-            restaurant = self._to_model(doc)
-            result['restaurants'].append(self._to_simple_response(restaurant))
-        
-        # 2. Search món ăn và category (tương tự user)
-        result['foods'] = self.search_for_users(query)
-        
-        return result
+        """Search cho ADMIN: Kết hợp 2 hàm CRUD khác nhau"""
+        try:
+            # Logic: Admin cần cả 2 luồng dữ liệu riêng biệt
+            result = {
+                'restaurants': self.search_restaurants_by_name(query), # CRUD 1
+                'foods': self.search_foods_by_name_and_category(query) # CRUD 2
+            }
+            return result
+        except Exception as e:
+            raise ValueError(f'Lỗi khi tìm kiếm: {str(e)}')
 
 restaurant_service = RestaurantService()
