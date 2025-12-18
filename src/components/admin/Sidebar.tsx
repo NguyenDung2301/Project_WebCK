@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Users, ShoppingBag, BarChart3, Settings, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingBag, BarChart3, Settings, LogOut, X, Store } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { cn } from '../../utils/cn';
 import { Logo } from '../common/Logo';
@@ -19,6 +19,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onHom
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { id: 'users', label: 'Quản lý Người dùng', icon: <Users size={20} /> },
+    { id: 'restaurants', label: 'Quản lý Nhà hàng', icon: <Store size={20} /> },
     { id: 'orders', label: 'Quản lý Đơn hàng', icon: <ShoppingBag size={20} /> },
     { id: 'reports', label: 'Báo cáo', icon: <BarChart3 size={20} /> },
     { id: 'settings', label: 'Cài đặt', icon: <Settings size={20} /> },

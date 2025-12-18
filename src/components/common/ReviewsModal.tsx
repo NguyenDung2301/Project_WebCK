@@ -1,61 +1,50 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Star, MessageSquare, X, ChevronDown, ImageIcon } from 'lucide-react';
 import { Modal } from './Modal';
 import { Review } from '../../types';
+import { reviewService } from '../../services/reviewService';
 import { cn } from '../../utils/cn';
 
 interface ReviewsModalProps {
   isOpen: boolean;
   onClose: () => void;
   rating: number | string;
-  reviewCount: number;
   reviews: Review[];
 }
 
 export const ReviewsModal: React.FC<ReviewsModalProps> = ({ 
   isOpen, 
   onClose, 
-  rating, 
-  reviewCount, 
+  rating: initialRating,
   reviews 
 }) => {
   const [activeFilter, setActiveFilter] = useState('all');
 
-  const ratingDistribution = [
-    { stars: 5, count: 192, percentage: 75 },
-    { stars: 4, count: 38, percentage: 15 },
-    { stars: 3, count: 12, percentage: 5 },
-    { stars: 2, count: 5, percentage: 2 },
-    { stars: 1, count: 9, percentage: 3 },
-  ];
+  // Tự động tính toán các chỉ số thống kê từ "Database" reviews truyền vào
+  const stats = useMemo(() => {
+    return reviewService.getRatingStats(reviews);
+  }, [reviews]);
+
+  const filteredReviews = useMemo(() => {
+    if (activeFilter === 'all') return reviews;
+    return reviews.filter(r => r.rating === parseInt(activeFilter));
+  }, [reviews, activeFilter]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="2xl">
-      <div className="-mx-8 -mt-8 mb-6 bg-white border-b border-gray-50 px-8 py-5 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center text-primary-600">
-            <Star size={18} fill="currentColor" />
-          </div>
-          <h3 className="text-xl font-black text-gray-900 tracking-tight">Đánh giá & Nhận xét</h3>
-        </div>
-        <button onClick={onClose} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
-          <X size={20} className="text-gray-400" />
-        </button>
-      </div>
-
       <div className="space-y-10">
         {/* Rating Summary Section */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-10 items-center">
           {/* Summary Box */}
           <div className="md:col-span-2 bg-white rounded-[40px] p-8 flex flex-col items-center justify-center text-center shadow-[0_20px_50px_-15px_rgba(249,115,22,0.1)] border border-primary-50/50">
-            <span className="text-7xl font-black text-gray-900 mb-2">{rating}</span>
+            <span className="text-7xl font-black text-gray-900 mb-2">{stats.average}</span>
             <div className="flex gap-1 text-yellow-400 mb-3">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} size={20} fill={i < Math.floor(Number(rating)) ? "currentColor" : "none"} strokeWidth={2.5} />
+                <Star key={i} size={20} fill={i < Math.floor(Number(stats.average)) ? "currentColor" : "none"} strokeWidth={2.5} />
               ))}
             </div>
-            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">{reviewCount} đánh giá</p>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">{stats.count} đánh giá thực tế</p>
             <button className="w-full py-3.5 bg-primary-600 text-white font-black rounded-2xl hover:bg-primary-700 shadow-lg shadow-primary-200 transition-all active:scale-95 text-xs uppercase tracking-widest">
               Viết đánh giá
             </button>
@@ -63,7 +52,7 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({
 
           {/* Distribution Bars */}
           <div className="md:col-span-3 space-y-3.5">
-            {ratingDistribution.map((item) => (
+            {stats.distribution.map((item) => (
               <div key={item.stars} className="flex items-center gap-4 group">
                 <div className="flex items-center gap-1.5 min-w-[30px]">
                   <span className="text-sm font-black text-gray-900">{item.stars}</span>
@@ -106,14 +95,14 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({
               )}
             >
               {s} <Star size={12} fill={activeFilter === s.toString() ? "currentColor" : "none"} /> 
-              <span className="opacity-40 ml-0.5">({ratingDistribution.find(d => d.stars === s)?.count})</span>
+              <span className="opacity-40 ml-0.5">({stats.distribution.find(d => d.stars === s)?.count})</span>
             </button>
           ))}
         </div>
 
         {/* Review List */}
-        <div className="space-y-10 pb-4">
-          {reviews.map((review) => (
+        <div className="space-y-10 pb-4 max-h-[400px] overflow-y-auto no-scrollbar">
+          {filteredReviews.length > 0 ? filteredReviews.map((review) => (
             <div key={review._id} className="group animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
@@ -130,7 +119,7 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({
                   </div>
                 </div>
                 <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">
-                  {new Date(review.createdAt).toLocaleDateString('vi-VN')} {new Date(review.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(review.createdAt).toLocaleDateString('vi-VN')}
                 </span>
               </div>
               <p className="text-gray-500 text-sm leading-relaxed font-medium mb-4 pl-16">
@@ -146,7 +135,12 @@ export const ReviewsModal: React.FC<ReviewsModalProps> = ({
                 </div>
               )}
             </div>
-          ))}
+          )) : (
+            <div className="text-center py-10">
+              <MessageSquare size={48} className="mx-auto text-gray-100 mb-4" />
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Chưa có đánh giá cho mức sao này</p>
+            </div>
+          )}
         </div>
       </div>
     </Modal>

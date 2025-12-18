@@ -4,7 +4,7 @@ export type OrderStatus = 'pending' | 'confirmed' | 'delivering' | 'done' | 'can
 export type Status = 'Active' | 'Inactive' | 'Banned';
 
 export interface User {
-  _id: string; // Tương đương ObjectId
+  _id: string;
   name: string;
   email: string;
   password?: string;
@@ -13,7 +13,6 @@ export interface User {
   role: Role;
   createdAt: string;
   avatarUrl?: string;
-  // UI compatibility fields
   status?: Status;
   dob?: string;
   gender?: string;
@@ -21,6 +20,7 @@ export interface User {
 
 export interface Review {
   _id: string;
+  foodId: string; // Liên kết với món ăn
   userId: string;
   userName: string;
   userAvatar?: string;
@@ -60,8 +60,8 @@ export interface Food {
   restaurantId: string;
   categoryId: string;
   createdAt: string;
-  promo?: string; // Metadata thêm cho UI
-  rating?: string; // Metadata thêm cho UI
+  promo?: string;
+  rating?: string;
 }
 
 export interface OrderItem {
@@ -82,7 +82,6 @@ export interface Order {
   createdAt: string;
 }
 
-// Giữ lại các type phục vụ UI admin cũ để tránh lỗi compile
 export interface ModalState {
   type: 'ADD' | 'EDIT' | 'DELETE' | 'VIEW' | null;
   data?: any | null;
@@ -96,10 +95,9 @@ export interface Voucher {
   type: 'freeship' | 'discount' | 'newuser';
 }
 
-// Helper interface cho giao diện hiện tại (đã join data)
 export interface FoodItemUI extends Food {
-  id: string; // alias cho _id
-  img: string; // alias cho image
+  id: string;
+  img: string;
   tags: string;
   deliveryTime: string;
   distance: string;

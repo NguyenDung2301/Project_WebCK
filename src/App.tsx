@@ -132,6 +132,7 @@ const AppRouter = () => {
           searchValue={searchQuery}
           setSearchValue={setSearchQuery}
           onOrders={handleMyOrdersListNavigation}
+          onAdmin={() => navigate('admin')}
         />
       )}
 

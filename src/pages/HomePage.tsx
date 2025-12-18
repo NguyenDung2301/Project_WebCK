@@ -4,9 +4,10 @@ import { Search, MapPin, X, Clock, Home, User, Sparkles, TrendingUp, ArrowLeft, 
 import { Logo } from '../components/common/Logo';
 import { Header } from '../components/common/Header';
 import { BackgroundElements } from '../components/common/BackgroundElements';
-import { allFoodItems } from '../data/foodData';
+import { foodApi } from '../api/foodApi';
 import { useAuth } from '../contexts/AuthContext';
 import { cn } from '../utils/cn';
+import { FoodItemUI } from '../types';
 
 interface HomePageProps {
   onLogin: () => void;
@@ -16,6 +17,7 @@ interface HomePageProps {
   onProductClick: (id: string) => void;
   onProfile: () => void;
   onOrders: () => void;
+  onAdmin?: () => void;
   isSearching: boolean;
   setIsSearching: (val: boolean) => void;
   searchValue: string;
@@ -48,6 +50,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onProductClick,
   onProfile,
   onOrders,
+  onAdmin,
   isSearching,
   setIsSearching,
   searchValue,
@@ -58,6 +61,11 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [activeFilter, setActiveFilter] = useState('Tất cả');
   const [searchHistory, setSearchHistory] = useState<string[]>(['Cơm tấm sườn', 'Trà sữa full topping', 'Phở bò', 'Bún chả']);
   
+  // Lấy dữ liệu thực tế từ API (LocalStorage) và lọc những món đang sẵn sàng
+  const availableFoods = useMemo(() => {
+    return foodApi.getAll().filter(item => item.isAvailable);
+  }, [isSearching]); // Re-calc khi chuyển đổi chế độ tìm kiếm để cập nhật dữ liệu mới nhất
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const heroImages = [
     "https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80",
@@ -78,16 +86,16 @@ export const HomePage: React.FC<HomePageProps> = ({
 
   const filteredResults = useMemo(() => {
     if (!searchValue.trim()) return [];
-    return allFoodItems.filter(item => 
+    return availableFoods.filter(item => 
       item.name.toLowerCase().includes(searchValue.toLowerCase()) || 
       item.category.toLowerCase().includes(searchValue.toLowerCase()) ||
       item.tags.toLowerCase().includes(searchValue.toLowerCase())
     );
-  }, [searchValue]);
+  }, [searchValue, availableFoods]);
 
   const popularItems = useMemo(() => {
-    return [...allFoodItems].sort((a, b) => parseFloat(b.rating) - parseFloat(a.rating)).slice(0, 4);
-  }, []);
+    return [...availableFoods].sort((a, b) => parseFloat(b.rating || '0') - parseFloat(a.rating || '0')).slice(0, 4);
+  }, [availableFoods]);
 
   const handleSearchTrigger = () => {
     setIsAnimating(true);
@@ -112,6 +120,14 @@ export const HomePage: React.FC<HomePageProps> = ({
     setSearchValue('');
   };
 
+  const handleLogoClick = () => {
+    if (user?.role === 'admin' && onAdmin) {
+      onAdmin();
+    } else {
+      resetSearch();
+    }
+  };
+
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const { scrollLeft, clientWidth } = scrollRef.current;
@@ -125,7 +141,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       <BackgroundElements />
 
       <Header 
-        onHome={resetSearch}
+        onHome={handleLogoClick}
         onSearch={(q) => { setSearchValue(q); setIsSearching(true); }}
         onLogin={onLogin}
         onRegister={onRegister}
@@ -224,7 +240,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     </div>
                  </div>
 
-                 <div ref={scrollRef} className="flex overflow-x-auto gap-10 pb-16 snap-x scrollbar-hide no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                 <div ref={scrollRef} className="flex overflow-x-auto gap-10 snap-x scrollbar-hide no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {hanoiStores.map((store, idx) => (
                       <div 
                         key={store.id} 
@@ -265,7 +281,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 )}
               </div>
 
-              {/* Filters - Giảm kích thước và khoảng cách */}
+              {/* Filters */}
               <div className="flex flex-wrap gap-2.5 mb-10">
                 {['Tất cả', 'Giá', 'Đánh giá', 'Thời gian giao', 'Ưu đãi'].map((filter, idx) => (
                   <button 
