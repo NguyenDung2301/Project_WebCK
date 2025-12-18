@@ -49,24 +49,33 @@ const Checkout: React.FC<CheckoutProps> = ({
     }
   };
 
+  const createOrderObject = (): Order => ({
+    id: `ord-${Date.now()}`,
+    foodId: food.id,
+    restaurantName: restaurant.name,
+    orderTime: `${new Date().getHours()}:${new Date().getMinutes()} • ${new Date().toLocaleDateString('vi-VN')}`,
+    description: `${food.name} (x${quantity})`,
+    totalAmount: total,
+    status: 'PENDING',
+    imageUrl: food.imageUrl
+  });
+
   const handleConfirmClick = () => {
-    if (paymentMethod === 'wallet' && userProfile.balance < total) return;
-    setShowPasswordModal(true);
+    if (paymentMethod === 'cash') {
+      // Bỏ qua mật khẩu cho thanh toán tiền mặt
+      const newOrder = createOrderObject();
+      onAddOrder(newOrder);
+      setShowSuccessModal(true);
+    } else {
+      // Cần mật khẩu cho thanh toán ví
+      if (userProfile.balance < total) return;
+      setShowPasswordModal(true);
+    }
   };
 
   const handlePasswordConfirm = () => {
     if (password === (userProfile.password || '')) {
-      const newOrder: Order = {
-        id: `ord-${Date.now()}`,
-        foodId: food.id,
-        restaurantName: restaurant.name,
-        orderTime: `${new Date().getHours()}:${new Date().getMinutes()} • ${new Date().toLocaleDateString('vi-VN')}`,
-        description: `${food.name} (x${quantity})`,
-        totalAmount: total,
-        status: 'PENDING',
-        imageUrl: food.imageUrl
-      };
-      
+      const newOrder = createOrderObject();
       onAddOrder(newOrder);
       setShowPasswordModal(false);
       setShowSuccessModal(true);

@@ -19,6 +19,7 @@ const FoodDetail: React.FC<FoodDetailProps> = ({ food, onHomeClick, onCategoryNa
   const restaurant = MOCK_RESTAURANTS[0];
 
   const categoryName = CATEGORIES.find(c => c.id === food.category)?.name || 'Món ăn';
+  const totalPrice = food.price * quantity;
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-12 animate-in fade-in duration-500">
@@ -118,7 +119,7 @@ const FoodDetail: React.FC<FoodDetailProps> = ({ food, onHomeClick, onCategoryNa
             className="w-full bg-[#EE501C] text-white font-bold py-5 rounded-[2rem] shadow-xl shadow-orange-100 flex items-center justify-center gap-3 transform active:scale-95 transition-all hover:bg-[#d44719]"
           >
             <ShoppingCart className="w-6 h-6" />
-            <span>Đặt ngay</span>
+            <span>Đặt ngay • {totalPrice.toLocaleString()}đ</span>
           </button>
         </div>
       </div>
