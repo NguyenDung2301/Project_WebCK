@@ -219,6 +219,7 @@ const App: React.FC = () => {
             onOrderNow={handleOrderNow}
             onViewReviews={() => handleReviewNavigate()}
             onViewVouchers={handleGoToVouchers}
+            onFoodClick={handleFoodClick}
           />
         )}
 

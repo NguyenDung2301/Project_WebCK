@@ -11,9 +11,10 @@ interface FoodDetailProps {
   onOrderNow: (food: FoodItem, quantity: number) => void;
   onViewReviews: () => void;
   onViewVouchers: () => void;
+  onFoodClick: (food: FoodItem) => void;
 }
 
-const FoodDetail: React.FC<FoodDetailProps> = ({ food, onHomeClick, onCategoryNavigate, onOrderNow, onViewReviews, onViewVouchers }) => {
+const FoodDetail: React.FC<FoodDetailProps> = ({ food, onHomeClick, onCategoryNavigate, onOrderNow, onViewReviews, onViewVouchers, onFoodClick }) => {
   const [quantity, setQuantity] = useState(1);
   const restaurant = MOCK_RESTAURANTS[0];
 
@@ -182,8 +183,12 @@ const FoodDetail: React.FC<FoodDetailProps> = ({ food, onHomeClick, onCategoryNa
           <button className="text-xs font-bold text-[#EE501C] flex items-center gap-1 hover:underline">Xem tất cả <ChevronRight className="w-3 h-3" /></button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          {MOCK_FOODS.slice(0, 4).map((f) => (
-            <div key={f.id} className="bg-white rounded-[1.5rem] md:rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer group">
+          {MOCK_FOODS.filter(f => f.id !== food.id).slice(0, 4).map((f) => (
+            <div 
+              key={f.id} 
+              onClick={() => onFoodClick(f)}
+              className="bg-white rounded-[1.5rem] md:rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer group"
+            >
               <div className="h-32 md:h-44 relative overflow-hidden">
                 <img src={f.imageUrl} alt={f.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               </div>

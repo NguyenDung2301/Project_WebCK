@@ -110,6 +110,36 @@ export const MOCK_FOODS: FoodItem[] = [
     promoTag: 'Đồng giá 29k'
   },
   {
+    id: 'p4-food',
+    name: 'Combo Gà Rán KFC - Vạn Phúc',
+    description: '2 Miếng Gà Rán Giòn Cay + 1 Khoai Tây Chiên Vừa + 1 Pepsi Tươi mát lạnh. Tặng kèm Pepsi cho đơn hàng FoodDelivery.',
+    price: 89000,
+    originalPrice: 125000,
+    rating: 4.7,
+    reviewsCount: 1540,
+    distance: 0.5,
+    deliveryTime: '15 phút',
+    imageUrl: 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?auto=format&fit=crop&q=80&w=600&h=400',
+    category: 'chicken',
+    isPromo: true,
+    promoTag: 'Tặng Pepsi'
+  },
+  {
+    id: 'p5-food',
+    name: 'Burger Zinger KFC - Vạn Phúc',
+    description: 'Hương vị Burger Zinger huyền thoại với nhân gà giòn cay, xà lách tươi và sốt Mayo béo ngậy.',
+    price: 54000,
+    originalPrice: 65000,
+    rating: 4.8,
+    reviewsCount: 850,
+    distance: 0.5,
+    deliveryTime: '12 phút',
+    imageUrl: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=600&h=400',
+    category: 'burger',
+    isPromo: true,
+    promoTag: 'Siêu Deal'
+  },
+  {
     id: 'f-bundau',
     name: 'Bún Đậu Mắm Tôm – Cô Ba',
     description: 'Mẹt bún đậu đầy đủ hương vị truyền thống',
@@ -136,6 +166,17 @@ export const MOCK_FOODS: FoodItem[] = [
 ];
 
 export const MOCK_ORDERS: Order[] = [
+  {
+    id: 'ord-kfc-1',
+    foodId: 'p4-food',
+    restaurantName: 'KFC - Vạn Phúc',
+    orderTime: '12:00 • 25 Th10, 2023',
+    description: 'Combo Gà Rán KFC - Vạn Phúc (x1)',
+    totalAmount: 89000,
+    status: 'COMPLETED',
+    imageUrl: 'https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?auto=format&fit=crop&q=80&w=200&h=150',
+    isReviewed: true
+  },
   {
     id: 'ord4',
     foodId: 'p3-food',
