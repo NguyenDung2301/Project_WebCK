@@ -40,11 +40,13 @@ class MenuCategory(BaseModel):
 class Restaurant(BaseModel):
     restaurant_id: Optional[PyObjectId] = Field(default=None, alias="_id")
     restaurant_name: str = Field(..., alias="name") 
+    email: Optional[str] = None
     address: Optional[str] = None
     hotline: Optional[str] = None
     open_time: Optional[str] = Field(default=None, alias="openTime")
     close_time: Optional[str] = Field(default=None, alias="closeTime")
     map_link: Optional[str] = Field(default=None, alias="mapLink")
+    status: bool = Field(default=True, description="Trạng thái hoạt động của nhà hàng")
     
     # Menu là list các Category
     menu: Optional[List[MenuCategory]] = Field(default_factory=list)
@@ -61,11 +63,13 @@ class Restaurant(BaseModel):
         return {
             "_id": str(self.restaurant_id) if self.restaurant_id else None,
             "name": self.restaurant_name,
+            "email": self.email,
             "address": self.address,
             "hotline": self.hotline,
             "openTime": self.open_time,
             "closeTime": self.close_time,
             "mapLink": self.map_link,
+            "status": self.status,
             "menu": [cat.to_dict() for cat in self.menu] if self.menu else []
         }
 
@@ -73,11 +77,13 @@ class Restaurant(BaseModel):
         """Dùng để lưu vào MongoDB"""
         doc = {
             "name": self.restaurant_name,
+            "email": self.email,
             "address": self.address,
             "hotline": self.hotline,
             "openTime": self.open_time,
             "closeTime": self.close_time,
             "mapLink": self.map_link,
+            "status": self.status,
             # Lưu menu dưới dạng dict lồng nhau
             "menu": [cat.to_dict() for cat in self.menu] if self.menu else []
         }

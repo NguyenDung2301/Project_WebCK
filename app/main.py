@@ -8,6 +8,8 @@ from flask_cors import CORS
 from routes.user_route import user_router
 from routes.auth_route import auth_router
 from routes.restaurant_route import restaurant_router
+from routes.order_route import order_router
+from routes.payment_route import payment_router
 from db.connection import ping_db, init_indexes
 
 app = Flask(__name__)
@@ -26,6 +28,8 @@ with app.app_context():
 app.register_blueprint(auth_router, url_prefix='/api/auth')
 app.register_blueprint(user_router, url_prefix='/api/users')
 app.register_blueprint(restaurant_router, url_prefix='/api/restaurants')
+app.register_blueprint(order_router, url_prefix='/api/orders')
+app.register_blueprint(payment_router, url_prefix='/api/payments')
 
 
 @app.route('/')

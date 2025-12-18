@@ -9,8 +9,9 @@ db = client[config.MONGO_DB_NAME]
 
 # Thêm các collections vào đây
 users_collection = db['users']
-branches_collection = db['branches']
 restaurants_collection = db['restaurants']
+orders_collection = db['orders']
+payments_collection = db['payments']
 
 def get_db():
     """Trả về database instance"""
@@ -53,6 +54,22 @@ def init_indexes():
         
         # Index trên trường lồng nhau menu.items.name để hỗ trợ tìm món theo tên
         restaurants_collection.create_index('menu.items.name')
+        
+        # Index cho orders collection
+        orders_collection.create_index('userId')
+        orders_collection.create_index('restaurantId')
+        orders_collection.create_index('shipperId')
+        orders_collection.create_index('status')
+        orders_collection.create_index([('userId', 1), ('createdAt', -1)])  # User orders sorted by date
+        orders_collection.create_index([('restaurantId', 1), ('createdAt', -1)])  # Restaurant orders
+        orders_collection.create_index([('shipperId', 1), ('createdAt', -1)])  # Shipper orders
+        orders_collection.create_index([('status', 1), ('createdAt', -1)])  # Pending orders query
+
+        # Index cho payments collection
+        payments_collection.create_index('orderId')
+        payments_collection.create_index('userId')
+        payments_collection.create_index('status')
+        payments_collection.create_index([('userId', 1), ('createdAt', -1)])
         
         print("MongoDB indexes created successfully")
     except Exception as e:

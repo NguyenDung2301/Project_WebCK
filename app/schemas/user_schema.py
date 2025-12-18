@@ -15,7 +15,6 @@ class UserRegisterRequest(BaseModel):
     password: str = Field(..., min_length=6, description="Mật khẩu")
     phone_number: Optional[str] = Field(..., min_length=10, max_length=11, description="Số điện thoại")
     address: Optional[str] = Field(None, description="Địa chỉ")
-    balance: Optional[float] = Field(0, description="Số dư tài khoản")
     birthday: Optional[datetime] = Field(None, description="Ngày sinh")
     gender: Optional[GenderEnum] = Field(..., description="Giới tính")
     
@@ -27,7 +26,6 @@ class UserRegisterRequest(BaseModel):
                 "password": "password123",
                 "phone_number": "0909090909",
                 "address": "123 Main St",
-                "balance": 0,
                 "birthday": "1990-01-01",
                 "gender": "Male"
             }
@@ -39,7 +37,6 @@ class UserUpdateRequest(BaseModel):
     email: Optional[EmailStr] = Field(None, description="Email")
     phone_number: Optional[str] = Field(None, min_length=10, max_length=11, description="Số điện thoại")
     address: Optional[str] = Field(None, description="Địa chỉ")
-    balance: Optional[float] = Field(None, description="Số dư tài khoản")
     birthday: Optional[datetime] = Field(None, description="Ngày sinh")
     gender: Optional[GenderEnum] = Field(None, description="Giới tính")
 
@@ -65,3 +62,11 @@ class UserLoginResponse(BaseModel):
 class UserRoleUpdateRequest(BaseModel):
     """Schema cho cập nhật vai trò user (chỉ dành cho admin)"""
     role: Role
+
+
+class UserTopUpRequest(BaseModel):
+    """Schema cho nạp tiền vào tài khoản user"""
+    amount: float = Field(..., gt=0, description="Số tiền nạp (> 0)")
+
+    class Config:
+        json_schema_extra = {"example": {"amount": 100000}}

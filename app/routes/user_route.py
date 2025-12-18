@@ -47,3 +47,9 @@ def update_user_role(user_id):
 def get_all_users():
     """GET /api/users/all - Lấy danh sách tất cả users (chỉ admin)"""
     return user_controller.get_all_users()
+
+@user_router.route('/balance/topup', methods=['POST'])
+@auth_required
+def top_up_balance():
+    """POST /api/users/balance/topup - Nạp tiền cho tài khoản hiện tại"""
+    return user_controller.top_up()

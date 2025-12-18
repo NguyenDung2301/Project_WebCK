@@ -61,11 +61,13 @@ class RestaurantService:
             
             restaurant = Restaurant(
                 restaurant_name=req.restaurant_name,
+                email=req.email,
                 address=req.address,
                 hotline=req.hotline,
                 open_time=req.open_time,
                 close_time=req.close_time,
                 map_link=req.map_link,
+                status=req.status if req.status is not None else True,
                 menu=menu_list
             )
             insert_result = self.collection.insert_one(restaurant.to_mongo())
@@ -273,5 +275,22 @@ class RestaurantService:
             return result
         except Exception as e:
             raise ValueError(f'Lỗi khi tìm kiếm: {str(e)}')
+
+    def get_food_price(self, restaurant_id: str, food_name: str) -> Optional[float]:
+        """Lấy giá của một món ăn từ DB (dùng cho order creation - bảo mật)"""
+        try:
+            restaurant = self.find_by_id(restaurant_id)
+            if not restaurant:
+                raise ValueError(f'Không tìm thấy nhà hàng {restaurant_id}')
+            
+            # Tìm food item trong menu
+            for category in restaurant.menu:
+                for item in category.items:
+                    if item.name.lower() == food_name.lower():
+                        return float(item.price)
+            
+            raise ValueError(f'Không tìm thấy món ăn "{food_name}" trong nhà hàng')
+        except Exception as e:
+            raise ValueError(f'Lỗi khi lấy giá món: {str(e)}')
 
 restaurant_service = RestaurantService()

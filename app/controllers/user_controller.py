@@ -5,8 +5,10 @@ from schemas.user_schema import (
     UserLoginRequest,
     UserUpdateRequest,
     UserRoleUpdateRequest,
+    UserTopUpRequest,
 )
 from pydantic import ValidationError
+from utils.roles import Role
 
 class UserController:
     """User Controller - Xử lý HTTP requests"""
@@ -121,6 +123,29 @@ class UserController:
             role_data = UserRoleUpdateRequest(**request.json)
             result = user_service.update_user_role(user_id, role_data)
             return jsonify({'success': True, 'message': 'Cập nhật vai trò thành công', 'data': result}), 200
+        except ValidationError as e:
+            return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def top_up(self):
+        """API nạp tiền vào tài khoản user hiện tại (chỉ USER được nạp, không cho ADMIN/SHIPPER)"""
+        try:
+            if not request.json:
+                return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
+            
+            user_id = request.user_id
+            token_role = request.token_payload.get('role')
+            
+            # Kiểm tra role - chỉ USER được nạp tiền
+            if token_role != Role.USER.value:
+                return jsonify({'success': False, 'message': f'Bạn không có quyền nạp tiền. Chỉ user bình thường mới có thể nạp tiền'}), 403
+            
+            topup = UserTopUpRequest(**request.json)
+            result = user_service.top_up_balance(user_id, topup)
+            return jsonify({'success': True, 'message': 'Nạp tiền thành công', 'data': result}), 200
         except ValidationError as e:
             return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
         except ValueError as e:

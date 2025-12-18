@@ -22,8 +22,11 @@ class AddFoodToMenuRequest(BaseModel):
 
 class UpdateFoodInMenuRequest(BaseModel):
     """
-    Vì không có ID, khi update bạn sẽ cần truyền 'old_name' hoặc tìm cách định danh khác.
-    Ở đây mình để schema cơ bản để update các trường.
+    Schema chứa các thông tin CẦN SỬA.
+    Lưu ý: 
+    - Định danh món ăn (Tên cũ) sẽ nằm trên URL API.
+    - Field 'name' ở đây là TÊN MỚI (dùng khi muốn đổi tên món).
+    - Field 'category' ở đây là CATEGORY MỚI (dùng khi muốn chuyển nhóm).
     """
     name: Optional[str] = None
     price: Optional[float] = None
@@ -38,11 +41,13 @@ class UpdateFoodInMenuRequest(BaseModel):
 
 class CreateRestaurantRequest(BaseModel):
     restaurant_name: str = Field(..., alias="name")
+    email: Optional[str] = None
     address: Optional[str] = None
     hotline: Optional[str] = None
     open_time: Optional[str] = Field(default=None, alias="openTime")
     close_time: Optional[str] = Field(default=None, alias="closeTime")
     map_link: Optional[str] = Field(default=None, alias="mapLink")
+    status: Optional[bool] = Field(default=True, description="Trạng thái hoạt động")
     
     # Input menu lồng nhau: [{category: "Pizza", items: [...]}, ...]
     menu: Optional[List[MenuCategory]] = Field(default_factory=list)
@@ -53,11 +58,13 @@ class CreateRestaurantRequest(BaseModel):
 
 class UpdateRestaurantRequest(BaseModel):
     restaurant_name: Optional[str] = Field(None, alias="name")
+    email: Optional[str] = None
     address: Optional[str] = None
     hotline: Optional[str] = None
     open_time: Optional[str] = Field(default=None, alias="openTime")
     close_time: Optional[str] = Field(default=None, alias="closeTime")
     map_link: Optional[str] = Field(default=None, alias="mapLink")
+    status: Optional[bool] = None
 
     class Config:
         populate_by_name = True
@@ -72,11 +79,13 @@ class RestaurantSimpleResponse(BaseModel):
     """
     restaurant_id: str = Field(..., alias="_id") 
     restaurant_name: str = Field(..., alias="name")
+    email: Optional[str] = None
     address: Optional[str] = None
     hotline: Optional[str] = None
     open_time: Optional[str] = Field(default=None, alias="openTime")
     close_time: Optional[str] = Field(default=None, alias="closeTime")
     map_link: Optional[str] = Field(default=None, alias="mapLink")
+    status: bool = True
 
     class Config:
         populate_by_name = True

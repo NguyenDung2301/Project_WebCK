@@ -4,7 +4,8 @@ from typing import Optional, List, Dict
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
 from core.security import security
-from db.connection import users_collection
+from db.connection import users_collection, orders_collection
+from db.models.order import OrderStatus
 from db.models.user import User
 from schemas.user_schema import (
     UserLoginRequest,
@@ -13,6 +14,7 @@ from schemas.user_schema import (
     UserResponse,
     UserLoginResponse,
     UserRoleUpdateRequest,
+    UserTopUpRequest,
 )
 from utils.roles import Role
 
@@ -46,7 +48,7 @@ class UserService:
                 password=security.hash_password(user_data.password),
                 phone_number=user_data.phone_number,
                 address=user_data.address,
-                balance=user_data.balance or 0,
+                balance=0.0,
                 birthday=user_data.birthday,
                 gender=user_data.gender,
                 created_at=datetime.now(),
@@ -184,6 +186,61 @@ class UserService:
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy danh sách users: {str(e)}')
 
+    def deduct_balance(self, user_id: str, amount: float) -> User:
+        """Trừ số dư tài khoản của user một cách an toàn."""
+        if amount <= 0:
+            raise ValueError('Số tiền trừ phải lớn hơn 0')
+
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+
+        if user.balance < amount:
+            raise ValueError('Số dư tài khoản không đủ để thanh toán đơn hàng')
+
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$inc': {'balance': -float(amount)}, '$set': {'updated_at': datetime.now()}}
+        )
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật số dư user')
+
+        return self.find_by_id(user_id)
+
+    def top_up_balance(self, user_id: str, topup: UserTopUpRequest) -> Dict:
+        """Nạp tiền vào tài khoản user."""
+        if topup.amount <= 0:
+            raise ValueError('Số tiền nạp phải lớn hơn 0')
+
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$inc': {'balance': float(topup.amount)}, '$set': {'updated_at': datetime.now()}}
+        )
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật số dư user')
+
+        updated = self.find_by_id(user_id)
+        return UserResponse(**updated.to_dict()).model_dump()
+
+    def credit_balance(self, user_id: str, amount: float) -> User:
+        """Cộng tiền vào tài khoản user (dùng nội bộ cho refund)."""
+        if amount <= 0:
+            raise ValueError('Số tiền cộng phải lớn hơn 0')
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$inc': {'balance': float(amount)}, '$set': {'updated_at': datetime.now()}}
+        )
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật số dư user')
+        return self.find_by_id(user_id)
+
     def update_user_role(self, user_id: str, role_data: UserRoleUpdateRequest) -> Dict:
         """Cập nhật vai trò user (chỉ admin được phép gọi API)"""
         # Kiểm tra user tồn tại
@@ -192,6 +249,19 @@ class UserService:
             raise ValueError('Không tìm thấy user')
 
         new_role = role_data.role
+
+        # Nếu nâng lên SHIPPER, yêu cầu user không có đơn hàng đang xử lý
+        if new_role == Role.SHIPPER:
+            active_statuses = [
+                OrderStatus.PENDING.value,
+                OrderStatus.SHIPPING.value,
+            ]
+            active_count = orders_collection.count_documents({
+                'userId': ObjectId(user_id),
+                'status': {'$in': active_statuses}
+            })
+            if active_count > 0:
+                raise ValueError('User còn đơn hàng chưa hoàn tất, không thể chuyển sang shipper')
 
         result = self.collection.update_one(
             {'_id': ObjectId(user_id)},

@@ -2,6 +2,7 @@
 from flask import request, jsonify
 from functools import wraps
 from core.security import security
+from utils.roles import Role
 
 def auth_required(f):
     """Decorator để bảo vệ routes cần authentication"""
@@ -117,6 +118,39 @@ def admin_required(f):
             print(f"[DEBUG] admin_required: Exception: {str(e)}")
             import traceback
             traceback.print_exc()
+            return jsonify({'success': False,'message': 'Xác thực thất bại'}), 401
+    return decorated_function
+
+def shipper_required(f):
+    """
+    Decorator cho routes chỉ shipper mới truy cập được
+    Yêu cầu token phải có role='shipper'
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                return jsonify({'success': False,'message': 'Không tìm thấy token xác thực'}), 401
+
+            token = security.extract_token_from_header(auth_header)
+            if not token:
+                return jsonify({'success': False,'message': 'Format token không hợp lệ'}), 401
+
+            payload = security.verify_token(token)
+
+            token_role = payload.get('role')
+            if token_role != Role.SHIPPER.value:
+                return jsonify({'success': False,'message': f'Bạn không có quyền truy cập. Role hiện tại: {token_role}'}), 403
+
+            request.user_id = payload['user_id']
+            request.user_email = payload['email']
+            request.token_payload = payload
+
+            return f(*args, **kwargs)
+        except ValueError as e:
+            return jsonify({'success': False,'message': str(e)}), 401
+        except Exception:
             return jsonify({'success': False,'message': 'Xác thực thất bại'}), 401
     return decorated_function
 
