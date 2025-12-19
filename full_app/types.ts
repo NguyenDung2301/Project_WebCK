@@ -31,6 +31,7 @@ export interface Voucher {
   condition: string;
   type: 'FREESHIP' | 'DISCOUNT' | 'CASHBACK';
   isExpired?: boolean;
+  discountValue: number; // Giá trị giảm giá cụ thể
 }
 
 export interface Order {

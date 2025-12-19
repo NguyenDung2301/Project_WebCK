@@ -248,10 +248,10 @@ export const MOCK_PROMOTIONS = [
 ];
 
 export const MOCK_VOUCHERS: Voucher[] = [
-  { id: 'v1', title: 'Giảm 15k phí ship', condition: 'Đơn từ tối thiểu 100k', type: 'FREESHIP' },
-  { id: 'v2', title: 'Giảm 10% tối đa 50k', condition: 'Cho đơn từ 200k', type: 'DISCOUNT' },
-  { id: 'v3', title: 'Giảm 20k trực tiếp', condition: 'Áp dụng cho đơn đầu tiên', type: 'CASHBACK' },
-  { id: 'v4', title: 'Siêu Deal Cuối Tuần', condition: 'Hết hạn hôm qua', type: 'DISCOUNT', isExpired: true },
+  { id: 'v1', title: 'Giảm 15k phí ship', condition: 'Đơn từ tối thiểu 100k', type: 'FREESHIP', discountValue: 15000 },
+  { id: 'v2', title: 'Giảm 25k cho món nước', condition: 'Cho đơn từ 150k', type: 'DISCOUNT', discountValue: 25000 },
+  { id: 'v3', title: 'Giảm 20k trực tiếp', condition: 'Áp dụng cho đơn đầu tiên', type: 'CASHBACK', discountValue: 20000 },
+  { id: 'v4', title: 'Siêu Deal Cuối Tuần', condition: 'Hết hạn hôm qua', type: 'DISCOUNT', isExpired: true, discountValue: 50000 },
 ];
 
 export const RECENT_SEARCHES = [

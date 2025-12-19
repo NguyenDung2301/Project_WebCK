@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { MapPin, ChevronRight, CreditCard, Wallet, Search, Ticket, Info, CheckCircle2, ChevronDown, Lock, Eye, EyeOff, X, Check } from 'lucide-react';
+import { MapPin, ChevronRight, CreditCard, Wallet, Search, Ticket, Info, CheckCircle2, ChevronDown, Lock, Eye, EyeOff, X, Check, Plus, Heart } from 'lucide-react';
 import { FoodItem, Voucher, UserProfile, Order } from '../types';
 import { MOCK_VOUCHERS, MOCK_RESTAURANTS, CATEGORIES } from '../constants';
 
@@ -14,6 +14,8 @@ interface CheckoutProps {
   userProfile: UserProfile;
   onOrdersClick: () => void;
   onAddOrder: (order: Order) => void;
+  favoriteFoodIds: string[];
+  onToggleFavorite: (id: string) => void;
 }
 
 const Checkout: React.FC<CheckoutProps> = ({ 
@@ -25,7 +27,9 @@ const Checkout: React.FC<CheckoutProps> = ({
   onEditProfile, 
   userProfile,
   onOrdersClick,
-  onAddOrder
+  onAddOrder,
+  favoriteFoodIds,
+  onToggleFavorite
 }) => {
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'cash'>('wallet');
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(MOCK_VOUCHERS[0]);
@@ -40,8 +44,11 @@ const Checkout: React.FC<CheckoutProps> = ({
 
   const subtotal = food.price * quantity;
   const deliveryFee = 15000;
-  const discount = selectedVoucher ? (selectedVoucher.type === 'FREESHIP' ? 15000 : 25000) : 0;
+  // Giảm giá theo giá trị cụ thể của voucher đã chọn
+  const discount = selectedVoucher ? selectedVoucher.discountValue : 0;
   const total = subtotal + deliveryFee - discount;
+
+  const isFavorite = favoriteFoodIds.includes(food.id);
 
   const handleVoucherSelect = (v: Voucher) => {
     if (!v.isExpired) {
@@ -62,12 +69,10 @@ const Checkout: React.FC<CheckoutProps> = ({
 
   const handleConfirmClick = () => {
     if (paymentMethod === 'cash') {
-      // Bỏ qua mật khẩu cho thanh toán tiền mặt
       const newOrder = createOrderObject();
       onAddOrder(newOrder);
       setShowSuccessModal(true);
     } else {
-      // Cần mật khẩu cho thanh toán ví
       if (userProfile.balance < total) return;
       setShowPasswordModal(true);
     }
@@ -114,8 +119,30 @@ const Checkout: React.FC<CheckoutProps> = ({
           </div>
 
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-2 text-[#EE501C] font-bold mb-6">
-              <Ticket className="w-5 h-5" /> Món đã chọn
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2 text-[#EE501C] font-bold">
+                <Ticket className="w-5 h-5" /> Món đã chọn
+              </div>
+              <button 
+                onClick={() => onToggleFavorite(food.id)}
+                className={`text-xs font-bold flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-full ${
+                  isFavorite 
+                    ? 'text-[#EE501C] bg-orange-50 ring-1 ring-orange-200' 
+                    : 'text-gray-500 hover:text-[#EE501C] hover:bg-orange-50'
+                }`}
+              >
+                {isFavorite ? (
+                  <>
+                    <Heart className="w-3.5 h-3.5 fill-current" />
+                    Đã thêm
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5" />
+                    Thêm món
+                  </>
+                )}
+              </button>
             </div>
             <div className="flex gap-4">
               <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0">
@@ -177,7 +204,7 @@ const Checkout: React.FC<CheckoutProps> = ({
               <div className="flex items-center gap-2 text-[#EE501C] font-bold">
                 <Ticket className="w-5 h-5" /> Voucher khả dụng
               </div>
-              <button onClick={onViewVouchers} className="text-xs font-bold text-[#EE501C] flex items-center gap-1 hover:underline">Xem tất cả <ChevronRight className="w-3 h-3" /></button>
+              {/* Nút 'Xem tất cả' đã bị xóa theo yêu cầu */}
             </div>
             
             <div className="relative mb-6">
@@ -256,7 +283,7 @@ const Checkout: React.FC<CheckoutProps> = ({
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-gray-900 ml-1">Mật khẩu tài khoản</label>
                   <div className="relative">
-                    <input type={showPasswordText ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); if(passwordError) setPasswordError(''); }} placeholder="••••••••" className={`w-full bg-white border ${passwordError ? 'border-red-400 ring-4 ring-red-50' : 'border-orange-100 ring-4 ring-orange-50'} rounded-full py-4 px-6 text-sm focus:outline-none transition-all text-gray-800`} />
+                    <input type={showPasswordText ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); if(passwordError) setPasswordError(''); }} placeholder="••••••••" className={`w-full bg-white border ${passwordError ? 'border-red-400 ring-4 ring-red-50' : 'border-orange-100 ring-4 ring-orange-50'} rounded-full py-4 px-6 text-sm focus:outline-none transition-all text-gray-700`} />
                     <button onClick={() => setShowPasswordText(!showPasswordText)} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#EE501C] transition-colors">{showPasswordText ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button>
                   </div>
                   {passwordError && <p className="text-[10px] font-bold text-red-500 ml-1 mt-1">{passwordError}</p>}

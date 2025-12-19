@@ -15,11 +15,11 @@ import { MOCK_FOODS, MOCK_ORDERS } from './constants';
 
 const App: React.FC = () => {
   const [screen, setScreen] = useState<Screen>('HOME');
+  const [history, setHistory] = useState<Screen[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [orderQuantity, setOrderQuantity] = useState(1);
   const [favoriteFoodIds, setFavoriteFoodIds] = useState<string[]>([]);
-  const [prevScreen, setPrevScreen] = useState<Screen>('HOME');
   const [activeProfileTab, setActiveProfileTab] = useState<ProfileSubPage>('MAIN');
   const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
   const [reviewingOrderId, setReviewingOrderId] = useState<string | null>(null);
@@ -34,21 +34,36 @@ const App: React.FC = () => {
     password: '' 
   });
 
-  const handleSearchFocus = () => {
-    if (screen !== 'SEARCH') {
-      setScreen('SEARCH');
+  const navigateTo = (newScreen: Screen, replace = false) => {
+    if (!replace && newScreen !== screen) {
+      setHistory(prev => [...prev, screen]);
     }
-  };
-
-  const navigateTo = (newScreen: Screen) => {
-    setPrevScreen(screen);
     setScreen(newScreen);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleBack = () => {
+    if (history.length > 0) {
+      const prev = history[history.length - 1];
+      setHistory(prev => prev.slice(0, -1));
+      setScreen(prev);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      navigateTo('HOME');
+    }
+  };
+
+  const handleSearchFocus = () => {
+    if (screen !== 'SEARCH') {
+      navigateTo('SEARCH');
+    }
+  };
+
   const handleLogoClick = () => {
     setSearchValue('');
-    navigateTo('HOME');
+    setHistory([]);
+    setScreen('HOME');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOrdersClick = () => {
@@ -117,7 +132,7 @@ const App: React.FC = () => {
           : order
       ));
     }
-    navigateTo('ORDERS');
+    handleBack();
   };
 
   const handleGoToVouchers = () => {
@@ -177,10 +192,13 @@ const App: React.FC = () => {
         onLogoClick={handleLogoClick}
         onOrdersClick={handleOrdersClick}
         onProfileClick={handleProfileClick}
+        onBack={handleBack}
         currentScreen={screen}
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         onSearchSubmit={handleSearchSubmit}
+        onSearchFocus={handleSearchFocus}
+        showBackButton={screen !== 'HOME' && history.length > 0}
       />
 
       <main className="flex-1">
@@ -234,6 +252,8 @@ const App: React.FC = () => {
             userProfile={userProfile}
             onOrdersClick={handleOrdersClick}
             onAddOrder={handleAddOrder}
+            favoriteFoodIds={favoriteFoodIds}
+            onToggleFavorite={toggleFavorite}
           />
         )}
 
@@ -262,7 +282,7 @@ const App: React.FC = () => {
 
         {screen === 'REVIEW' && (
           <ReviewPage 
-            onBack={() => setScreen(prevScreen)} 
+            onBack={handleBack} 
             targetName={selectedFood?.name || "Sản phẩm"} 
             onReviewSubmit={handleReviewSubmit}
           />
