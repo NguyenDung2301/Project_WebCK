@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AdminLayout } from '../../layouts/AdminLayout';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -8,40 +8,8 @@ import {
   Download, DollarSign, TrendingUp, Users, Store, 
   Check, X, Bike
 } from 'lucide-react';
-
-// --- MOCK DATA FOR CHARTS ---
-const REVENUE_DATA = [
-  { name: 'T1', value: 1.2 }, { name: 'T2', value: 1.5 }, { name: 'T3', value: 1.8 },
-  { name: 'T4', value: 1.4 }, { name: 'T5', value: 2.1 }, { name: 'T6', value: 1.9 },
-  { name: 'T7', value: 2.3 }, { name: 'T8', value: 1.7 }, { name: 'T9', value: 2.5 },
-  { name: 'T10', value: 2.8 }, { name: 'T11', value: 2.4 }, { name: 'T12', value: 3.0 },
-];
-
-const STATUS_DATA = [
-  { name: 'Hoàn thành', value: 540, color: '#10B981' }, // Green
-  { name: 'Đang giao', value: 120, color: '#3B82F6' },  // Blue
-  { name: 'Đang chuẩn bị', value: 80, color: '#F59E0B' }, // Amber
-  { name: 'Đã hủy', value: 45, color: '#EF4444' },      // Red
-];
-
-const ACTIVITIES = [
-  { id: 1, user: 'Nguyễn Văn A', action: 'đã đặt đơn hàng', target: '#ORD-001', time: '2 phút trước', type: 'order' },
-  { id: 2, user: 'Shipper Tuấn', action: 'đã giao thành công', target: '#ORD-992', time: '15 phút trước', type: 'delivery' },
-  { id: 3, user: 'Lê Thị B', action: 'đã hủy đơn hàng', target: '#ORD-003', time: '1 giờ trước', type: 'cancellation' },
-  { id: 4, user: 'Admin', action: 'đã duyệt nhà hàng', target: 'KFC Láng Hạ', time: '3 giờ trước', type: 'system' },
-];
-
-const TOP_ITEMS = [
-  { id: 'F01', name: 'Gà Rán Giòn Cay', sales: '1,204', image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=100&auto=format&fit=crop' },
-  { id: 'F02', name: 'Trà Sữa Trân Châu', sales: '985', image: 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?q=80&w=100&auto=format&fit=crop' },
-  { id: 'F03', name: 'Cơm Tấm Sườn', sales: '856', image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=100&auto=format&fit=crop' },
-];
-
-const TOP_RESTAURANTS = [
-  { id: 'R01', name: 'KFC Vietnam', revenue: 450000000, logoInitial: 'K', color: 'bg-red-50 text-red-600' },
-  { id: 'R02', name: 'Highlands Coffee', revenue: 320000000, logoInitial: 'H', color: 'bg-red-50 text-red-700' },
-  { id: 'R03', name: 'Phúc Long', revenue: 280000000, logoInitial: 'P', color: 'bg-green-50 text-green-800' },
-];
+import { getDashboardStatsApi } from '../../api/dashboardApi';
+import { formatNumber, formatCurrency } from '../../utils';
 
 // Helper Component for Stat Card
 const StatCard = ({ title, value, icon: Icon, iconBg, iconColor, subValue }: any) => (
@@ -64,6 +32,37 @@ const StatCard = ({ title, value, icon: Icon, iconBg, iconColor, subValue }: any
 );
 
 export const DashboardPage: React.FC = () => {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const stats = await getDashboardStatsApi();
+        setData(stats);
+      } catch (error) {
+        console.error("Failed to load dashboard data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <AdminLayout title="Tổng quan hoạt động">
+         <div className="flex items-center justify-center h-[80vh]">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EE501C]"></div>
+         </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!data) return null;
+
+  const { revenue, status, activities, topItems, topRestaurants, summary } = data;
+
   return (
     <AdminLayout title="Tổng quan hoạt động">
       <div className="space-y-8 animate-in fade-in duration-500 pb-10">
@@ -83,8 +82,8 @@ export const DashboardPage: React.FC = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
-            title="Tổng doanh thu tháng" 
-            value="1.8 tỷ ₫" 
+            title="Tổng doanh thu" 
+            value={formatCurrency(summary?.totalRevenue || 0)} 
             icon={DollarSign} 
             iconBg="bg-red-50" 
             iconColor="text-[#EE501C]" 
@@ -92,27 +91,27 @@ export const DashboardPage: React.FC = () => {
           />
           <StatCard 
             title="Doanh thu hôm nay" 
-            value="45.2tr ₫" 
+            value={formatCurrency(summary?.todayRevenue || 0)} 
             icon={TrendingUp} 
             iconBg="bg-green-50" 
             iconColor="text-emerald-500" 
             subValue="+5%"
           />
           <StatCard 
-            title="Người dùng active" 
-            value="8,540" 
+            title="Tổng người dùng" 
+            value={formatNumber(summary?.totalUsers || 0)} 
             icon={Users} 
             iconBg="bg-blue-50" 
             iconColor="text-blue-500" 
-            subValue="+120"
+            subValue="Active"
           />
           <StatCard 
             title="Tổng số nhà hàng" 
-            value="482" 
+            value={formatNumber(summary?.totalRestaurants || 0)} 
             icon={Store} 
             iconBg="bg-orange-50" 
             iconColor="text-amber-500" 
-            subValue="Ổn định"
+            subValue="Đối tác"
           />
         </div>
 
@@ -129,7 +128,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={REVENUE_DATA}>
+                <BarChart data={revenue}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
@@ -142,7 +141,7 @@ export const DashboardPage: React.FC = () => {
                       backgroundColor: '#FFFFFF',
                       padding: '8px 12px'
                     }}
-                    formatter={(value: any) => [`${value} tỷ ₫`, 'Doanh thu']}
+                    formatter={(value: any) => [`${value} Tr ₫`, 'Doanh thu']}
                   />
                   <Bar dataKey="value" fill="#EE501C" radius={[4, 4, 0, 0]} barSize={32} />
                 </BarChart>
@@ -157,7 +156,7 @@ export const DashboardPage: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={STATUS_DATA}
+                    data={status}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -165,7 +164,7 @@ export const DashboardPage: React.FC = () => {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {STATUS_DATA.map((entry, index) => (
+                    {status.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -176,10 +175,10 @@ export const DashboardPage: React.FC = () => {
               </ResponsiveContainer>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3">
-              {STATUS_DATA.map((status) => (
-                <div key={status.name} className="flex items-center text-xs font-bold text-gray-500">
-                  <span className="w-2.5 h-2.5 rounded-full mr-2" style={{ backgroundColor: status.color }}></span>
-                  {status.name}
+              {status.map((item: any) => (
+                <div key={item.name} className="flex items-center text-xs font-bold text-gray-500">
+                  <span className="w-2.5 h-2.5 rounded-full mr-2" style={{ backgroundColor: item.color }}></span>
+                  {item.name}: {item.value}
                 </div>
               ))}
             </div>
@@ -192,7 +191,7 @@ export const DashboardPage: React.FC = () => {
           <div className="bg-white p-6 rounded-[1.5rem] shadow-sm border border-gray-200">
             <h3 className="text-lg font-bold text-gray-900 mb-6">Hoạt động gần đây</h3>
             <div className="space-y-6">
-              {ACTIVITIES.map((act) => (
+              {activities.map((act: any) => (
                 <div key={act.id} className="flex items-start gap-4">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 
                     ${act.type === 'order' ? 'bg-blue-100 text-blue-600' : 
@@ -219,14 +218,14 @@ export const DashboardPage: React.FC = () => {
           <div className="bg-white p-6 rounded-[1.5rem] shadow-sm border border-gray-200">
             <h3 className="text-lg font-bold text-gray-900 mb-6">Top món bán chạy</h3>
             <div className="space-y-5">
-              {TOP_ITEMS.map((item) => (
+              {topItems.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-4 group cursor-pointer">
                   <img alt={item.name} className="w-12 h-12 rounded-xl object-cover shadow-sm bg-gray-100 group-hover:scale-105 transition-transform" src={item.image} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-800 truncate group-hover:text-[#EE501C] transition-colors">{item.name}</p>
                     <p className="text-[10px] text-gray-400 mt-0.5 font-mono">#{item.id}</p>
                   </div>
-                  <span className="text-xs font-bold text-[#EE501C] bg-orange-50 px-2 py-1 rounded-lg">{item.sales}</span>
+                  <span className="text-xs font-bold text-[#EE501C] bg-orange-50 px-2 py-1 rounded-lg">{item.sales} sold</span>
                 </div>
               ))}
             </div>
@@ -236,7 +235,7 @@ export const DashboardPage: React.FC = () => {
           <div className="bg-white p-6 rounded-[1.5rem] shadow-sm border border-gray-200">
             <h3 className="text-lg font-bold text-gray-900 mb-6">Top doanh thu</h3>
             <div className="space-y-6">
-              {TOP_RESTAURANTS.map((res) => (
+              {topRestaurants.map((res: any) => (
                 <div key={res.id} className="flex items-center gap-4 group cursor-pointer">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shadow-sm shrink-0 transition-transform group-hover:rotate-6 ${res.color}`}>
                     {res.logoInitial}
@@ -247,7 +246,7 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-sm font-black text-gray-900 leading-none">
-                      {(res.revenue / 1000000000).toFixed(1)} tỷ
+                      {formatCurrency(res.revenue)}
                     </p>
                   </div>
                 </div>

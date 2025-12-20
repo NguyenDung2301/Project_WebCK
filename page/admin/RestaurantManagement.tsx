@@ -54,9 +54,13 @@ export const RestaurantManagement: React.FC = () => {
   // Filter Logic
   const filteredRestaurants = useMemo(() => {
     return restaurants.filter(res => {
-      const matchSearch = res.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          res.id.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchStatus = statusFilter ? res.status.toLowerCase() === statusFilter.toLowerCase() : true;
+      const name = res.name || '';
+      const id = res.id || '';
+      const status = res.status || '';
+
+      const matchSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchStatus = statusFilter ? status.toLowerCase() === statusFilter.toLowerCase() : true;
       return matchSearch && matchStatus;
     });
   }, [restaurants, searchTerm, statusFilter]);

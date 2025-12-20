@@ -33,10 +33,15 @@ export const OrderManagement: React.FC = () => {
   // Filter Logic
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
+      // Map properties with fallbacks to avoid crashes
+      const customer = order.customer || 'Khách lẻ';
+      const id = order.id || '';
+      const restaurant = order.restaurantName || order.restaurant || '';
+
       const matchesSearch = 
-        order.customer.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.restaurant.toLowerCase().includes(searchTerm.toLowerCase());
+        customer.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        restaurant.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'Tất cả trạng thái' || order.status === statusFilter;
       
@@ -136,22 +141,27 @@ export const OrderManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedOrders.length > 0 ? paginatedOrders.map((order) => (
+                {paginatedOrders.length > 0 ? paginatedOrders.map((order) => {
+                  const customerName = order.customer || 'Khách lẻ';
+                  const restaurantName = order.restaurantName || order.restaurant || 'Nhà hàng';
+                  const amount = order.totalAmount || order.amount || 0;
+                  
+                  return (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-500 font-mono">{order.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-8 w-8 rounded-full bg-orange-100 text-[#EE501C] flex items-center justify-center text-xs font-bold mr-3 border border-orange-200">
-                          {order.customer.charAt(0)}
+                          {customerName.charAt(0)}
                         </div>
                         <div>
-                           <div className="text-sm font-medium text-gray-900">{order.customer}</div>
-                           <div className="text-[10px] text-gray-400">{order.email}</div>
+                           <div className="text-sm font-medium text-gray-900">{customerName}</div>
+                           {order.email && <div className="text-[10px] text-gray-400">{order.email}</div>}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{order.restaurant}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-[#EE501C]">{order.amount}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{restaurantName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-[#EE501C]">{amount.toLocaleString()}đ</td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`px-2.5 py-1 inline-flex text-[10px] leading-4 font-bold rounded-full uppercase tracking-wide ${getStatusClasses(order.status)}`}>
                         {getStatusLabel(order.status)}
@@ -172,7 +182,8 @@ export const OrderManagement: React.FC = () => {
                        </div>
                     </td>
                   </tr>
-                )) : (
+                );
+                }) : (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-gray-500 italic">
                       Không tìm thấy đơn hàng nào phù hợp.

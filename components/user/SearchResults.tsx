@@ -22,9 +22,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     if (!searchTerm) return foods;
     const lowerTerm = searchTerm.toLowerCase();
     return foods.filter(food => 
-      food.name.toLowerCase().includes(lowerTerm) || 
-      food.description.toLowerCase().includes(lowerTerm) ||
-      food.category.toLowerCase().includes(lowerTerm)
+      (food.name?.toLowerCase() || '').includes(lowerTerm) || 
+      (food.description?.toLowerCase() || '').includes(lowerTerm) ||
+      (food.category?.toLowerCase() || '').includes(lowerTerm)
     );
   }, [searchTerm, foods]);
 

@@ -9,7 +9,8 @@ import {
   INITIAL_VOUCHERS,
   INITIAL_PROMOTIONS,
   INITIAL_REVIEWS,
-  INITIAL_SUGGESTIONS
+  INITIAL_SUGGESTIONS,
+  INITIAL_DASHBOARD_DATA
 } from './initialData';
 
 /**
@@ -26,6 +27,7 @@ class MockDatabase {
   private promotions: any[];
   private reviews: Review[];
   private suggestions: any[];
+  private dashboardData: any;
 
   constructor() {
     this.users = [...INITIAL_USERS];
@@ -37,6 +39,7 @@ class MockDatabase {
     this.promotions = [...INITIAL_PROMOTIONS];
     this.reviews = [...INITIAL_REVIEWS];
     this.suggestions = [...INITIAL_SUGGESTIONS];
+    this.dashboardData = INITIAL_DASHBOARD_DATA;
     console.log('[MockDatabase] Initialized with full dataset in src/data folder');
   }
 
@@ -104,12 +107,10 @@ class MockDatabase {
   getRestaurants() {
     return this.restaurants.map(r => {
       const stats = this.getRestaurantStats(r.id);
-      // Only override if there is actual data, or force override to 0 to be "synced"
-      // Since user wants sync, we return actual calculated values
       return {
         ...r,
         reviewsCount: stats.count,
-        rating: stats.count > 0 ? stats.rating : (r.rating || 5.0) // Keep default rating if new, or 0
+        rating: stats.count > 0 ? stats.rating : (r.rating || 5.0)
       };
     });
   }
@@ -147,7 +148,6 @@ class MockDatabase {
   // --- FOOD & PRODUCT OPERATIONS ---
 
   getFoods() {
-    // Only return foods from active restaurants
     return this.foods.filter(f => this.isRestaurantActive(f.restaurantId));
   }
 
@@ -155,7 +155,6 @@ class MockDatabase {
     const food = this.foods.find(f => f.id === id);
     if (!food) return undefined;
     
-    // Check if restaurant is active
     if (!this.isRestaurantActive(food.restaurantId)) {
         return undefined;
     }
@@ -178,7 +177,6 @@ class MockDatabase {
   }
 
   getPromotions() {
-    // Filter promotions where the associated food's restaurant is active
     return this.promotions.filter(p => {
         const food = this.foods.find(f => f.id === p.foodId);
         if (!food) return false;
@@ -206,7 +204,144 @@ class MockDatabase {
   deleteOrder(id: string) {
     this.orders = this.orders.filter(o => o.id !== id);
   }
+
+  // --- DASHBOARD OPERATIONS ---
+
+  getDashboardData() {
+    // 1. Calculate Total Revenue & Counts
+    const totalRevenue = this.orders.reduce((sum, order) => {
+      // Only count completed or delivered orders
+      if (order.status === 'COMPLETED' || order.status === 'DELIVERING') {
+        return sum + (order.totalAmount || 0);
+      }
+      return sum;
+    }, 0);
+
+    const totalUsers = this.users.length;
+    const totalRestaurants = this.restaurants.length;
+    
+    // Mock "Today's Revenue" (randomize slightly based on total for demo)
+    const todayRevenue = Math.round(totalRevenue * 0.05); 
+
+    // 2. Calculate Order Status Distribution
+    const statusCounts = {
+      'COMPLETED': 0,
+      'DELIVERING': 0,
+      'PENDING': 0,
+      'CANCELLED': 0
+    };
+    
+    this.orders.forEach(o => {
+      const s = o.status as keyof typeof statusCounts;
+      if (statusCounts[s] !== undefined) statusCounts[s]++;
+    });
+
+    const statusData = [
+      { name: 'Hoàn thành', value: statusCounts.COMPLETED, color: '#10B981' },
+      { name: 'Đang giao', value: statusCounts.DELIVERING, color: '#3B82F6' },
+      { name: 'Đang chuẩn bị', value: statusCounts.PENDING, color: '#F59E0B' },
+      { name: 'Đã hủy', value: statusCounts.CANCELLED, color: '#EF4444' },
+    ];
+
+    // 3. Generate Recent Activities from Orders
+    const recentActivities = this.orders.slice(0, 5).map(order => {
+        let action = 'đã đặt đơn hàng';
+        let type = 'order';
+        if (order.status === 'COMPLETED') { action = 'đã nhận hàng'; type = 'delivery'; }
+        if (order.status === 'CANCELLED') { action = 'đã hủy đơn'; type = 'cancellation'; }
+        
+        const userName = order.customer || 'Khách hàng';
+
+        return {
+            id: order.id,
+            user: userName,
+            action: action,
+            target: order.restaurantName,
+            time: order.orderTime.split('•')[0].trim(),
+            type: type
+        };
+    });
+
+    // 4. Calculate Top Restaurants (by Revenue)
+    const resRevenueMap: Record<string, number> = {};
+    this.orders.forEach(order => {
+        if (!resRevenueMap[order.restaurantName]) resRevenueMap[order.restaurantName] = 0;
+        resRevenueMap[order.restaurantName] += order.totalAmount;
+    });
+
+    const topRestaurantsData = Object.entries(resRevenueMap)
+        .map(([name, revenue], index) => {
+            const resDetails = this.restaurants.find(r => r.name === name);
+            return {
+                id: resDetails?.id || `R${index}`,
+                name: name,
+                revenue: revenue,
+                logoInitial: name.charAt(0),
+                color: resDetails?.colorClass || 'bg-gray-100 text-gray-600'
+            };
+        })
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5);
+
+    // 5. Calculate Top Items (by Frequency)
+    const itemFreqMap: Record<string, number> = {};
+    this.orders.forEach(order => {
+        if (!itemFreqMap[order.foodId]) itemFreqMap[order.foodId] = 0;
+        itemFreqMap[order.foodId] += 1;
+    });
+
+    const topItemsData = Object.entries(itemFreqMap)
+        .map(([foodId, count]) => {
+            const food = this.foods.find(f => f.id === foodId);
+            return {
+                id: foodId,
+                name: food?.name || 'Món ăn',
+                sales: count.toString(),
+                image: food?.imageUrl || ''
+            };
+        })
+        .sort((a, b) => Number(b.sales) - Number(a.sales))
+        .slice(0, 5);
+
+    // 6. Calculate Monthly Revenue (REAL DATA)
+    const monthlyRevenue = Array(12).fill(0);
+    this.orders.forEach(order => {
+        if (order.status === 'COMPLETED' || order.status === 'DELIVERING') {
+            // Parse 'HH:mm • DD/MM/YYYY'
+            const datePart = order.orderTime.split('•')[1]?.trim();
+            if (datePart) {
+                const parts = datePart.split('/');
+                if (parts.length === 3) {
+                    const month = parseInt(parts[1], 10);
+                    // month is 1-12, index is 0-11
+                    if (month >= 1 && month <= 12) {
+                        monthlyRevenue[month - 1] += order.totalAmount;
+                    }
+                }
+            }
+        }
+    });
+
+    // Format revenue for chart (in Millions VND for better readability with sample data)
+    const revenueChartData = monthlyRevenue.map((total, index) => ({
+        name: `T${index + 1}`,
+        value: Number((total / 1000000).toFixed(2)) // Convert to Millions
+    }));
+
+    return {
+      summary: {
+        totalRevenue,
+        todayRevenue,
+        totalUsers,
+        totalRestaurants
+      },
+      revenue: revenueChartData,
+      status: statusData,
+      activities: recentActivities.length > 0 ? recentActivities : INITIAL_DASHBOARD_DATA.activities,
+      topItems: topItemsData.length > 0 ? topItemsData : INITIAL_DASHBOARD_DATA.topItems,
+      topRestaurants: topRestaurantsData.length > 0 ? topRestaurantsData : INITIAL_DASHBOARD_DATA.topRestaurants
+    };
+  }
 }
 
-// Export singleton instance
 export const db = new MockDatabase();

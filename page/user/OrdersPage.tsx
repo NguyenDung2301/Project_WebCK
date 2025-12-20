@@ -1,59 +1,32 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronDown, CheckCircle2, XCircle, RotateCcw, FileText, Clock, Utensils, X, Bike, Navigation } from 'lucide-react';
 import { Order } from '../../types/common';
-
-// MOCK DATA
-const MOCK_ORDERS: Order[] = [
-  {
-    id: 'ord-1',
-    foodId: '1',
-    restaurantName: 'Quán Ngon Nhà Làm',
-    orderTime: '10:30 • 20/11/2023',
-    description: 'Bún Bò Huế Đặc Biệt (x2)',
-    totalAmount: 110000,
-    status: 'COMPLETED',
-    imageUrl: 'https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=200&auto=format&fit=crop',
-    isReviewed: true,
-  },
-  {
-    id: 'ord-2',
-    foodId: '2',
-    restaurantName: 'Cơm Tấm Phúc Lộc Thọ',
-    orderTime: '12:15 • 21/11/2023',
-    description: 'Cơm Sườn Bì Chả (x1)',
-    totalAmount: 45000,
-    status: 'PENDING',
-    imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=200&auto=format&fit=crop',
-  },
-  {
-    id: 'ord-3',
-    foodId: '3',
-    restaurantName: 'The Pizza Company',
-    orderTime: '19:00 • 22/11/2023',
-    description: 'Pizza Hải Sản (Size M)',
-    totalAmount: 250000,
-    status: 'DELIVERING',
-    imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=200&auto=format&fit=crop',
-  },
-   {
-    id: 'ord-4',
-    foodId: '4',
-    restaurantName: 'Gà Rán KFC',
-    orderTime: '18:30 • 19/11/2023',
-    description: 'Combo Gà Rán (x1)',
-    totalAmount: 89000,
-    status: 'CANCELLED',
-    imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=200&auto=format&fit=crop',
-  }
-];
+import { getAllOrdersApi } from '../../api/orderApi';
 
 export const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filters logic matching the provided reference
+  // Load orders from API
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        const data = await getAllOrdersApi();
+        setOrders(data);
+      } catch (error) {
+        console.error("Failed to fetch orders", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  // Filters logic
   const allOrders = orders.filter(o => o.status === 'CANCELLED' || o.isReviewed);
   const pendingOrders = orders.filter(o => o.status === 'PENDING');
   const deliveringOrders = orders.filter(o => o.status === 'DELIVERING');
@@ -76,11 +49,9 @@ export const OrdersPage: React.FC = () => {
       case 'review': return reviewOrders;
       case 'all': 
       default: 
-        // Note: The reference implementation logic for 'all' tab strictly showed only CANCELLED or REVIEWED
-        // You might want to show ALL orders in a real app, but sticking to the requested logic:
         return orders; 
     }
-  }, [activeTab, orders]);
+  }, [activeTab, orders, pendingOrders, deliveringOrders, completedOrders, reviewOrders]);
 
   const handleCancelOrder = (orderId: string) => {
     if (window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
@@ -91,6 +62,14 @@ export const OrdersPage: React.FC = () => {
   const handleConfirmReceived = (orderId: string) => {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'COMPLETED', needsReview: true } : o));
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EE501C]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 animate-in fade-in duration-500 bg-white min-h-screen">

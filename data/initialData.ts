@@ -1,6 +1,38 @@
 import { BackendUser } from '../types/user';
 import { Order, Restaurant, FoodItem, Voucher, Review } from '../types/common';
 
+// --- DASHBOARD DATA ---
+export const INITIAL_DASHBOARD_DATA = {
+  revenue: [
+    { name: 'T1', value: 1.2 }, { name: 'T2', value: 1.5 }, { name: 'T3', value: 1.8 },
+    { name: 'T4', value: 1.4 }, { name: 'T5', value: 2.1 }, { name: 'T6', value: 1.9 },
+    { name: 'T7', value: 2.3 }, { name: 'T8', value: 1.7 }, { name: 'T9', value: 2.5 },
+    { name: 'T10', value: 2.8 }, { name: 'T11', value: 2.4 }, { name: 'T12', value: 3.0 },
+  ],
+  status: [
+    { name: 'Hoàn thành', value: 540, color: '#10B981' },
+    { name: 'Đang giao', value: 120, color: '#3B82F6' },
+    { name: 'Đang chuẩn bị', value: 80, color: '#F59E0B' },
+    { name: 'Đã hủy', value: 45, color: '#EF4444' },
+  ],
+  activities: [
+    { id: 1, user: 'Nguyễn Văn A', action: 'đã đặt đơn hàng', target: '#ORD-001', time: '2 phút trước', type: 'order' },
+    { id: 2, user: 'Shipper Tuấn', action: 'đã giao thành công', target: '#ORD-992', time: '15 phút trước', type: 'delivery' },
+    { id: 3, user: 'Lê Thị B', action: 'đã hủy đơn hàng', target: '#ORD-003', time: '1 giờ trước', type: 'cancellation' },
+    { id: 4, user: 'Admin', action: 'đã duyệt nhà hàng', target: 'KFC Láng Hạ', time: '3 giờ trước', type: 'system' },
+  ],
+  topItems: [
+    { id: 'F01', name: 'Gà Rán Giòn Cay', sales: '1,204', image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=100&auto=format&fit=crop' },
+    { id: 'F02', name: 'Trà Sữa Trân Châu', sales: '985', image: 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?q=80&w=100&auto=format&fit=crop' },
+    { id: 'F03', name: 'Cơm Tấm Sườn', sales: '856', image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=100&auto=format&fit=crop' },
+  ],
+  topRestaurants: [
+    { id: 'R01', name: 'KFC Vietnam', revenue: 450000000, logoInitial: 'K', color: 'bg-red-50 text-red-600' },
+    { id: 'R02', name: 'Highlands Coffee', revenue: 320000000, logoInitial: 'H', color: 'bg-red-50 text-red-700' },
+    { id: 'R03', name: 'Phúc Long', revenue: 280000000, logoInitial: 'P', color: 'bg-green-50 text-green-800' },
+  ]
+};
+
 // --- USERS DATA ---
 export const INITIAL_USERS: BackendUser[] = [
   { user_id: 'usr-admin-001', fullname: 'Administrator', email: 'admin@gmail.com', phone_number: '0909000001', birthday: '1990-01-01', gender: 'Male', created_at: '2023-01-01T00:00:00Z', role: 'admin' },
@@ -225,14 +257,47 @@ export const INITIAL_PROMOTIONS = [
 
 // --- ORDERS DATA ---
 export const INITIAL_ORDERS: any[] = [
-  { id: '#979639', customer: 'Ẩn danh', email: 'user-admin-01', restaurant: 'Pizza & Pasta 4P\'s', amount: '170,000đ', status: 'PENDING' },
-  { id: '#863137', customer: 'Ẩn danh', email: 'user-admin-01', restaurant: 'Pizza & Pasta 4P\'s', amount: '900,000đ', status: 'PENDING' },
-  { id: '#504246', customer: 'Phạm Thị D', email: 'phamd@example.com', restaurant: 'Cơm Tấm & Bánh Mì Việt', amount: '50,000đ', status: 'PENDING' },
-  { id: '#357219', customer: 'Nguyễn Văn A', email: 'user@gmail.com', restaurant: 'Cơm Tấm & Bánh Mì Việt', amount: '85,000đ', status: 'COMPLETED' },
-  { id: '#357220', customer: 'Nguyễn Văn A', email: 'user@gmail.com', restaurant: 'KFC Vietnam', amount: '150,000đ', status: 'CANCELLED' },
-  { id: '#357221', customer: 'Lê Văn Khách', email: 'levanc@example.com', restaurant: 'Highlands Coffee', amount: '59,000đ', status: 'COMPLETED' },
-  { id: '#357222', customer: 'Trần Thị Shipper', email: 'shipper@food.com', restaurant: 'Phở Thìn Lò Đúc', amount: '65,000đ', status: 'COMPLETED' },
-  { id: '#357223', customer: 'Hoàng Văn E', email: 'hoange@example.com', restaurant: 'Jollibee', amount: '120,000đ', status: 'PENDING' },
+  {
+    id: 'ord-1',
+    foodId: '1',
+    restaurantName: 'Quán Ngon Nhà Làm',
+    orderTime: '10:30 • 20/11/2023',
+    description: 'Bún Bò Huế Đặc Biệt (x2)',
+    totalAmount: 110000,
+    status: 'COMPLETED',
+    imageUrl: 'https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=200&auto=format&fit=crop',
+    isReviewed: true,
+  },
+  {
+    id: 'ord-2',
+    foodId: '2',
+    restaurantName: 'Cơm Tấm Phúc Lộc Thọ',
+    orderTime: '12:15 • 21/11/2023',
+    description: 'Cơm Sườn Bì Chả (x1)',
+    totalAmount: 45000,
+    status: 'PENDING',
+    imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=200&auto=format&fit=crop',
+  },
+  {
+    id: 'ord-3',
+    foodId: '3',
+    restaurantName: 'The Pizza Company',
+    orderTime: '19:00 • 22/11/2023',
+    description: 'Pizza Hải Sản (Size M)',
+    totalAmount: 250000,
+    status: 'DELIVERING',
+    imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=200&auto=format&fit=crop',
+  },
+   {
+    id: 'ord-4',
+    foodId: '4',
+    restaurantName: 'Gà Rán KFC',
+    orderTime: '18:30 • 19/11/2023',
+    description: 'Combo Gà Rán (x1)',
+    totalAmount: 89000,
+    status: 'CANCELLED',
+    imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=200&auto=format&fit=crop',
+  }
 ];
 
 // --- REVIEWS DATA ---

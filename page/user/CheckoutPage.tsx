@@ -3,16 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Ticket, CreditCard, ChevronRight, CheckCircle2, Lock, Eye, EyeOff, Check, Wallet, Search, Plus, Heart } from 'lucide-react';
 import { FoodItem, UserProfile, Voucher } from '../../types/common';
 import { getVouchersApi } from '../../api/voucherApi';
-
-// --- MOCK USER ---
-const MOCK_USER: UserProfile = {
-  name: 'Nguyễn Văn Khách',
-  email: 'khach@example.com',
-  phone: '(+84) 901 234 567',
-  address: '123 Đường ABC, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh.',
-  balance: 500000,
-  password: 'password123'
-};
+import { useAuthContext } from '../../contexts/AuthContext';
 
 const DEFAULT_FOOD: FoodItem = {
   id: '1',
@@ -27,12 +18,22 @@ const DEFAULT_FOOD: FoodItem = {
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthContext();
   const state = location.state as { food: FoodItem, quantity: number, voucher?: Voucher } | undefined;
   
-  // Use passed data or fall back to mock
+  // Use passed data or fall back to default
   const food = state?.food || DEFAULT_FOOD;
   const quantity = state?.quantity || 2;
-  const userProfile = MOCK_USER;
+  
+  // Construct UserProfile from AuthContext or fallback
+  const userProfile: UserProfile = {
+    name: user?.name || 'Khách hàng',
+    email: user?.email || 'email@example.com',
+    phone: '(+84) 901 234 567', // Default for now, as AuthContext doesn't have phone
+    address: '123 Đường ABC, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh.',
+    balance: 500000, // Default mock balance
+    password: 'password123'
+  };
 
   // Calculate subtotal immediately for validation
   const subtotal = food.price * quantity;
