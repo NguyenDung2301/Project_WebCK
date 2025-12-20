@@ -24,3 +24,8 @@ export const updateRestaurantStatusApi = async (id: string, status: string) => {
   await new Promise(resolve => setTimeout(resolve, 300));
   return db.updateRestaurant(id, { status });
 };
+
+export const getRestaurantMenuApi = async (restaurantId: string) => {
+  await new Promise(resolve => setTimeout(resolve, 200));
+  return db.getFoodsByRestaurantId(restaurantId);
+};

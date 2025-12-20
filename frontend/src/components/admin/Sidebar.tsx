@@ -27,7 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 flex flex-col z-20 hidden md:flex shadow-sm">
       {/* Brand */}
-      <div className="h-16 flex items-center px-6 border-b border-gray-100 cursor-pointer" onClick={() => navigate('/')}>
+      <div className="h-16 flex items-center px-6 border-b border-gray-100">
         <div className="w-8 h-8 bg-[#EE501C] rounded-lg flex items-center justify-center text-white font-bold mr-3">
           FD
         </div>

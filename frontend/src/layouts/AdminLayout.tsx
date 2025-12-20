@@ -26,7 +26,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
       <div className="md:ml-64 transition-all duration-300">
          {/* Top Header */}
         <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-black text-gray-800">{title}</h1>
+          <h1 className="text-2xl font-black text-[#EE501C]">{title}</h1>
           <div className="flex items-center space-x-4">
              <div className="hidden md:flex items-center text-sm font-medium text-gray-500">
                 <span className="mr-2">Hôm nay:</span>

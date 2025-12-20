@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '../../layouts/AdminLayout';
 import { 
-  Search, Plus, Filter, Star, UtensilsCrossed, Lock, Unlock, Trash2, 
-  ChevronLeft, ChevronRight 
+  Search, Plus, Filter, Star, UtensilsCrossed, Lock, Unlock, Trash2
 } from 'lucide-react';
 import { getRestaurantsApi, deleteRestaurantApi, updateRestaurantStatusApi } from '../../api/restaurantApi';
 import { paginate } from '../../utils';
+import { RestaurantModals } from '../../components/admin/RestaurantModals';
+import { Restaurant } from '../../types/common';
+import { Pagination } from '../../components/common/Pagination';
 
 export const RestaurantManagement: React.FC = () => {
   const [restaurants, setRestaurants] = useState<any[]>([]);
@@ -13,6 +15,10 @@ export const RestaurantManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Modal State
+  const [activeModal, setActiveModal] = useState<'MENU' | 'DELETE' | null>(null);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   
   const ITEMS_PER_PAGE = 7;
 
@@ -38,10 +44,27 @@ export const RestaurantManagement: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter]);
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa nhà hàng này?')) {
-      await deleteRestaurantApi(id);
-      loadRestaurants();
+  // Handlers for Modals
+  const openMenuModal = (restaurant: Restaurant) => {
+    setSelectedRestaurant(restaurant);
+    setActiveModal('MENU');
+  };
+
+  const openDeleteModal = (restaurant: Restaurant) => {
+    setSelectedRestaurant(restaurant);
+    setActiveModal('DELETE');
+  };
+
+  const closeModals = () => {
+    setActiveModal(null);
+    setSelectedRestaurant(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedRestaurant) {
+      await deleteRestaurantApi(selectedRestaurant.id);
+      await loadRestaurants();
+      closeModals();
     }
   };
 
@@ -70,7 +93,7 @@ export const RestaurantManagement: React.FC = () => {
     return paginate(filteredRestaurants, currentPage, ITEMS_PER_PAGE);
   }, [filteredRestaurants, currentPage]);
 
-  const { totalItems, totalPages, startIndex, endIndex, hasNextPage, hasPrevPage } = pagination;
+  const { totalItems, totalPages, startIndex, endIndex } = pagination;
 
   return (
     <AdminLayout title="Quản lý Nhà hàng">
@@ -180,7 +203,11 @@ export const RestaurantManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="w-8 h-8 rounded hover:bg-gray-100 text-gray-400 hover:text-[#EE501C] transition-colors flex items-center justify-center" title="Hiển thị menu quán">
+                        <button 
+                          onClick={() => openMenuModal(res)}
+                          className="w-8 h-8 rounded hover:bg-gray-100 text-gray-400 hover:text-[#EE501C] transition-colors flex items-center justify-center" 
+                          title="Hiển thị menu quán"
+                        >
                           <UtensilsCrossed className="w-4 h-4" />
                         </button>
                         <button 
@@ -191,7 +218,7 @@ export const RestaurantManagement: React.FC = () => {
                           {res.status === 'Active' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                         </button>
                         <button 
-                          onClick={() => handleDelete(res.id)}
+                          onClick={() => openDeleteModal(res)}
                           className="w-8 h-8 rounded hover:bg-gray-100 text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center" 
                           title="Xoá nhà hàng"
                         >
@@ -210,34 +237,27 @@ export const RestaurantManagement: React.FC = () => {
           </div>
           
           {/* Pagination */}
-          <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              Hiển thị <span className="font-medium text-gray-900">{totalItems > 0 ? startIndex : 0}</span> đến <span className="font-medium text-gray-900">{endIndex}</span> trong số <span className="font-medium text-gray-900">{totalItems}</span> nhà hàng
-            </p>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setCurrentPage(p => p - 1)}
-                disabled={!hasPrevPage}
-                className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-500"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <span className="text-sm text-gray-500 px-2">
-                Trang <span className="font-medium text-gray-900">{currentPage}</span> / <span className="font-medium text-gray-900">{totalPages || 1}</span>
-              </span>
-              <button 
-                onClick={() => setCurrentPage(p => p + 1)}
-                disabled={!hasNextPage}
-                className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-500"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            totalItems={totalItems}
+            onPageChange={setCurrentPage}
+            label="nhà hàng"
+          />
           </>
           )}
         </div>
       </div>
+
+      {/* Render Modals */}
+      <RestaurantModals 
+        modalType={activeModal} 
+        restaurant={selectedRestaurant} 
+        onClose={closeModals} 
+        onConfirmDelete={handleConfirmDelete} 
+      />
     </AdminLayout>
   );
 };

@@ -1,35 +1,36 @@
 import { BackendUser } from '../types/user';
-import { Order, Restaurant, FoodItem, Voucher, Review } from '../types/common';
+import { FoodItem, Voucher, Review, Restaurant } from '../types/common';
 
 // --- DASHBOARD DATA ---
 export const INITIAL_DASHBOARD_DATA = {
+  summary: {
+    totalRevenue: 1800000000, // 1.8 tỷ
+    todayRevenue: 45200000,   // 45.2tr
+    totalUsers: 8540,
+    totalRestaurants: 482
+  },
   revenue: [
     { name: 'T1', value: 1.2 }, { name: 'T2', value: 1.5 }, { name: 'T3', value: 1.8 },
-    { name: 'T4', value: 1.4 }, { name: 'T5', value: 2.1 }, { name: 'T6', value: 1.9 },
-    { name: 'T7', value: 2.3 }, { name: 'T8', value: 1.7 }, { name: 'T9', value: 2.5 },
-    { name: 'T10', value: 2.8 }, { name: 'T11', value: 2.4 }, { name: 'T12', value: 3.0 },
+    { name: 'T4', value: 1.4 }, { name: 'T5', value: 2.0 }, { name: 'T6', value: 2.2 },
+    { name: 'T7', value: 2.5 }, { name: 'T8', value: 2.1 }, { name: 'T9', value: 1.9 },
+    { name: 'T10', value: 2.3 }, { name: 'T11', value: 2.4 }, { name: 'T12', value: 2.6 },
   ],
   status: [
-    { name: 'Hoàn thành', value: 540, color: '#10B981' },
-    { name: 'Đang giao', value: 120, color: '#3B82F6' },
-    { name: 'Đang chuẩn bị', value: 80, color: '#F59E0B' },
-    { name: 'Đã hủy', value: 45, color: '#EF4444' },
+    { name: 'Hoàn thành', value: 65, color: '#10B981' },
+    { name: 'Đang chuẩn bị', value: 15, color: '#F59E0B' },
+    { name: 'Đang giao', value: 12, color: '#3B82F6' },
+    { name: 'Đã hủy', value: 8, color: '#EF4444' },
   ],
-  activities: [
-    { id: 1, user: 'Nguyễn Văn A', action: 'đã đặt đơn hàng', target: '#ORD-001', time: '2 phút trước', type: 'order' },
-    { id: 2, user: 'Shipper Tuấn', action: 'đã giao thành công', target: '#ORD-992', time: '15 phút trước', type: 'delivery' },
-    { id: 3, user: 'Lê Thị B', action: 'đã hủy đơn hàng', target: '#ORD-003', time: '1 giờ trước', type: 'cancellation' },
-    { id: 4, user: 'Admin', action: 'đã duyệt nhà hàng', target: 'KFC Láng Hạ', time: '3 giờ trước', type: 'system' },
-  ],
+  activities: [], // Will be populated dynamically from orders
   topItems: [
-    { id: 'F01', name: 'Gà Rán Giòn Cay', sales: '1,204', image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=100&auto=format&fit=crop' },
-    { id: 'F02', name: 'Trà Sữa Trân Châu', sales: '985', image: 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?q=80&w=100&auto=format&fit=crop' },
-    { id: 'F03', name: 'Cơm Tấm Sườn', sales: '856', image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=100&auto=format&fit=crop' },
+    { id: '1029', name: 'Burger Bò Phô Mai', sales: '156', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=100&auto=format&fit=crop' },
+    { id: '2045', name: 'Pizza Hải Sản', sales: '120', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=100&auto=format&fit=crop' },
+    { id: '3310', name: 'Combo Sushi 12 miếng', sales: '98', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=100&auto=format&fit=crop' },
   ],
   topRestaurants: [
-    { id: 'R01', name: 'KFC Vietnam', revenue: 450000000, logoInitial: 'K', color: 'bg-red-50 text-red-600' },
-    { id: 'R02', name: 'Highlands Coffee', revenue: 320000000, logoInitial: 'H', color: 'bg-red-50 text-red-700' },
-    { id: 'R03', name: 'Phúc Long', revenue: 280000000, logoInitial: 'P', color: 'bg-green-50 text-green-800' },
+    { id: '#RES-001', name: 'KFC Vietnam', revenue: 2400000000, logoInitial: 'K', color: 'bg-red-50 text-red-600' },
+    { id: '#RES-002', name: "McDonald's", revenue: 2100000000, logoInitial: 'M', color: 'bg-yellow-50 text-yellow-600' },
+    { id: '#RES-003', name: 'Pizza Hut', revenue: 1800000000, logoInitial: 'P', color: 'bg-blue-50 text-blue-600' },
   ]
 };
 
@@ -258,18 +259,19 @@ export const INITIAL_PROMOTIONS = [
 // --- ORDERS DATA ---
 export const INITIAL_ORDERS: any[] = [
   {
-    id: 'ord-1',
-    foodId: '1',
-    restaurantName: 'Quán Ngon Nhà Làm',
-    orderTime: '10:30 • 20/11/2023',
-    description: 'Bún Bò Huế Đặc Biệt (x2)',
-    totalAmount: 110000,
-    status: 'COMPLETED',
-    imageUrl: 'https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=200&auto=format&fit=crop',
-    isReviewed: true,
+    id: 'ord-3',
+    customer: 'Lê Văn C',
+    foodId: '3',
+    restaurantName: 'The Pizza Company',
+    orderTime: '19:00 • 22/11/2023',
+    description: 'Pizza Hải Sản (Size M)',
+    totalAmount: 250000,
+    status: 'DELIVERING',
+    imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=200&auto=format&fit=crop',
   },
   {
     id: 'ord-2',
+    customer: 'Trần Thị B',
     foodId: '2',
     restaurantName: 'Cơm Tấm Phúc Lộc Thọ',
     orderTime: '12:15 • 21/11/2023',
@@ -279,17 +281,20 @@ export const INITIAL_ORDERS: any[] = [
     imageUrl: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=200&auto=format&fit=crop',
   },
   {
-    id: 'ord-3',
-    foodId: '3',
-    restaurantName: 'The Pizza Company',
-    orderTime: '19:00 • 22/11/2023',
-    description: 'Pizza Hải Sản (Size M)',
-    totalAmount: 250000,
-    status: 'DELIVERING',
-    imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=200&auto=format&fit=crop',
+    id: 'ord-1',
+    customer: 'Nguyễn Văn A',
+    foodId: '1',
+    restaurantName: 'Quán Ngon Nhà Làm',
+    orderTime: '10:30 • 20/11/2023',
+    description: 'Bún Bò Huế Đặc Biệt (x2)',
+    totalAmount: 110000,
+    status: 'COMPLETED',
+    imageUrl: 'https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=200&auto=format&fit=crop',
+    isReviewed: true,
   },
    {
     id: 'ord-4',
+    customer: 'Phạm Thị D',
     foodId: '4',
     restaurantName: 'Gà Rán KFC',
     orderTime: '18:30 • 19/11/2023',

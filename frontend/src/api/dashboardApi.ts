@@ -5,8 +5,8 @@
 
 import { db } from '../data/store';
 
-export const getDashboardStatsApi = async () => {
+export const getDashboardStatsApi = async (year?: number) => {
   // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return db.getDashboardData();
+  await new Promise(resolve => setTimeout(resolve, 300));
+  return db.getDashboardData(year);
 };

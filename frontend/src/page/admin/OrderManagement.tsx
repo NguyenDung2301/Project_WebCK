@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '../../layouts/AdminLayout';
-import { Search, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { getAllOrdersApi, deleteOrderApi } from '../../api/orderApi';
 import { paginate } from '../../utils';
+import { Pagination } from '../../components/common/Pagination';
 
 const ITEMS_PER_PAGE = 7;
 
@@ -54,7 +55,7 @@ export const OrderManagement: React.FC = () => {
     return paginate(filteredOrders, currentPage, ITEMS_PER_PAGE);
   }, [filteredOrders, currentPage]);
 
-  const { totalItems, totalPages, startIndex, endIndex, hasNextPage, hasPrevPage } = pagination;
+  const { totalItems, totalPages, startIndex, endIndex } = pagination;
 
   // Reset page when filters change
   useEffect(() => {
@@ -137,7 +138,7 @@ export const OrderManagement: React.FC = () => {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider" scope="col">Nhà hàng</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider" scope="col">Tổng tiền</th>
                   <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider" scope="col">Trạng thái</th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider" scope="col">Hành động</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider" scope="col">Thời gian</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -167,19 +168,8 @@ export const OrderManagement: React.FC = () => {
                         {getStatusLabel(order.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                       <div className="flex items-center justify-end gap-3">
-                          <button className="text-gray-400 hover:text-[#EE501C] transition-colors" title="Xem chi tiết">
-                             <Eye size={18} />
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(order.id)}
-                            className="text-gray-400 hover:text-red-600 transition-colors"
-                            title="Xóa đơn hàng"
-                          >
-                             <Trash2 size={18} />
-                          </button>
-                       </div>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500 font-mono">
+                       {order.orderTime}
                     </td>
                   </tr>
                 );
@@ -195,31 +185,15 @@ export const OrderManagement: React.FC = () => {
           </div>
           
           {/* Pagination Footer */}
-          <div className="bg-white px-6 py-4 flex items-center justify-between border-t border-gray-200">
-            <div className="text-sm text-gray-500">
-              Hiển thị <span className="font-bold text-gray-900">{totalItems > 0 ? startIndex : 0}</span> đến <span className="font-bold text-gray-900">{endIndex}</span> của <span className="font-bold text-gray-900">{totalItems}</span> đơn hàng
-            </div>
-            
-            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden divide-x divide-gray-200">
-              <button 
-                onClick={() => setCurrentPage(p => p - 1)}
-                disabled={!hasPrevPage}
-                className="px-2.5 py-2 text-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-white"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <div className="px-6 py-2 text-sm text-gray-700 font-medium bg-white min-w-[120px] text-center">
-                Trang {currentPage} / {totalPages || 1}
-              </div>
-              <button 
-                onClick={() => setCurrentPage(p => p + 1)}
-                disabled={!hasNextPage}
-                className="px-2.5 py-2 text-gray-400 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-white"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            totalItems={totalItems}
+            onPageChange={setCurrentPage}
+            label="đơn hàng"
+          />
           </>
           )}
         </div>

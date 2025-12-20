@@ -151,6 +151,10 @@ class MockDatabase {
     return this.foods.filter(f => this.isRestaurantActive(f.restaurantId));
   }
 
+  getFoodsByRestaurantId(restaurantId: string) {
+    return this.foods.filter(f => f.restaurantId === restaurantId);
+  }
+
   getFoodById(id: string) {
     const food = this.foods.find(f => f.id === id);
     if (!food) return undefined;
@@ -207,48 +211,106 @@ class MockDatabase {
 
   // --- DASHBOARD OPERATIONS ---
 
-  getDashboardData() {
-    // 1. Calculate Total Revenue & Counts
-    const totalRevenue = this.orders.reduce((sum, order) => {
-      // Only count completed or delivered orders
-      if (order.status === 'COMPLETED' || order.status === 'DELIVERING') {
-        return sum + (order.totalAmount || 0);
-      }
-      return sum;
-    }, 0);
+  getDashboardData(selectedYear?: number) {
+    const orders = this.orders;
+    const targetYear = selectedYear || new Date().getFullYear();
 
-    const totalUsers = this.users.length;
-    const totalRestaurants = this.restaurants.length;
-    
-    // Mock "Today's Revenue" (randomize slightly based on total for demo)
-    const todayRevenue = Math.round(totalRevenue * 0.05); 
-
-    // 2. Calculate Order Status Distribution
+    // 1. Calculate Summary (Revenue & Counts - All Time / Global)
+    let totalRevenue = 0;
     const statusCounts = {
-      'COMPLETED': 0,
-      'DELIVERING': 0,
-      'PENDING': 0,
-      'CANCELLED': 0
+        'COMPLETED': 0,
+        'PENDING': 0,
+        'DELIVERING': 0,
+        'CANCELLED': 0
     };
-    
-    this.orders.forEach(o => {
-      const s = o.status as keyof typeof statusCounts;
-      if (statusCounts[s] !== undefined) statusCounts[s]++;
+
+    // Revenue per month (index 0-11) - Filtered by targetYear
+    const monthlyRevenue = Array(12).fill(0);
+    const restaurantRevenue: Record<string, number> = {};
+    const itemSales: Record<string, { name: string, image: string, count: number }> = {};
+
+    orders.forEach(order => {
+        // Status Count (Global)
+        const status = order.status as 'COMPLETED' | 'PENDING' | 'DELIVERING' | 'CANCELLED';
+        if (statusCounts[status] !== undefined) {
+            statusCounts[status]++;
+        }
+
+        // Only count COMPLETED orders for Revenue & Top Items
+        if (order.status === 'COMPLETED') {
+            // Global Total Revenue
+            totalRevenue += order.totalAmount;
+
+            // Restaurant Revenue (Global)
+            const resName = order.restaurantName || 'Unknown';
+            restaurantRevenue[resName] = (restaurantRevenue[resName] || 0) + order.totalAmount;
+
+            // Item Sales (Global)
+            const foodId = order.foodId;
+            if (foodId) {
+                if (!itemSales[foodId]) {
+                    const rawName = order.description || 'Món ăn';
+                    const cleanName = rawName.replace(/\(x\d+\)/g, '').trim();
+                    
+                    itemSales[foodId] = {
+                        name: cleanName,
+                        image: order.imageUrl || '',
+                        count: 0
+                    };
+                }
+                const qtyMatch = order.description?.match(/\(x(\d+)\)/);
+                const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+                itemSales[foodId].count += qty;
+            }
+        }
+
+        // Populate Monthly Chart Data (COMPLETED Only, Filtered by Year)
+        const datePart = order.orderTime.split('•')[1]?.trim();
+        if (datePart) {
+            const [day, month, yearStr] = datePart.split('/');
+            const monthIndex = parseInt(month, 10) - 1;
+            const year = parseInt(yearStr, 10);
+
+            if (year === targetYear && monthIndex >= 0 && monthIndex < 12) {
+                 if (order.status === 'COMPLETED') {
+                     monthlyRevenue[monthIndex] += order.totalAmount;
+                 }
+            }
+        }
     });
 
-    const statusData = [
-      { name: 'Hoàn thành', value: statusCounts.COMPLETED, color: '#10B981' },
-      { name: 'Đang giao', value: statusCounts.DELIVERING, color: '#3B82F6' },
-      { name: 'Đang chuẩn bị', value: statusCounts.PENDING, color: '#F59E0B' },
-      { name: 'Đã hủy', value: statusCounts.CANCELLED, color: '#EF4444' },
+    // 2. Format Chart Data
+    const revenueChartData = monthlyRevenue.map((amount, index) => ({
+        name: `T${index + 1}`,
+        value: amount
+    }));
+
+    // 3. Format Status Data
+    const statusChartData = [
+        { name: 'Hoàn thành', value: statusCounts.COMPLETED, color: '#10B981' },
+        { name: 'Đang chuẩn bị', value: statusCounts.PENDING, color: '#F59E0B' },
+        { name: 'Đang giao', value: statusCounts.DELIVERING, color: '#3B82F6' },
+        { name: 'Đã hủy', value: statusCounts.CANCELLED, color: '#EF4444' },
     ];
 
-    // 3. Generate Recent Activities from Orders
-    const recentActivities = this.orders.slice(0, 5).map(order => {
-        let action = 'đã đặt đơn hàng';
+    // 4. Format Recent Activities
+    const recentActivities = orders.slice(0, 5).map(order => {
+        let action = 'vừa đặt đơn hàng';
         let type = 'order';
-        if (order.status === 'COMPLETED') { action = 'đã nhận hàng'; type = 'delivery'; }
-        if (order.status === 'CANCELLED') { action = 'đã hủy đơn'; type = 'cancellation'; }
+        
+        if (order.status === 'COMPLETED') { 
+            action = 'đã hoàn thành đơn'; 
+            type = 'delivery'; 
+        } else if (order.status === 'CANCELLED') { 
+            action = 'đã hủy đơn hàng'; 
+            type = 'cancellation'; 
+        } else if (order.status === 'DELIVERING') {
+            action = 'đang được giao từ';
+            type = 'delivery';
+        } else if (order.status === 'PENDING') {
+            action = 'vừa đặt đơn tại';
+            type = 'order';
+        }
         
         const userName = order.customer || 'Khách hàng';
 
@@ -262,84 +324,41 @@ class MockDatabase {
         };
     });
 
-    // 4. Calculate Top Restaurants (by Revenue)
-    const resRevenueMap: Record<string, number> = {};
-    this.orders.forEach(order => {
-        if (!resRevenueMap[order.restaurantName]) resRevenueMap[order.restaurantName] = 0;
-        resRevenueMap[order.restaurantName] += order.totalAmount;
-    });
-
-    const topRestaurantsData = Object.entries(resRevenueMap)
-        .map(([name, revenue], index) => {
-            const resDetails = this.restaurants.find(r => r.name === name);
-            return {
-                id: resDetails?.id || `R${index}`,
-                name: name,
-                revenue: revenue,
-                logoInitial: name.charAt(0),
-                color: resDetails?.colorClass || 'bg-gray-100 text-gray-600'
-            };
-        })
+    // 5. Format Top Restaurants
+    const topRestaurants = Object.entries(restaurantRevenue)
+        .map(([name, revenue], index) => ({
+            id: `#RES-TOP-${index+1}`,
+            name: name,
+            revenue: revenue,
+            logoInitial: name.charAt(0),
+            color: index === 0 ? 'bg-red-50 text-red-600' : index === 1 ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'
+        }))
         .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 3);
+
+    // 6. Format Top Selling Items
+    const topItems = Object.entries(itemSales)
+        .map(([id, data]) => ({
+            id: id,
+            name: data.name,
+            sales: data.count.toString(),
+            image: data.image
+        }))
+        .sort((a, b) => parseInt(b.sales) - parseInt(a.sales))
         .slice(0, 5);
-
-    // 5. Calculate Top Items (by Frequency)
-    const itemFreqMap: Record<string, number> = {};
-    this.orders.forEach(order => {
-        if (!itemFreqMap[order.foodId]) itemFreqMap[order.foodId] = 0;
-        itemFreqMap[order.foodId] += 1;
-    });
-
-    const topItemsData = Object.entries(itemFreqMap)
-        .map(([foodId, count]) => {
-            const food = this.foods.find(f => f.id === foodId);
-            return {
-                id: foodId,
-                name: food?.name || 'Món ăn',
-                sales: count.toString(),
-                image: food?.imageUrl || ''
-            };
-        })
-        .sort((a, b) => Number(b.sales) - Number(a.sales))
-        .slice(0, 5);
-
-    // 6. Calculate Monthly Revenue (REAL DATA)
-    const monthlyRevenue = Array(12).fill(0);
-    this.orders.forEach(order => {
-        if (order.status === 'COMPLETED' || order.status === 'DELIVERING') {
-            // Parse 'HH:mm • DD/MM/YYYY'
-            const datePart = order.orderTime.split('•')[1]?.trim();
-            if (datePart) {
-                const parts = datePart.split('/');
-                if (parts.length === 3) {
-                    const month = parseInt(parts[1], 10);
-                    // month is 1-12, index is 0-11
-                    if (month >= 1 && month <= 12) {
-                        monthlyRevenue[month - 1] += order.totalAmount;
-                    }
-                }
-            }
-        }
-    });
-
-    // Format revenue for chart (in Millions VND for better readability with sample data)
-    const revenueChartData = monthlyRevenue.map((total, index) => ({
-        name: `T${index + 1}`,
-        value: Number((total / 1000000).toFixed(2)) // Convert to Millions
-    }));
 
     return {
       summary: {
-        totalRevenue,
-        todayRevenue,
-        totalUsers,
-        totalRestaurants
+        totalRevenue: totalRevenue,
+        todayRevenue: 0,
+        totalUsers: this.users.length,
+        totalRestaurants: this.restaurants.length
       },
       revenue: revenueChartData,
-      status: statusData,
-      activities: recentActivities.length > 0 ? recentActivities : INITIAL_DASHBOARD_DATA.activities,
-      topItems: topItemsData.length > 0 ? topItemsData : INITIAL_DASHBOARD_DATA.topItems,
-      topRestaurants: topRestaurantsData.length > 0 ? topRestaurantsData : INITIAL_DASHBOARD_DATA.topRestaurants
+      status: statusChartData,
+      activities: recentActivities,
+      topItems: topItems.length > 0 ? topItems : [],
+      topRestaurants: topRestaurants.length > 0 ? topRestaurants : INITIAL_DASHBOARD_DATA.topRestaurants
     };
   }
 }
