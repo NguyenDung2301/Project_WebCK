@@ -1,0 +1,39 @@
+import React from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CATEGORIES } from '../../constants';
+
+export const CategorySection: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (categoryName: string) => {
+    navigate('/search', { state: { query: categoryName } });
+  };
+
+  return (
+    <section className="px-4 md:px-10">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-xl font-bold text-gray-800">There's something for everyone!</h2>
+        <div className="flex gap-2">
+          <button className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors hidden md:flex"><ChevronLeft className="w-5 h-5 text-gray-400" /></button>
+          <button className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors hidden md:flex"><ChevronRight className="w-5 h-5 text-gray-400" /></button>
+        </div>
+      </div>
+      
+      <div className="flex overflow-x-auto gap-4 md:gap-6 scrollbar-hide pb-4 -mx-2 px-2">
+        {CATEGORIES.map((cat) => (
+          <div 
+            key={cat.id} 
+            onClick={() => handleCategoryClick(cat.name)}
+            className="flex flex-col items-center gap-2 cursor-pointer group min-w-[90px] md:min-w-[110px] lg:min-w-[140px]"
+          >
+            <div className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-[2rem] lg:rounded-[2.5rem] bg-gray-50 overflow-hidden shadow-sm border border-gray-100 group-hover:shadow-2xl group-hover:scale-105 group-hover:border-[#EE501C] transition-all duration-300">
+              <img src={cat.image} alt={cat.name} className="w-full h-full object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-500" />
+            </div>
+            <span className="text-[10px] md:text-xs font-black text-gray-700 group-hover:text-[#EE501C] transition-colors text-center uppercase tracking-widest">{cat.name}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
