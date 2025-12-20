@@ -82,13 +82,9 @@ const App: React.FC = () => {
             )}
 
             <div className="flex items-center">
-               {currentView === 'dashboard' ? (
-                 <span className="material-icons-round text-slate-500 text-[26px] cursor-default select-none transform rotate-[-15deg]">dark_mode</span>
-               ) : currentView === 'orders' ? (
-                 null
-               ) : (
+               {currentView !== 'dashboard' && currentView !== 'orders' ? (
                  <span className="material-icons-round text-gray-400 text-xl">notifications</span>
-               )}
+               ) : null}
             </div>
           </div>
         </header>
