@@ -8,7 +8,8 @@ import {
   INITIAL_CATEGORIES,
   INITIAL_VOUCHERS,
   INITIAL_PROMOTIONS,
-  INITIAL_REVIEWS
+  INITIAL_REVIEWS,
+  INITIAL_SUGGESTIONS
 } from './initialData';
 
 /**
@@ -24,6 +25,7 @@ class MockDatabase {
   private vouchers: Voucher[];
   private promotions: any[];
   private reviews: Review[];
+  private suggestions: any[];
 
   constructor() {
     this.users = [...INITIAL_USERS];
@@ -34,6 +36,7 @@ class MockDatabase {
     this.vouchers = [...INITIAL_VOUCHERS];
     this.promotions = [...INITIAL_PROMOTIONS];
     this.reviews = [...INITIAL_REVIEWS];
+    this.suggestions = [...INITIAL_SUGGESTIONS];
     console.log('[MockDatabase] Initialized with full dataset in src/data folder');
   }
 
@@ -162,6 +165,10 @@ class MockDatabase {
 
   getCategories() {
     return [...this.categories];
+  }
+
+  getSuggestions() {
+    return [...this.suggestions];
   }
 
   // --- MARKETING OPERATIONS ---

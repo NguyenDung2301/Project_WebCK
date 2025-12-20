@@ -251,3 +251,12 @@ export const INITIAL_REVIEWS: Review[] = [
   { id: 'rv-12', foodId: '3', userId: 'usr-001', userName: 'Nguyễn Văn A', rating: 4, comment: 'Hơi ngọt xíu, lần sau sẽ giảm đường.', date: '2023-11-17T10:00:00Z' },
   { id: 'rv-13', foodId: '9', userId: 'usr-006', userName: 'Vũ Thị F', rating: 5, comment: 'Burger to chà bá, ăn một cái no cả buổi.', date: '2023-11-18T12:30:00Z' }
 ];
+
+export const INITIAL_SUGGESTIONS = [
+  { name: 'Gà Rán KFC', tag: 'Burger, Cơm gà', image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=200&auto=format&fit=crop' },
+  { name: 'Cơm Tấm Cali', tag: 'Cơm tấm, Sườn bì', image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=200&auto=format&fit=crop' },
+  { name: 'Trà Sữa Gong Cha', tag: 'Trà sữa trân châu', image: 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?q=80&w=200&auto=format&fit=crop' },
+  { name: 'The Pizza Company', tag: 'Pizza Hải Sản', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=200&auto=format&fit=crop' },
+  { name: 'Phở Thìn', tag: 'Phở tái lăn', image: 'https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=200&auto=format&fit=crop' },
+  { name: 'Highlands Coffee', tag: 'Phin Sữa Đá', image: 'https://images.unsplash.com/photo-1584483766114-2cea6fac256d?q=80&w=200&auto=format&fit=crop' },
+];
