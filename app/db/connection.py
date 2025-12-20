@@ -12,6 +12,7 @@ users_collection = db['users']
 restaurants_collection = db['restaurants']
 orders_collection = db['orders']
 payments_collection = db['payments']
+vouchers_collection = db['vouchers']
 
 def get_db():
     """Trả về database instance"""
@@ -70,6 +71,11 @@ def init_indexes():
         payments_collection.create_index('userId')
         payments_collection.create_index('status')
         payments_collection.create_index([('userId', 1), ('createdAt', -1)])
+
+        # Index cho vouchers collection
+        vouchers_collection.create_index('code', unique=True)
+        vouchers_collection.create_index('active')
+        vouchers_collection.create_index('restaurantId')
         
         print("MongoDB indexes created successfully")
     except Exception as e:

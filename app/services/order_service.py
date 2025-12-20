@@ -6,6 +6,7 @@ from pymongo.collection import Collection
 from db.connection import orders_collection
 from db.models.order import Order, OrderItem, OrderStatus
 from db.models.payment import PaymentMethod, PaymentStatus
+from services.voucher_service import voucher_service
 from services.payment_service import payment_service
 from schemas.order_schema import (
     CreateOrderRequest,
@@ -43,8 +44,24 @@ class OrderService:
         return OrderSimpleResponse(**order.to_dict()).model_dump(by_alias=True)
 
     def _to_full_response(self, order: Order) -> Dict:
-        """Convert Order model to full response dict"""
-        return OrderResponse(**order.to_dict()).model_dump(by_alias=True)
+        """Convert Order model to full response dict + shipper details if available"""
+        data = order.to_dict()
+
+        # Bổ sung thông tin shipper (nếu có)
+        try:
+            if order.shipper_id:
+                shipper = self.user_service.find_by_id(str(order.shipper_id))
+                if shipper:
+                    data['shipper'] = {
+                        'shipperId': str(order.shipper_id),
+                        'fullname': shipper.fullname,
+                        'phone_number': shipper.phone_number
+                    }
+        except Exception:
+            # Không chặn response nếu lấy shipper info lỗi
+            pass
+
+        return OrderResponse(**data).model_dump(by_alias=True)
 
     # ==================== LAYER 1: MongoDB CRUD Operations ====================
 
@@ -164,8 +181,22 @@ class OrderService:
                 items_list.append(item)
                 subtotal += item_subtotal
             
+            # Áp dụng voucher (nếu có) để tính discount server-side
+            discount = 0.0
+            if req.promo_id:
+                try:
+                    discount = voucher_service.preview_discount(
+                        user_id=user_id,
+                        restaurant_id=req.restaurant_id,
+                        subtotal=subtotal,
+                        shipping_fee=req.shipping_fee,
+                        promo_id=req.promo_id
+                    )['discount']
+                except Exception as e:
+                    raise ValueError(f'Không thể áp dụng voucher: {str(e)}')
+
             # Tính total_amount
-            total_amount = subtotal + req.shipping_fee - req.discount
+            total_amount = subtotal + req.shipping_fee - discount
             
             # ===== Tạo Order object với denormalized data =====
             order = Order(
@@ -181,7 +212,7 @@ class OrderService:
                 note=req.note,
                 subtotal=subtotal,
                 shipping_fee=req.shipping_fee,
-                discount=req.discount,
+                discount=discount,
                 total_amount=total_amount,
                 promo_id=ObjectId(req.promo_id) if req.promo_id else None,
                 payment_method=req.payment_method,
@@ -192,7 +223,12 @@ class OrderService:
             
             # Insert vào MongoDB
             insert_result = self.collection.insert_one(order.to_mongo())
-            return self.find_by_id(str(insert_result.inserted_id))
+            created = self.find_by_id(str(insert_result.inserted_id))
+            
+            # NOTE: Không mark voucher ở đây để tránh mất voucher khi payment fail
+            # Voucher sẽ được mark trong create_order() sau khi payment thành công
+            
+            return created
         except Exception as e:
             print(f"Error creating order: {e}")
             raise ValueError(f'Lỗi DB khi tạo đơn hàng: {str(e)}')
@@ -274,6 +310,15 @@ class OrderService:
                     {'_id': ObjectId(str(created.id))},
                     {'$set': {'paymentId': payment.id}}
                 )
+                
+                # ✅ CHỈ mark voucher SAU KHI payment thành công
+                # Đảm bảo nếu payment fail, voucher không bị mất
+                if req.promo_id:
+                    try:
+                        voucher_service.mark_voucher_used(req.promo_id, user_id)
+                    except Exception as e:
+                        print(f"Warning: Could not mark voucher as used: {e}")
+                        # Không chặn flow nếu mark voucher fail (đơn hàng vẫn thành công)
             except Exception as e:
                 # ROLLBACK: Xóa payment (nếu có) và order
                 if payment and payment.id:
@@ -697,6 +742,14 @@ class OrderService:
             updated = self.cancel_order_in_db(order_id, 'user', reason)
             if not updated:
                 raise ValueError('Không thể hủy đơn')
+
+            # Hoàn lại voucher nếu đơn có sử dụng voucher
+            try:
+                if order.promo_id:
+                    voucher_service.refund_voucher_used(str(order.promo_id), user_id)
+            except Exception:
+                # Không chặn flow nếu refund voucher lỗi
+                pass
             
             return self._to_full_response(updated)
         except ValueError:
@@ -726,6 +779,14 @@ class OrderService:
             updated = self.cancel_order_in_db(order_id, 'admin', reason)
             if not updated:
                 raise ValueError('Không thể hủy đơn')
+
+            # Hoàn lại voucher nếu đơn có sử dụng voucher
+            try:
+                if order.promo_id:
+                    voucher_service.refund_voucher_used(str(order.promo_id), str(order.user_id))
+            except Exception:
+                # Không chặn flow nếu refund voucher lỗi
+                pass
             
             return self._to_full_response(updated)
         except ValueError:

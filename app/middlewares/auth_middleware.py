@@ -101,8 +101,8 @@ def admin_required(f):
             
             # Check role
             token_role = payload.get('role')
-            if token_role != 'admin':
-                print(f"[DEBUG] admin_required: Access denied. Token role: {token_role}, required: admin")
+            if token_role != Role.ADMIN.value:
+                print(f"[DEBUG] admin_required: Access denied. Token role: {token_role}, required: {Role.ADMIN.value}")
                 return jsonify({'success': False,'message': f'Bạn không có quyền truy cập. Role hiện tại: {token_role}'}), 403
             
             request.user_id = payload['user_id']
@@ -152,6 +152,78 @@ def shipper_required(f):
             return jsonify({'success': False,'message': str(e)}), 401
         except Exception:
             return jsonify({'success': False,'message': 'Xác thực thất bại'}), 401
+    return decorated_function
+
+
+def user_required(f):
+    """
+    Decorator cho routes chỉ USER mới truy cập được
+    - Yêu cầu token hợp lệ
+    - role phải là 'user'
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                return jsonify({'success': False, 'message': 'Không tìm thấy token xác thực'}), 401
+
+            token = security.extract_token_from_header(auth_header)
+            if not token:
+                return jsonify({'success': False, 'message': 'Format token không hợp lệ'}), 401
+
+            payload = security.verify_token(token)
+
+            token_role = payload.get('role')
+            if token_role != Role.USER.value:
+                return jsonify({'success': False, 'message': f'Bạn không có quyền truy cập. Role hiện tại: {token_role}'}), 403
+
+            request.user_id = payload['user_id']
+            request.user_email = payload['email']
+            request.token_payload = payload
+
+            return f(*args, **kwargs)
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 401
+        except Exception:
+            return jsonify({'success': False, 'message': 'Xác thực thất bại'}), 401
+
+    return decorated_function
+
+
+def user_or_admin_required(f):
+    """
+    Decorator cho routes mà cả USER và ADMIN đều truy cập được
+    - Yêu cầu token hợp lệ
+    - role phải là 'user' hoặc 'admin'
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                return jsonify({'success': False, 'message': 'Không tìm thấy token xác thực'}), 401
+
+            token = security.extract_token_from_header(auth_header)
+            if not token:
+                return jsonify({'success': False, 'message': 'Format token không hợp lệ'}), 401
+
+            payload = security.verify_token(token)
+
+            token_role = payload.get('role')
+            if token_role not in [Role.USER.value, Role.ADMIN.value]:
+                return jsonify({'success': False, 'message': f'Bạn không có quyền truy cập. Role hiện tại: {token_role}'}), 403
+
+            request.user_id = payload['user_id']
+            request.user_email = payload['email']
+            request.token_payload = payload
+
+            return f(*args, **kwargs)
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 401
+        except Exception:
+            return jsonify({'success': False, 'message': 'Xác thực thất bại'}), 401
+
     return decorated_function
 
     

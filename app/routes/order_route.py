@@ -1,37 +1,37 @@
 from flask import Blueprint
 from controllers.order_controller import order_controller
-from middlewares.auth_middleware import auth_required, admin_required, shipper_required
+from middlewares.auth_middleware import admin_required, shipper_required, user_required
 
 order_router = Blueprint("order_router", __name__)
 
 # ==================== USER ROUTES ====================
 
 @order_router.route('', methods=['POST'])
-@auth_required
+@user_required
 def create_order():
     """POST /api/orders - Tạo đơn hàng"""
     return order_controller.create_order()
 
 @order_router.route('/my_orders', methods=['GET'])
-@auth_required
+@user_required
 def get_my_orders():
     """GET /api/orders/my_orders - Danh sách đơn hàng của user"""
     return order_controller.get_my_orders()
 
 @order_router.route('/my_orders/filter', methods=['GET'])
-@auth_required
+@user_required
 def filter_my_orders():
     """GET /api/orders/my_orders/filter?status=Pending - Lọc đơn hàng của user theo trạng thái"""
     return order_controller.filter_my_orders()
 
 @order_router.route('/<order_id>', methods=['GET'])
-@auth_required
+@user_required
 def get_order_detail(order_id: str):
     """GET /api/orders/<order_id> - Chi tiết đơn hàng"""
     return order_controller.get_order_detail(order_id)
 
 @order_router.route('/<order_id>/cancel', methods=['PUT'])
-@auth_required
+@user_required
 def user_cancel_order(order_id: str):
     """PUT /api/orders/<order_id>/cancel - User hủy đơn (PENDING only)"""
     return order_controller.user_cancel_order(order_id)

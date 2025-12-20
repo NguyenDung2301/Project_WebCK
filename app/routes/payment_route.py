@@ -1,25 +1,25 @@
 from flask import Blueprint
 from controllers.payment_controller import payment_controller
-from middlewares.auth_middleware import auth_required, admin_required
+from middlewares.auth_middleware import admin_required, user_required
 
 payment_router = Blueprint("payment_router", __name__)
 
 # ==================== USER ROUTES ====================
 
 @payment_router.route('/my', methods=['GET'])
-@auth_required
+@user_required
 def get_my_payments():
     """GET /api/payments/my?status=Paid - Danh sách payment của tôi"""
     return payment_controller.get_my_payments()
 
 @payment_router.route('/by_order/<order_id>', methods=['GET'])
-@auth_required
+@user_required
 def get_payment_by_order(order_id: str):
     """GET /api/payments/by_order/<order_id> - Lấy payment theo order"""
     return payment_controller.get_by_order(order_id)
 
 @payment_router.route('/<payment_id>', methods=['GET'])
-@auth_required
+@user_required
 def get_payment(payment_id: str):
     """GET /api/payments/<payment_id> - Lấy chi tiết payment"""
     return payment_controller.get_payment(payment_id)

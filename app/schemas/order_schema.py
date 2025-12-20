@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel, Field, model_serializer
+from typing import Optional, List, Any
 from datetime import datetime
 from db.models.order import OrderItem, OrderStatus
 from db.models.payment import PaymentMethod
@@ -17,14 +17,13 @@ class CreateOrderItemRequest(BaseModel):
 
 
 class CreateOrderRequest(BaseModel):
-    """Request tạo đơn hàng"""
+    """Request tạo đơn hàng - Backend tự tính discount từ promoId, người dùng không thể truyền"""
     restaurant_id: str = Field(..., alias="restaurantId", description="ID nhà hàng")
     items: List[CreateOrderItemRequest] = Field(..., description="Danh sách món")
     address: str = Field(..., description="Địa chỉ giao")
     note: Optional[str] = Field(None, description="Ghi chú")
     payment_method: PaymentMethod = Field(..., description="Phương thức thanh toán")
     shipping_fee: float = Field(default=0, ge=0, description="Phí ship")
-    discount: float = Field(default=0, ge=0, description="Giảm giá")
     promo_id: Optional[str] = Field(None, alias="promoId", description="ID voucher")
 
     class Config:
@@ -84,6 +83,8 @@ class OrderResponse(BaseModel):
     user_id: str = Field(..., alias="userId")
     restaurant_id: str = Field(..., alias="restaurantId")
     shipper_id: Optional[str] = Field(None, alias="shipperId")
+    # Thông tin shipper bổ sung trong chi tiết đơn
+    shipper: Optional[dict] = None
     user_fullname: str = Field(..., alias="userFullname")
     user_phone: str = Field(..., alias="userPhone")
     restaurant_name: str = Field(..., alias="restaurantName")
@@ -108,6 +109,47 @@ class OrderResponse(BaseModel):
     shipper_rejections: List[ShipperRejectionResponse] = Field(default_factory=list, alias="shipperRejections")
     created_at: datetime = Field(..., alias="createdAt")
     updated_at: datetime = Field(..., alias="updatedAt")
+
+    @model_serializer
+    def serialize_model(self) -> dict[str, Any]:
+        """Custom serializer: Loại bỏ shipperId khi đã có object shipper"""
+        data = {
+            "_id": self.order_id,
+            "userId": self.user_id,
+            "restaurantId": self.restaurant_id,
+            "userFullname": self.user_fullname,
+            "userPhone": self.user_phone,
+            "restaurantName": self.restaurant_name,
+            "restaurantAddress": self.restaurant_address,
+            "restaurantHotline": self.restaurant_hotline,
+            "items": self.items,
+            "address": self.address,
+            "note": self.note,
+            "subtotal": self.subtotal,
+            "shipping_fee": self.shipping_fee,
+            "discount": self.discount,
+            "total_amount": self.total_amount,
+            "promoId": self.promo_id,
+            "paymentId": self.payment_id,
+            "paymentMethod": self.payment_method,
+            "status": self.status,
+            "refunded": self.refunded,
+            "refunded_amount": self.refunded_amount,
+            "refund_at": self.refund_at,
+            "cancelled_by": self.cancelled_by,
+            "cancellation_reason": self.cancellation_reason,
+            "shipperRejections": self.shipper_rejections,
+            "createdAt": self.created_at,
+            "updatedAt": self.updated_at,
+        }
+        
+        # Chỉ thêm shipperId khi KHÔNG có object shipper
+        if self.shipper:
+            data["shipper"] = self.shipper
+        else:
+            data["shipperId"] = self.shipper_id
+        
+        return data
 
     class Config:
         populate_by_name = True

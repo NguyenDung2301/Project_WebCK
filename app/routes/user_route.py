@@ -1,19 +1,17 @@
 from flask import Blueprint
-from middlewares.auth_middleware import auth_required, admin_required
+from middlewares.auth_middleware import admin_required, user_required
 from controllers.user_controller import user_controller
 
 user_router = Blueprint("user_router", __name__)
 
 @user_router.route("/profile_me", methods=["GET"])
-@auth_required
 def get_profile():
-    """GET /api/users/profile - Lấy profile của user hiện tại"""
+    """GET /api/users/profile - Lấy profile của user hiện tại (public)"""
     return user_controller.get_profile()
 
 @user_router.route('/update_profile', methods=['PUT'])
-@auth_required
 def update_profile():
-    """PUT /api/users/profile - Cập nhật profile"""
+    """PUT /api/users/profile - Cập nhật profile (public)"""
     return user_controller.update_user()
 
 @user_router.route('/profile_<user_id>', methods=['GET'])
@@ -49,7 +47,7 @@ def get_all_users():
     return user_controller.get_all_users()
 
 @user_router.route('/balance/topup', methods=['POST'])
-@auth_required
+@user_required
 def top_up_balance():
     """POST /api/users/balance/topup - Nạp tiền cho tài khoản hiện tại"""
     return user_controller.top_up()
