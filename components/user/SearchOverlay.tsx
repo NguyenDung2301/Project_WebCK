@@ -1,6 +1,15 @@
-import React, { KeyboardEvent, useState } from 'react';
+import React, { KeyboardEvent, useState, useEffect } from 'react';
 import { Clock, X, TrendingUp, Search as SearchIcon, ArrowRight, Trash2 } from 'lucide-react';
-import { RECENT_SEARCHES, SUGGESTIONS } from '../../constants';
+import { getSuggestionsApi } from '../../api/productApi';
+
+// Mock recent searches locally for now, could be in store/localstorage in real app
+const MOCK_RECENT_SEARCHES = [
+  'Cơm tấm sườn bì',
+  'Trà sữa trân châu',
+  'Bún bò Huế',
+  'Pizza Company',
+  'Bánh xèo giòn'
+];
 
 interface SearchProps {
   onSearch: (term: string) => void;
@@ -9,8 +18,16 @@ interface SearchProps {
 }
 
 export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, onSearchChange }) => {
-  // Use local state to handle deletion of history items
-  const [history, setHistory] = useState<string[]>(RECENT_SEARCHES);
+  const [history, setHistory] = useState<string[]>(MOCK_RECENT_SEARCHES);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      const data = await getSuggestionsApi();
+      setSuggestions(data);
+    };
+    fetchSuggestions();
+  }, []);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchValue.trim()) {
@@ -90,14 +107,14 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
         </section>
       )}
 
-      {/* Suggestions - Limited to 6 items as requested */}
+      {/* Suggestions */}
       <section>
         <div className="flex items-center gap-2 text-gray-800 font-bold mb-6">
           <TrendingUp className="w-4 h-4 text-orange-500" />
           <span>Gợi ý cho bạn</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {SUGGESTIONS.slice(0, 6).map((item, idx) => (
+          {suggestions.slice(0, 6).map((item, idx) => (
             <div 
               key={idx} 
               onClick={() => onSearch(item.name)}

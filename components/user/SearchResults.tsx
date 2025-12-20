@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { ChevronDown, Star, Heart } from 'lucide-react';
-import { MOCK_FOODS } from '../../constants';
 import { FoodItem } from '../../types/common';
 
 interface SearchResultsProps {
@@ -8,24 +7,26 @@ interface SearchResultsProps {
   onItemClick: (item: FoodItem) => void;
   favoriteFoodIds: string[];
   onToggleFavorite: (id: string) => void;
+  foods?: FoodItem[]; // Add foods prop
 }
 
 export const SearchResults: React.FC<SearchResultsProps> = ({ 
   searchTerm, 
   onItemClick, 
   favoriteFoodIds, 
-  onToggleFavorite 
+  onToggleFavorite,
+  foods = [] // Default to empty
 }) => {
-  // Simple filtering logic to show relevant data based on the search history term
+  // Filtering logic
   const filteredFoods = useMemo(() => {
-    if (!searchTerm) return MOCK_FOODS;
+    if (!searchTerm) return foods;
     const lowerTerm = searchTerm.toLowerCase();
-    return MOCK_FOODS.filter(food => 
+    return foods.filter(food => 
       food.name.toLowerCase().includes(lowerTerm) || 
       food.description.toLowerCase().includes(lowerTerm) ||
       food.category.toLowerCase().includes(lowerTerm)
     );
-  }, [searchTerm]);
+  }, [searchTerm, foods]);
 
   const handleHeartClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();

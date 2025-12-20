@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { SearchOverlay } from '../../components/user/SearchOverlay';
 import { SearchResults } from '../../components/user/SearchResults';
 import { FoodItem } from '../../types/common';
+import { getFoodsApi } from '../../api/productApi';
 
 export const SearchPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,6 +11,20 @@ export const SearchPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [foods, setFoods] = useState<FoodItem[]>([]);
+
+  // Load foods
+  useEffect(() => {
+    const fetchFoods = async () => {
+      try {
+        const data = await getFoodsApi();
+        setFoods(data);
+      } catch (error) {
+        console.error("Failed to fetch foods", error);
+      }
+    };
+    fetchFoods();
+  }, []);
 
   useEffect(() => {
     // If navigation state contains a query, show results
@@ -53,6 +68,7 @@ export const SearchPage: React.FC = () => {
             onItemClick={handleProductClick}
             favoriteFoodIds={favoriteIds}
             onToggleFavorite={handleToggleFavorite}
+            foods={foods} // Pass loaded foods
           />
         )}
       </div>

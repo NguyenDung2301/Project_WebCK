@@ -3,7 +3,7 @@
  * Hook xử lý logic quản lý người dùng cho Admin Dashboard
  */
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { User } from '../types/user';
 import { ModalState } from '../types/admin';
 import { 
@@ -72,9 +72,9 @@ export const useUser = () => {
    * Sử dụng utils/filters.ts để tái sử dụng logic
    */
   const filteredUsers = useMemo(() => {
-    return applyFilters(users, [
-      (items) => filterBySearch(items, searchTerm, ['name', 'email', 'phone']),
-      (items) => filterByField(items, 'role', filterRole),
+    return applyFilters<User>(users, [
+      (items) => filterBySearch(items, searchTerm, ['name', 'email', 'phone'] as (keyof User)[]),
+      (items) => filterByField(items, 'role' as keyof User, filterRole),
     ]);
   }, [users, searchTerm, filterRole]);
 

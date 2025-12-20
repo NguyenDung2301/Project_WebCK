@@ -1,60 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Star, MapPin, Clock, Plus, Minus, ShoppingCart, ChevronRight, Heart, Lock } from 'lucide-react';
-import { FoodItem, Voucher } from '../../types/common';
-
-// --- MOCK DATA FOR DEMO ---
-const MOCK_RESTAURANT = {
-  id: 'res-1',
-  name: 'Quán Ngon Nhà Làm',
-  address: '123 Đường ABC, Quận 1, TP.HCM',
-  imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=100&auto=format&fit=crop',
-  rating: 4.8,
-  reviewsCount: 256,
-};
-
-const MOCK_FOOD_DETAIL: FoodItem = {
-  id: '1',
-  name: 'Bún Bò Huế Đặc Biệt',
-  price: 55000,
-  originalPrice: 65000,
-  imageUrl: 'https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=1200&auto=format&fit=crop',
-  rating: 4.8,
-  description: 'Hương vị đậm đà chuẩn gốc Huế với nước dùng hầm xương 24h, thịt bò tái mềm, chả cua dai ngon và rau sống tươi sạch.',
-  category: 'noodles'
-};
-
-const MOCK_VOUCHERS: Voucher[] = [
-  { id: 'v1', title: 'Freeship 15k', type: 'FREESHIP', condition: 'Đơn từ 100k', code: 'FS15', discountValue: 15000, minOrderValue: 100000 },
-  { id: 'v2', title: 'Giảm 10%', type: 'DISCOUNT', condition: 'Tối đa 50k', code: 'SALE10', discountValue: 5500, minOrderValue: 0 },
-  { id: 'v3', title: 'Giảm 20k', type: 'DISCOUNT', condition: 'Đơn từ 200k', code: 'SALE20', discountValue: 20000, minOrderValue: 200000 },
-];
-
-const RELATED_FOODS = [
-  { id: '101', name: 'Gỏi Cuốn Tôm Thịt', price: 15000, imageUrl: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?q=80&w=400&auto=format&fit=crop', rating: 4.9 },
-  { id: '102', name: 'Bánh Mì Thập Cẩm', price: 25000, imageUrl: 'https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=400&auto=format&fit=crop', rating: 4.5 },
-  { id: '103', name: 'Cà Phê Sữa Đá', price: 18000, imageUrl: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?q=80&w=400&auto=format&fit=crop', rating: 4.8 },
-  { id: '104', name: 'Bánh Flan Caramel', price: 12000, imageUrl: 'https://images.unsplash.com/photo-1543573852-1a71a6ce19bc?q=80&w=400&auto=format&fit=crop', rating: 5.0 },
-];
+import { FoodItem, Voucher, Review, Restaurant } from '../../types/common';
+import { getFoodByIdApi, getFoodsApi } from '../../api/productApi';
+import { getVouchersApi } from '../../api/voucherApi';
+import { getReviewsByFoodIdApi } from '../../api/reviewApi';
+import { getRestaurantByIdApi } from '../../api/restaurantApi';
 
 export const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); // In real app, fetch data by ID
+  const { id } = useParams();
   const [quantity, setQuantity] = useState(1);
-  
-  // Use mock data
-  const food = MOCK_FOOD_DETAIL;
-  const restaurant = MOCK_RESTAURANT;
-  
+  const [food, setFood] = useState<FoodItem | null>(null);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [relatedFoods, setRelatedFoods] = useState<FoodItem[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        if (id) {
+          // 1. Fetch current food
+          const foodData = await getFoodByIdApi(id);
+          setFood(foodData || null);
+
+          // 2. Fetch vouchers
+          const voucherData = await getVouchersApi();
+          setVouchers(voucherData);
+
+          // 3. Fetch related foods (simple logic: fetch all and take first 4 exclude current)
+          const allFoods = await getFoodsApi();
+          const related = allFoods.filter(f => f.id !== id).slice(0, 4);
+          setRelatedFoods(related);
+
+          // 4. Fetch Reviews for this food
+          const reviewsData = await getReviewsByFoodIdApi(id);
+          setReviews(reviewsData);
+
+          // 5. Fetch Restaurant info
+          if (foodData && foodData.restaurantId) {
+            const resData = await getRestaurantByIdApi(foodData.restaurantId);
+            setRestaurant(resData || null);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching product detail", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+     return <div className="min-h-screen flex items-center justify-center">Đang tải...</div>;
+  }
+
+  if (!food) {
+    return <div className="min-h-screen flex items-center justify-center">Không tìm thấy món ăn</div>;
+  }
+
+  // Calculate dynamic stats
+  const totalReviews = reviews.length;
+  const averageRating = totalReviews > 0
+    ? (reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1)
+    : "0.0";
+
+  // Use fetched restaurant or fallback to a default structure if missing
+  const displayRestaurant = restaurant || {
+    id: 'unknown',
+    name: 'Nhà hàng đối tác',
+    address: 'Đang cập nhật địa chỉ',
+    imageUrl: '',
+    rating: 4.5,
+    reviewsCount: 100,
+    initial: 'R',
+    status: 'Active'
+  };
+
   const totalPrice = food.price * quantity;
 
   const handleOrderNow = () => {
-    // Navigate to checkout with state
     navigate('/checkout', { state: { food, quantity } });
   };
 
   const handleApplyVoucher = (voucher: Voucher) => {
-    // Navigate to checkout with food, quantity AND selected voucher
     navigate('/checkout', { state: { food, quantity, voucher } });
   };
 
@@ -76,7 +109,7 @@ export const ProductDetailPage: React.FC = () => {
         <button 
           className="hover:text-[#EE501C] transition-colors cursor-pointer"
         >
-          Món nước
+          Món ăn
         </button> 
         <ChevronRight className="w-3 h-3 shrink-0" />
         <span className="text-gray-800 font-semibold truncate max-w-[150px] md:max-w-none">{food.name}</span>
@@ -110,22 +143,23 @@ export const ProductDetailPage: React.FC = () => {
           {/* Restaurant Info */}
           <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 flex items-center gap-5">
              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-[#EE501C] font-bold text-xl shadow-sm overflow-hidden shrink-0 border-2 border-orange-50">
-               <span className="text-xl">Q</span>
+               {displayRestaurant.initial || displayRestaurant.name.charAt(0)}
              </div>
              <div className="flex-1">
                <div className="flex items-center justify-between">
-                 <h3 className="font-bold text-gray-800">{restaurant.name}</h3>
-                 <span className="text-[10px] text-green-500 font-bold border border-green-200 bg-white px-2 py-0.5 rounded">Đang mở cửa</span>
+                 <h3 className="font-bold text-gray-800">{displayRestaurant.name}</h3>
+                 {displayRestaurant.status === 'Active' ? (
+                    <span className="text-[10px] text-green-500 font-bold border border-green-200 bg-white px-2 py-0.5 rounded">Đang mở cửa</span>
+                 ) : (
+                    <span className="text-[10px] text-red-500 font-bold border border-red-200 bg-white px-2 py-0.5 rounded">Đóng cửa</span>
+                 )}
                </div>
                <div className="flex items-center gap-1 text-[11px] text-gray-400 mb-1 mt-1">
-                 <MapPin className="w-3 h-3" /> {restaurant.address}
+                 <MapPin className="w-3 h-3" /> {displayRestaurant.address}
                </div>
-               <button 
-                onClick={handleViewReviews}
-                className="flex items-center gap-1 text-[11px] text-[#EE501C] font-bold hover:underline"
-               >
-                 <Star className="w-3 h-3 fill-[#EE501C]" /> {restaurant.rating} <span className="text-gray-400 font-medium">({restaurant.reviewsCount} đánh giá)</span>
-               </button>
+               <div className="flex items-center gap-1 text-[11px] text-[#EE501C] font-bold">
+                 <Star className="w-3 h-3 fill-[#EE501C]" /> {displayRestaurant.rating} <span className="text-gray-400 font-medium">({displayRestaurant.reviewsCount} đánh giá)</span>
+               </div>
              </div>
           </div>
 
@@ -156,17 +190,18 @@ export const ProductDetailPage: React.FC = () => {
                <div className="flex items-center gap-2 text-[10px] text-orange-700 font-bold bg-orange-50 w-fit px-2 py-0.5 rounded-full">
                  <Clock className="w-3 h-3" /> THỜI GIAN GIAO HÀNG
                </div>
-               <span className="text-sm font-bold text-gray-800">15 - 20 phút</span>
+               <span className="text-sm font-bold text-gray-800">{food.deliveryTime || '15 - 20 phút'}</span>
             </div>
           </div>
 
           {/* Action Button */}
           <button 
             onClick={handleOrderNow}
-            className="w-full bg-[#EE501C] text-white font-bold py-5 rounded-[2rem] shadow-xl shadow-orange-100 flex items-center justify-center gap-3 transform active:scale-95 transition-all hover:bg-[#d44719]"
+            disabled={displayRestaurant.status !== 'Active'}
+            className={`w-full text-white font-bold py-5 rounded-[2rem] shadow-xl shadow-orange-100 flex items-center justify-center gap-3 transform active:scale-95 transition-all ${displayRestaurant.status === 'Active' ? 'bg-[#EE501C] hover:bg-[#d44719]' : 'bg-gray-300 cursor-not-allowed shadow-none'}`}
           >
             <ShoppingCart className="w-6 h-6" />
-            <span>Đặt ngay • {totalPrice.toLocaleString()}đ</span>
+            <span>{displayRestaurant.status === 'Active' ? `Đặt ngay • ${totalPrice.toLocaleString()}đ` : 'Nhà hàng đang đóng cửa'}</span>
           </button>
         </div>
       </div>
@@ -174,14 +209,14 @@ export const ProductDetailPage: React.FC = () => {
       {/* Reviews Summary */}
       <section className="bg-white rounded-[3rem] p-8 md:p-12 border border-gray-50 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="flex items-center gap-6">
-          <div className="text-5xl font-black text-gray-900">4.8</div>
+          <div className="text-5xl font-black text-gray-900">{averageRating}</div>
           <div>
             <div className="flex items-center gap-1 mb-1">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                <Star key={i} className={`w-4 h-4 ${i < Math.round(Number(averageRating)) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
               ))}
             </div>
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Dựa trên 256 lượt đánh giá</div>
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">Dựa trên {totalReviews} lượt đánh giá</div>
           </div>
         </div>
         <button 
@@ -208,7 +243,7 @@ export const ProductDetailPage: React.FC = () => {
           </button>
         </div>
         <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
-          {MOCK_VOUCHERS.map((v) => {
+          {vouchers.map((v) => {
             const isEligible = totalPrice >= v.minOrderValue;
             const missingAmount = v.minOrderValue - totalPrice;
 
@@ -253,7 +288,7 @@ export const ProductDetailPage: React.FC = () => {
           <button className="text-xs font-bold text-[#EE501C] flex items-center gap-1 hover:underline">Xem tất cả <ChevronRight className="w-3 h-3" /></button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          {RELATED_FOODS.map((f) => (
+          {relatedFoods.map((f) => (
             <div 
               key={f.id} 
               onClick={() => navigate(`/product/${f.id}`)}

@@ -1,94 +1,237 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '../../layouts/AdminLayout';
-import { Search, Plus, Lock, Trash2 } from 'lucide-react';
-import { Button } from '../../components/common/Button';
+import { 
+  Search, Plus, Filter, Star, UtensilsCrossed, Lock, Unlock, Trash2, 
+  ChevronLeft, ChevronRight 
+} from 'lucide-react';
+import { getRestaurantsApi, deleteRestaurantApi, updateRestaurantStatusApi } from '../../api/restaurantApi';
+import { paginate } from '../../utils';
 
 export const RestaurantManagement: React.FC = () => {
-  const restaurants = [
-    { id: '#RES-001', name: 'Cơm Tấm & Bánh Mì Việt', address: '123 Nguyễn Trãi, Quận 1', contact: '0901234567', email: 'contact@001.com', status: 'Active', initial: 'C' },
-    { id: '#RES-002', name: 'Phở Thìn Lò Đúc', address: '13 Lò Đúc, Hai Bà Trưng', contact: '0907654321', email: 'contact@002.com', status: 'Active', initial: 'P' },
-    { id: '#RES-003', name: 'Pizza & Pasta 4P\'s', address: '8/15 Lê Thánh Tôn, Quận 1', contact: '0909998887', email: 'contact@003.com', status: 'Active', initial: 'P' },
-  ];
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const ITEMS_PER_PAGE = 7;
+
+  // Load data from "Database"
+  const loadRestaurants = async () => {
+    try {
+      setLoading(true);
+      const data = await getRestaurantsApi();
+      setRestaurants(data);
+    } catch (error) {
+      console.error('Failed to load restaurants', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRestaurants();
+  }, []);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Bạn có chắc chắn muốn xóa nhà hàng này?')) {
+      await deleteRestaurantApi(id);
+      loadRestaurants();
+    }
+  };
+
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+    await updateRestaurantStatusApi(id, newStatus);
+    loadRestaurants();
+  };
+
+  // Filter Logic
+  const filteredRestaurants = useMemo(() => {
+    return restaurants.filter(res => {
+      const matchSearch = res.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          res.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchStatus = statusFilter ? res.status.toLowerCase() === statusFilter.toLowerCase() : true;
+      return matchSearch && matchStatus;
+    });
+  }, [restaurants, searchTerm, statusFilter]);
+
+  // Pagination Logic
+  const { data: paginatedData, pagination } = useMemo(() => {
+    return paginate(filteredRestaurants, currentPage, ITEMS_PER_PAGE);
+  }, [filteredRestaurants, currentPage]);
+
+  const { totalItems, totalPages, startIndex, endIndex, hasNextPage, hasPrevPage } = pagination;
 
   return (
     <AdminLayout title="Quản lý Nhà hàng">
-      <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="flex items-end justify-between">
+      <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+        
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div>
-            <h2 className="text-gray-500 font-medium uppercase tracking-wider text-sm mb-1">Hệ thống quản trị trung tâm</h2>
-            <p className="text-gray-600">Chào mừng quay trở lại, Admin!</p>
+            <h2 className="text-lg font-medium text-gray-900">Danh sách đối tác</h2>
+            <p className="text-sm text-gray-500 mt-1">Quản lý thông tin và trạng thái của tất cả nhà hàng trong hệ thống (Dữ liệu từ folder data).</p>
+          </div>
+          <button className="bg-[#EE501C] hover:bg-[#d64215] text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm transition-colors">
+            <Plus className="w-5 h-5 mr-2" />
+            Thêm nhà hàng mới
+          </button>
+        </div>
+
+        {/* Filters Section */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input 
+              type="text" 
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-gray-50 focus:ring-1 focus:ring-[#EE501C] focus:border-[#EE501C] transition-colors text-sm text-gray-900 placeholder-gray-400 outline-none"
+              placeholder="Tìm kiếm theo tên nhà hàng, mã ID..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-4">
+            <select 
+              className="py-2 px-3 pr-8 rounded-lg border border-gray-200 bg-gray-50 focus:ring-1 focus:ring-[#EE501C] focus:border-[#EE501C] text-sm text-gray-500 outline-none cursor-pointer"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="active">Đang hoạt động</option>
+              <option value="inactive">Ngừng hoạt động</option>
+            </select>
+            <button className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-500 transition-colors flex items-center">
+              <Filter className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between gap-4">
-           <div className="relative flex-1 max-w-lg ml-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300" />
-              <input
-                type="text"
-                placeholder="Tìm theo tên nhà hàng, mã ID..."
-                className="block w-full pl-10 pr-3 py-3 border-none bg-transparent focus:ring-0 placeholder-gray-400 text-sm font-medium"
-              />
-           </div>
-           <Button 
-             className="rounded-xl shadow-lg shadow-orange-100 px-6 py-3"
-             icon={<Plus size={18} />}
-           >
-             THÊM NHÀ HÀNG
-           </Button>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-           <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100">
-                   <th className="px-8 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">ID</th>
-                   <th className="px-6 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Nhà hàng</th>
-                   <th className="px-6 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Địa chỉ</th>
-                   <th className="px-6 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">Liên hệ</th>
-                   <th className="px-6 py-5 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">Trạng thái</th>
-                   <th className="px-6 py-5 text-right text-xs font-bold text-gray-400 uppercase tracking-widest">Thao tác</th>
+        {/* Table Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+          {loading ? (
+             <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
+          ) : (
+          <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 font-semibold text-gray-500">Restaurant ID</th>
+                  <th className="px-6 py-4 font-semibold text-gray-500">Tên nhà hàng</th>
+                  <th className="px-6 py-4 font-semibold text-gray-500">Địa chỉ</th>
+                  <th className="px-6 py-4 font-semibold text-gray-500">Liên hệ</th>
+                  <th className="px-6 py-4 font-semibold text-gray-500 text-center">Đánh giá</th>
+                  <th className="px-6 py-4 font-semibold text-gray-500">Trạng thái</th>
+                  <th className="px-6 py-4 font-semibold text-gray-500 text-right">Hoạt động</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                 {restaurants.map((res) => (
-                   <tr key={res.id} className="hover:bg-gray-50 transition-colors group">
-                      <td className="px-8 py-6 text-sm font-bold text-gray-400">{res.id}</td>
-                      <td className="px-6 py-6">
-                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#EE501C] flex items-center justify-center font-black">
-                               {res.initial}
-                            </div>
-                            <div>
-                               <div className="font-bold text-gray-900 text-sm">{res.name}</div>
-                               <div className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
-                                  4.8 <span className="text-yellow-400">★</span> RATING
-                               </div>
-                            </div>
-                         </div>
-                      </td>
-                      <td className="px-6 py-6 text-sm font-bold text-gray-500 max-w-[200px] truncate">{res.address}</td>
-                      <td className="px-6 py-6">
-                         <div className="font-bold text-gray-900 text-sm">{res.contact}</div>
-                         <div className="text-[10px] font-medium text-gray-400 italic">{res.email}</div>
-                      </td>
-                      <td className="px-6 py-6 text-center">
-                         <span className="bg-green-100 text-green-700 text-[10px] font-bold px-3 py-1 rounded-full border border-green-200 uppercase tracking-wide">
-                            Đang hoạt động
-                         </span>
-                      </td>
-                      <td className="px-6 py-6 text-right">
-                         <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="text-gray-300 hover:text-gray-500 transition-colors"><Lock size={18} /></button>
-                            <button className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
-                         </div>
-                      </td>
-                   </tr>
-                 ))}
+              <tbody className="divide-y divide-gray-200">
+                {paginatedData.length > 0 ? paginatedData.map((res) => (
+                  <tr key={res.id} className="hover:bg-gray-50 transition-colors group">
+                    <td className="px-6 py-4 text-gray-500 font-mono">{res.id}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg shadow-sm flex-shrink-0 ${res.colorClass || 'bg-gray-100 text-gray-600'}`}>
+                          {res.initial || res.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{res.name}</p>
+                          <p className="text-xs text-gray-500">{res.category}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-500 max-w-xs truncate" title={res.address}>
+                      {res.address}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <span className="text-gray-900 font-medium">{res.phone}</span>
+                        <span className="text-xs text-gray-500">{res.email}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="inline-flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded text-yellow-600 font-medium text-xs">
+                        <Star className="w-3.5 h-3.5 fill-current" />
+                        {res.rating}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {res.status === 'Active' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                          Đang hoạt động
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                          Tạm ngưng
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button className="w-8 h-8 rounded hover:bg-gray-100 text-gray-400 hover:text-[#EE501C] transition-colors flex items-center justify-center" title="Hiển thị menu quán">
+                          <UtensilsCrossed className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleToggleStatus(res.id, res.status)}
+                          className="w-8 h-8 rounded hover:bg-gray-100 text-gray-400 hover:text-yellow-500 transition-colors flex items-center justify-center" 
+                          title={res.status === 'Active' ? "Tạm ngừng" : "Kích hoạt"}
+                        >
+                          {res.status === 'Active' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(res.id)}
+                          className="w-8 h-8 rounded hover:bg-gray-100 text-gray-400 hover:text-red-500 transition-colors flex items-center justify-center" 
+                          title="Xoá nhà hàng"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500 italic">Không tìm thấy nhà hàng nào phù hợp.</td>
+                  </tr>
+                )}
               </tbody>
-           </table>
-           <div className="p-8 text-center" />
+            </table>
+          </div>
+          
+          {/* Pagination */}
+          <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between">
+            <p className="text-sm text-gray-500">
+              Hiển thị <span className="font-medium text-gray-900">{totalItems > 0 ? startIndex : 0}</span> đến <span className="font-medium text-gray-900">{endIndex}</span> trong số <span className="font-medium text-gray-900">{totalItems}</span> nhà hàng
+            </p>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => p - 1)}
+                disabled={!hasPrevPage}
+                className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-500"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="text-sm text-gray-500 px-2">
+                Trang <span className="font-medium text-gray-900">{currentPage}</span> / <span className="font-medium text-gray-900">{totalPages || 1}</span>
+              </span>
+              <button 
+                onClick={() => setCurrentPage(p => p + 1)}
+                disabled={!hasNextPage}
+                className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-500"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          </>
+          )}
         </div>
       </div>
     </AdminLayout>

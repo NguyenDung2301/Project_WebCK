@@ -1,14 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_PROMOTIONS } from '../../constants';
+import { getPromotionsApi } from '../../api/productApi';
 
 export const PromoSection: React.FC = () => {
   const navigate = useNavigate();
+  const [promotions, setPromotions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPromos = async () => {
+      try {
+        const data = await getPromotionsApi();
+        setPromotions(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPromos();
+  }, []);
 
   const handlePromoClick = (foodId: string) => {
     navigate(`/product/${foodId}`);
   };
+
+  if (loading) return <div className="h-60 flex items-center justify-center text-gray-400">Đang tải khuyến mãi...</div>;
 
   return (
     <section className="px-4 md:px-10 pb-12">
@@ -22,7 +40,7 @@ export const PromoSection: React.FC = () => {
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {MOCK_PROMOTIONS.map((promo) => (
+        {promotions.map((promo) => (
           <div 
             key={promo.id} 
             onClick={() => handlePromoClick(promo.foodId)}

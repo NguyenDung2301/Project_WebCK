@@ -53,6 +53,7 @@ export interface FoodItem {
   distance?: string;
   deliveryTime?: string;
   promoTag?: string;
+  restaurantId?: string;
 }
 
 export interface Voucher {
@@ -91,10 +92,27 @@ export interface Order {
 export interface Restaurant {
   id: string;
   name: string;
+  category: string;
   address: string;
-  imageUrl: string;
+  phone: string;
+  email: string;
   rating: number;
+  status: string;
+  initial: string;
+  colorClass: string;
   reviewsCount: number;
+  imageUrl?: string;
+}
+
+export interface Review {
+  id: string;
+  foodId: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  date: string; // ISO Date string
+  images?: string[];
 }
 
 // ============ Profile Types ============

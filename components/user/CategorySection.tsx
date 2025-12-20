@@ -1,14 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { CATEGORIES } from '../../constants';
+import { getCategoriesApi } from '../../api/productApi';
 
 export const CategorySection: React.FC = () => {
   const navigate = useNavigate();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await getCategoriesApi();
+        setCategories(data);
+      } catch (error) {
+        console.error('Failed to fetch categories', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const handleCategoryClick = (categoryName: string) => {
     navigate('/search', { state: { query: categoryName } });
   };
+
+  if (loading) return <div className="h-40 flex items-center justify-center text-gray-400">Đang tải danh mục...</div>;
 
   return (
     <section className="px-4 md:px-10">
@@ -21,7 +39,7 @@ export const CategorySection: React.FC = () => {
       </div>
       
       <div className="flex overflow-x-auto gap-4 md:gap-6 scrollbar-hide pb-4 -mx-2 px-2">
-        {CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <div 
             key={cat.id} 
             onClick={() => handleCategoryClick(cat.name)}

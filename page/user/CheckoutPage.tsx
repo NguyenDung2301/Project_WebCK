@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MapPin, Ticket, CreditCard, ChevronRight, CheckCircle2, Lock, Eye, EyeOff, Check, Wallet, Search, Plus, Heart } from 'lucide-react';
 import { FoodItem, UserProfile, Voucher } from '../../types/common';
+import { getVouchersApi } from '../../api/voucherApi';
 
-// --- MOCK DATA ---
+// --- MOCK USER ---
 const MOCK_USER: UserProfile = {
   name: 'Nguyễn Văn Khách',
   email: 'khach@example.com',
@@ -23,11 +24,6 @@ const DEFAULT_FOOD: FoodItem = {
   category: 'noodles'
 };
 
-const MOCK_VOUCHERS: Voucher[] = [
-  { id: 'v1', title: 'Giảm 15k phí vận chuyển', code: 'FREESHIP', discountValue: 15000, minOrderValue: 100000, type: 'FREESHIP', condition: 'Đơn tối thiểu 100k' },
-  { id: 'v2', title: 'Giảm 10k cho đơn hàng', code: 'GIAM10K', discountValue: 10000, minOrderValue: 50000, type: 'DISCOUNT', condition: 'Đơn tối thiểu 50k' },
-];
-
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,7 +41,8 @@ export const CheckoutPage: React.FC = () => {
   const initialVoucher = state?.voucher && subtotal >= state.voucher.minOrderValue ? state.voucher : null;
 
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'cash'>('wallet');
-  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(initialVoucher || (subtotal >= MOCK_VOUCHERS[0].minOrderValue ? MOCK_VOUCHERS[0] : null));
+  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(initialVoucher);
+  const [availableVouchers, setAvailableVouchers] = useState<Voucher[]>([]);
   
   // Modals
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -55,6 +52,24 @@ export const CheckoutPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPasswordText, setShowPasswordText] = useState(false);
   const [passwordError, setPasswordError] = useState('');
+
+  // Fetch vouchers
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      try {
+        const data = await getVouchersApi();
+        setAvailableVouchers(data);
+        // Auto select best voucher if none selected
+        if (!initialVoucher) {
+            const valid = data.find(v => subtotal >= v.minOrderValue && !v.isExpired);
+            if (valid) setSelectedVoucher(valid);
+        }
+      } catch (error) {
+        console.error("Failed to fetch vouchers");
+      }
+    };
+    fetchVouchers();
+  }, [initialVoucher, subtotal]);
 
   const deliveryFee = 15000;
   const discount = selectedVoucher ? selectedVoucher.discountValue : 0;
@@ -200,7 +215,7 @@ export const CheckoutPage: React.FC = () => {
 
             <div className="space-y-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gợi ý cho bạn</p>
-              {MOCK_VOUCHERS.map(v => {
+              {availableVouchers.filter(v => !v.isExpired).map(v => {
                  const isEligible = subtotal >= v.minOrderValue;
                  return (
                   <div 

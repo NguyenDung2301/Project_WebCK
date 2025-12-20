@@ -5,9 +5,10 @@ import {
   ChevronDown, Truck, Mail, Phone, Calendar, MapPin, 
   CreditCard as CardIcon
 } from 'lucide-react';
-import { FoodItem, ProfileSubPage, UserProfile } from '../../types/common';
+import { FoodItem, ProfileSubPage, UserProfile, Voucher } from '../../types/common';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { MOCK_FOODS } from '../../constants';
+import { getVouchersApi } from '../../api/voucherApi';
+import { getFoodsApi } from '../../api/productApi';
 
 const ProfileItem = ({ 
   icon: Icon, 
@@ -54,7 +55,7 @@ export const ProfilePage: React.FC = () => {
   const [voucherTab, setVoucherTab] = useState<'AVAILABLE' | 'EXPIRED'>('AVAILABLE');
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
   
-  // Mock data for profile state
+  // Data State
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: user?.name || 'Nguyễn Văn Khách',
     email: user?.email || 'email@example.com',
@@ -63,14 +64,27 @@ export const ProfilePage: React.FC = () => {
     balance: 500000
   });
 
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+        const vData = await getVouchersApi();
+        setVouchers(vData);
+
+        const fData = await getFoodsApi();
+        // Simulate favorites by picking random 2
+        setFavoriteFoods(fData.slice(0, 2));
+    };
+    fetchData();
+  }, []);
+
   // Local form state for editing
   const [formName, setFormName] = useState(userProfile.name);
   const [formEmail, setFormEmail] = useState(userProfile.email);
   const [formPhone, setFormPhone] = useState(userProfile.phone);
   const [formAddress, setFormAddress] = useState(userProfile.address);
-
-  // Mock favorites
-  const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>(MOCK_FOODS.slice(0, 2));
 
   const handleSaveProfile = () => {
     setUserProfile({
@@ -198,8 +212,8 @@ export const ProfilePage: React.FC = () => {
           <ProfileItem 
             icon={Ticket} 
             title="Ví vouchers" 
-            subtitle="3 mã giảm giá đang chờ bạn" 
-            badge="3"
+            subtitle={`${vouchers.filter(v => !v.isExpired).length} mã giảm giá đang chờ bạn`} 
+            badge={vouchers.filter(v => !v.isExpired).length.toString()}
             onClick={() => setSubPage('VOUCHERS')}
           />
           <ProfileItem 
@@ -276,7 +290,10 @@ export const ProfilePage: React.FC = () => {
     </div>
   );
 
-  const renderVouchersView = () => (
+  const renderVouchersView = () => {
+    const displayedVouchers = vouchers.filter(v => voucherTab === 'AVAILABLE' ? !v.isExpired : v.isExpired);
+    
+    return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
       <div>
         <h3 className="text-xl font-bold text-gray-800 mb-6 px-2">Ví vouchers</h3>
@@ -309,45 +326,46 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          {(voucherTab === 'AVAILABLE' ? [
-            { title: 'Miễn phí vận chuyển', condition: 'Đơn hàng tối thiểu 50.000đ', value: '-15K', hsd: '30/11/2023', type: 'FREESHIP' },
-            { title: 'Giảm 50% Bạn Mới', condition: 'Giảm tối đa 40k cho đơn đầu tiên', value: '50%', hsd: '15/12/2023', type: 'PROMO', hot: true },
-            { title: 'Giảm 20K Món Yêu Thích', condition: 'Áp dụng cho danh sách cửa hàng chọn lọc', value: '-20K', hsd: '31/12/2023', type: 'CASHBACK' }
-          ] : [
-            { title: 'Miễn phí vận chuyển', condition: 'Đơn hàng tối thiểu 50.000đ', value: '-15K', hsd: '30/11/2023', type: 'FREESHIP', expired: true }
-          ]).map((v, idx) => (
+          {displayedVouchers.length > 0 ? displayedVouchers.map((v, idx) => (
             <div 
               key={idx} 
-              className={`bg-white border border-gray-50 rounded-[2rem] p-6 flex gap-6 items-center shadow-sm hover:shadow-md transition-all group relative overflow-hidden ${v.expired ? 'opacity-60' : ''}`}
+              className={`bg-white border border-gray-50 rounded-[2rem] p-6 flex gap-6 items-center shadow-sm hover:shadow-md transition-all group relative overflow-hidden ${v.isExpired ? 'opacity-60' : ''}`}
             >
               <div className={`w-20 h-20 rounded-2xl flex flex-col items-center justify-center shrink-0 ${v.type === 'FREESHIP' ? 'bg-orange-50' : 'bg-orange-100'}`}>
-                {v.type === 'FREESHIP' ? <Truck className={`w-8 h-8 ${v.expired ? 'text-gray-400' : 'text-[#EE501C]'}`} /> : <span className={`text-3xl ${v.expired ? 'text-gray-400' : 'text-[#EE501C]'}`}>%</span>}
-                <span className={`text-[8px] font-black uppercase mt-1 tracking-widest ${v.expired ? 'text-gray-400' : 'text-[#EE501C]'}`}>{v.type}</span>
+                {v.type === 'FREESHIP' ? <Truck className={`w-8 h-8 ${v.isExpired ? 'text-gray-400' : 'text-[#EE501C]'}`} /> : <span className={`text-3xl ${v.isExpired ? 'text-gray-400' : 'text-[#EE501C]'}`}>%</span>}
+                <span className={`text-[8px] font-black uppercase mt-1 tracking-widest ${v.isExpired ? 'text-gray-400' : 'text-[#EE501C]'}`}>{v.type}</span>
               </div>
               
               <div className="flex-1">
-                <h4 className={`font-bold text-gray-900 mb-1 ${v.expired ? 'text-gray-500' : ''}`}>{v.title}</h4>
+                <h4 className={`font-bold text-gray-900 mb-1 ${v.isExpired ? 'text-gray-500' : ''}`}>{v.title}</h4>
                 <p className="text-xs text-gray-400 mb-1">{v.condition}</p>
                 <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400">
-                  <span>HSD: {v.hsd}</span>
+                  <span>Mã: {v.code}</span>
                 </div>
               </div>
 
               <div className="text-right">
-                <div className={`text-2xl font-black mb-2 ${v.expired ? 'text-gray-400' : 'text-[#EE501C]'}`}>{v.value}</div>
+                <div className={`text-2xl font-black mb-2 ${v.isExpired ? 'text-gray-400' : 'text-[#EE501C]'}`}>
+                    {v.type === 'DISCOUNT' ? `-${v.discountValue/1000}k` : v.discountValue > 100 ? `${v.discountValue/1000}k` : `${v.discountValue}%`}
+                </div>
                 <button 
-                  onClick={() => !v.expired && setSubPage('FAVORITES')}
-                  className={`text-[10px] font-black uppercase tracking-widest ${v.expired ? 'text-gray-400 cursor-default' : 'text-[#EE501C] hover:underline cursor-pointer'}`}
+                  onClick={() => !v.isExpired && setSubPage('FAVORITES')}
+                  className={`text-[10px] font-black uppercase tracking-widest ${v.isExpired ? 'text-gray-400 cursor-default' : 'text-[#EE501C] hover:underline cursor-pointer'}`}
                 >
-                  {v.expired ? 'Hết hạn' : 'Dùng ngay'}
+                  {v.isExpired ? 'Hết hạn' : 'Dùng ngay'}
                 </button>
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="text-center py-10 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
+                <p className="text-gray-400 text-sm">Không có voucher nào trong mục này.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderEditProfileView = () => (
     <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-gray-50 shadow-sm animate-in fade-in slide-in-from-right-4 duration-300">

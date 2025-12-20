@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Star, X, Camera, ChevronDown, Send, CheckCircle2 } from 'lucide-react';
+import { getReviewsByFoodIdApi, submitReviewApi } from '../../api/reviewApi';
+import { Review } from '../../types/common';
+import { formatDateVN } from '../../utils';
+import { useAuthContext } from '../../contexts/AuthContext';
 
-const ReviewItem = ({ name, date, rating, comment, images }: { name: string, date: string, rating: number, comment: string, images?: string[] }) => (
+const ReviewItem = ({ review }: { review: Review }) => (
   <div className="py-6 border-b border-gray-50 last:border-0 flex gap-4 items-start animate-in fade-in duration-500">
     {/* Avatar bên trái */}
     <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-orange-50 overflow-hidden border border-orange-100 shrink-0">
       <img 
-        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=fff7ed&color=ee501c&bold=true`} 
-        alt={name} 
+        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(review.userName)}&background=fff7ed&color=ee501c&bold=true`} 
+        alt={review.userName} 
         className="w-full h-full object-cover"
       />
     </div>
@@ -17,21 +21,23 @@ const ReviewItem = ({ name, date, rating, comment, images }: { name: string, dat
     <div className="flex-1">
         <div className="flex justify-between items-start">
             <div>
-                <h5 className="text-sm font-bold text-gray-900">{name}</h5>
+                <h5 className="text-sm font-bold text-gray-900">{review.userName}</h5>
                 <div className="flex items-center gap-0.5 mt-0.5">
                     {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`w-3 h-3 ${i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
+                    <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
                     ))}
                 </div>
             </div>
-            <span className="text-[10px] md:text-xs text-gray-400 font-medium">{date}</span>
+            <span className="text-[10px] md:text-xs text-gray-400 font-medium">
+              {formatDateVN(review.date)}
+            </span>
         </div>
 
-        <p className="text-sm text-gray-600 leading-relaxed mt-3 mb-3">{comment}</p>
+        <p className="text-sm text-gray-600 leading-relaxed mt-3 mb-3">{review.comment}</p>
         
-        {images && images.length > 0 && (
+        {review.images && review.images.length > 0 && (
         <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-            {images.map((img, idx) => (
+            {review.images.map((img, idx) => (
             <div key={idx} className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-gray-100 shadow-sm bg-gray-50 hover:opacity-90 transition-opacity cursor-pointer">
                 <img src={img} alt={`Review ${idx}`} className="w-full h-full object-cover" />
             </div>
@@ -44,34 +50,99 @@ const ReviewItem = ({ name, date, rating, comment, images }: { name: string, dat
 
 export const ReviewPage: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuthContext();
+  
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showWriteForm, setShowWriteForm] = useState(false);
+  
+  // Form State
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const ratingsDistribution = [
-    { stars: 5, count: 192, percent: 75 },
-    { stars: 4, count: 38, percent: 15 },
-    { stars: 3, count: 12, percent: 5 },
-    { stars: 2, count: 5, percent: 2 },
-    { stars: 1, count: 9, percent: 3 },
-  ];
+  // Load reviews from API
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (id) {
+        try {
+          setLoading(true);
+          const data = await getReviewsByFoodIdApi(id);
+          setReviews(data);
+        } catch (error) {
+          console.error("Failed to load reviews", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchReviews();
+  }, [id]);
 
-  const handleSubmitReview = (e: React.FormEvent) => {
+  // Calculate Statistics dynamically
+  const stats = useMemo(() => {
+    const total = reviews.length;
+    if (total === 0) return { average: 0, total: 0, distribution: [] };
+
+    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+    const average = (sum / total).toFixed(1);
+
+    const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    reviews.forEach(r => { counts[r.rating] = (counts[r.rating] || 0) + 1; });
+
+    const distribution = [5, 4, 3, 2, 1].map(star => ({
+      stars: star,
+      count: counts[star],
+      percent: Math.round((counts[star] / total) * 100)
+    }));
+
+    return { average, total, distribution };
+  }, [reviews]);
+
+  // Filter logic
+  const filteredReviews = useMemo(() => {
+    if (activeFilter === 'all') return reviews;
+    return reviews.filter(r => r.rating === parseInt(activeFilter));
+  }, [reviews, activeFilter]);
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userRating === 0) return;
+    if (userRating === 0 || !id) return;
     
-    // Simulate API call
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setShowWriteForm(false);
-      setIsSubmitted(false);
-      setUserRating(0);
-      setComment('');
-    }, 2000);
+    // Default user info if not logged in (for demo)
+    const userInfo = user || { id: 'guest', name: 'Khách hàng ẩn danh' };
+
+    try {
+      const newReview = await submitReviewApi({
+        foodId: id,
+        userId: userInfo.id,
+        userName: userInfo.name || 'Anonymous',
+        rating: userRating,
+        comment: comment,
+      });
+
+      // Update UI immediately (Optimistic or just push to state)
+      setReviews(prev => [newReview, ...prev]);
+      
+      setIsSubmitted(true);
+      setTimeout(() => {
+        setShowWriteForm(false);
+        setIsSubmitted(false);
+        setUserRating(0);
+        setComment('');
+      }, 1500);
+    } catch (error) {
+      console.error('Failed to submit review', error);
+      alert('Gửi đánh giá thất bại. Vui lòng thử lại.');
+    }
   };
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Đang tải đánh giá...</div>;
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 animate-in fade-in zoom-in-95 duration-300 min-h-screen">
@@ -98,13 +169,13 @@ export const ReviewPage: React.FC = () => {
             
             {/* Left: Score Card */}
             <div className="w-full md:w-[280px] bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-6 flex flex-col items-center justify-center text-center shrink-0">
-              <div className="text-6xl font-black text-gray-900 mb-1 leading-none">4.8</div>
+              <div className="text-6xl font-black text-gray-900 mb-1 leading-none">{stats.average}</div>
               <div className="flex items-center gap-1 mb-3">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                  <Star key={i} className={`w-5 h-5 ${i < Math.round(Number(stats.average)) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200'}`} />
                 ))}
               </div>
-              <div className="text-xs text-gray-500 font-medium mb-6">256 đánh giá</div>
+              <div className="text-xs text-gray-500 font-medium mb-6">{stats.total} đánh giá</div>
               
               <button 
                 onClick={() => setShowWriteForm(true)}
@@ -116,7 +187,7 @@ export const ReviewPage: React.FC = () => {
 
             {/* Right: Distribution Bars */}
             <div className="flex-1 py-2 flex flex-col justify-center gap-3">
-              {ratingsDistribution.map((item) => (
+              {stats.distribution.map((item) => (
                 <div key={item.stars} className="flex items-center gap-3">
                   <div className="flex items-center gap-1 w-8 shrink-0">
                     <span className="text-sm font-bold text-gray-700">{item.stars}</span>
@@ -144,57 +215,40 @@ export const ReviewPage: React.FC = () => {
             >
               Tất cả
             </button>
-            <button 
-              onClick={() => setActiveFilter('5')}
-              className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeFilter === '5' ? 'bg-white border-[#EE501C] text-[#EE501C]' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
-            >
-              5 ⭐ (192)
-            </button>
-            <button 
-              onClick={() => setActiveFilter('4')}
-              className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeFilter === '4' ? 'bg-white border-[#EE501C] text-[#EE501C]' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
-            >
-              4 ⭐ (38)
-            </button>
-            <button 
-              onClick={() => setActiveFilter('3')}
-              className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeFilter === '3' ? 'bg-white border-[#EE501C] text-[#EE501C]' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
-            >
-              3 ⭐ (12)
-            </button>
+            {[5, 4, 3, 2, 1].map(star => {
+               const count = stats.distribution.find(d => d.stars === star)?.count || 0;
+               return (
+                <button 
+                  key={star}
+                  onClick={() => setActiveFilter(String(star))}
+                  className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeFilter === String(star) ? 'bg-white border-[#EE501C] text-[#EE501C]' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                >
+                  {star} ⭐ ({count})
+                </button>
+               );
+            })}
           </div>
 
           {/* Reviews List */}
           <div className="space-y-2">
-            <ReviewItem 
-              name="Nguyễn Văn A"
-              date="20/10/2023 18:30"
-              rating={5}
-              comment="Nước lèo rất đậm đà, thịt bò mềm và nhiều. Đóng gói cẩn thận, nước lèo để riêng nóng hổi. Sẽ ủng hộ dài dài!"
-              images={[
-                "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=200&h=200",
-                "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&q=80&w=200&h=200"
-              ]}
-            />
-            <ReviewItem 
-              name="Trần Thị B"
-              date="18/10/2023 12:15"
-              rating={4}
-              comment="Món ăn ngon nhưng shipper giao hơi chậm xíu. Bù lại đồ ăn vẫn còn nóng hổi, shop tặng kèm trà đá nữa."
-            />
-            <ReviewItem 
-              name="Lê Văn C"
-              date="15/10/2023 09:00"
-              rating={1}
-              comment="Giao sai món, gọi quán không bắt máy. Rất thất vọng về cách phục vụ."
-            />
+            {filteredReviews.length > 0 ? (
+                filteredReviews.map(review => (
+                    <ReviewItem key={review.id} review={review} />
+                ))
+            ) : (
+                <div className="text-center py-12 text-gray-400 text-sm italic">
+                    Chưa có đánh giá nào cho tiêu chí này.
+                </div>
+            )}
           </div>
 
-          <div className="mt-8 pt-4 text-center">
-             <button className="text-sm font-bold text-gray-400 hover:text-[#EE501C] transition-colors flex items-center justify-center gap-1 mx-auto">
-               <ChevronDown className="w-4 h-4" />
-             </button>
-          </div>
+          {reviews.length > 5 && (
+            <div className="mt-8 pt-4 text-center">
+               <button className="text-sm font-bold text-gray-400 hover:text-[#EE501C] transition-colors flex items-center justify-center gap-1 mx-auto">
+                 Xem thêm <ChevronDown className="w-4 h-4" />
+               </button>
+            </div>
+          )}
         </div>
       </div>
 

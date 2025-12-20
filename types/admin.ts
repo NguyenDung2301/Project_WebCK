@@ -3,6 +3,7 @@
  * Các types dành riêng cho Admin Dashboard UI
  */
 
+import React from 'react';
 import type { User } from './user';
 
 // Note: Import types directly from './user' or './common' instead of re-exporting
@@ -59,4 +60,3 @@ export interface SidebarProps {
   setActiveTab: (tab: string) => void;
   onLogout: () => void;
 }
-
