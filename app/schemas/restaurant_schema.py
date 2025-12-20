@@ -86,6 +86,8 @@ class RestaurantSimpleResponse(BaseModel):
     close_time: Optional[str] = Field(default=None, alias="closeTime")
     map_link: Optional[str] = Field(default=None, alias="mapLink")
     status: bool = True
+    average_rating: float = Field(default=0.0, alias="averageRating")
+    total_reviews: int = Field(default=0, alias="totalReviews")
 
     class Config:
         populate_by_name = True

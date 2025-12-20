@@ -5,7 +5,6 @@ from schemas.order_schema import (
     CreateOrderRequest,
     CancelOrderRequest,
 )
-from utils.roles import Role
 
 
 class OrderController:
@@ -18,11 +17,6 @@ class OrderController:
         try:
             if not request.json:
                 return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
-            
-            # Chặn shipper không được mua hàng
-            user_role = request.token_payload.get('role')
-            if user_role == Role.SHIPPER.value:
-                return jsonify({'success': False, 'message': 'Shipper không được phép đặt hàng'}), 403
             
             req = CreateOrderRequest(**request.json)
             user_id = request.user_id

@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 from services.user_service import user_service
 from schemas.user_schema import (
     UserRegisterRequest,
@@ -8,7 +8,6 @@ from schemas.user_schema import (
     UserTopUpRequest,
 )
 from pydantic import ValidationError
-from utils.roles import Role
 
 class UserController:
     """User Controller - Xử lý HTTP requests"""
@@ -53,7 +52,9 @@ class UserController:
     def update_user(self):
         """API cập nhật thông tin user"""
         try:
-            user_id = request.user_id
+            user_id = getattr(request, 'user_id', None) or getattr(g, 'user_id', None)
+            if not user_id:
+                return jsonify({'success': False, 'message': 'Thiếu thông tin xác thực'}), 401
             user_data = UserUpdateRequest(**request.json)
             result = user_service.update_user(user_id, user_data)
             return jsonify({'success': True, 'message': 'Cập nhật thành công', 'data': result}), 200  
@@ -84,7 +85,10 @@ class UserController:
         """API lấy profile user hiện tại"""
         try:
             # Lấy user_id từ middleware (sau khi verify token)
-            user_id = request.user_id           
+            user_id = getattr(request, 'user_id', None) or getattr(g, 'user_id', None)
+            if not user_id:
+                return jsonify({'success': False,'message': 'Thiếu thông tin xác thực'}), 401
+            
             result = user_service.get_user_by_id(user_id)
             return jsonify({'success': True,'data': result}), 200            
         except ValueError as e:
@@ -136,12 +140,9 @@ class UserController:
             if not request.json:
                 return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
             
-            user_id = request.user_id
-            token_role = request.token_payload.get('role')
-            
-            # Kiểm tra role - chỉ USER được nạp tiền
-            if token_role != Role.USER.value:
-                return jsonify({'success': False, 'message': f'Bạn không có quyền nạp tiền. Chỉ user bình thường mới có thể nạp tiền'}), 403
+            user_id = getattr(request, 'user_id', None) or getattr(g, 'user_id', None)
+            if not user_id:
+                return jsonify({'success': False, 'message': 'Thiếu thông tin xác thực'}), 401
             
             topup = UserTopUpRequest(**request.json)
             result = user_service.top_up_balance(user_id, topup)

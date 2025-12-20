@@ -113,7 +113,9 @@ class RestaurantService:
             {
                 '$project': {
                     '_id': 1, 'name': 1, 'address': 1, 'hotline': 1, 
-                    'openTime': 1, 'closeTime': 1, 'mapLink': 1, 
+                    'openTime': 1, 'closeTime': 1, 'mapLink': 1,
+                    'average_rating': 1,  # Thêm để hiển thị rating
+                    'total_reviews': 1,   # Thêm để hiển thị số đánh giá
                     'category': '$menu.category', 'food': '$menu.items'
                 }
             }
@@ -137,6 +139,8 @@ class RestaurantService:
                 'openTime': item.get('openTime'),
                 'closeTime': item.get('closeTime'),
                 'mapLink': item.get('mapLink'),
+                'averageRating': item.get('average_rating', 0.0),
+                'totalReviews': item.get('total_reviews', 0),
             })
             return SearchFoodResponse(
                 food=food_data,
@@ -155,7 +159,9 @@ class RestaurantService:
             {
                 '$project': {
                     '_id': 1, 'name': 1, 'address': 1, 'hotline': 1, 
-                    'openTime': 1, 'closeTime': 1, 'mapLink': 1, 
+                    'openTime': 1, 'closeTime': 1, 'mapLink': 1,
+                    'average_rating': 1,  # Thêm để hiển thị rating
+                    'total_reviews': 1,   # Thêm để hiển thị số đánh giá
                     'category': '$menu.category', 'food': '$menu.items'
                 }
             }

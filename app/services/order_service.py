@@ -733,11 +733,14 @@ class OrderService:
             if str(order.user_id) != user_id:
                 raise ValueError('Chỉ user đặt đơn mới có thể hủy')
             
-            # Hoàn tiền nếu đã thanh toán (chỉ refund khi status=PAID)
+            # Xử lý payment: refund nếu đã trả, hoặc đánh dấu thất bại nếu đang chờ
             if order.payment_id:
                 payment = payment_service.find_by_order_id(order_id)
-                if payment and payment.status == PaymentStatus.PAID:
-                    payment_service.refund(str(order.payment_id))
+                if payment:
+                    if payment.status == PaymentStatus.PAID:
+                        payment_service.refund(str(order.payment_id))
+                    elif payment.status == PaymentStatus.PENDING:
+                        payment_service.mark_failed(str(order.payment_id))
 
             updated = self.cancel_order_in_db(order_id, 'user', reason)
             if not updated:
@@ -770,11 +773,14 @@ class OrderService:
             if order.status == OrderStatus.CANCELLED:
                 raise ValueError('Đơn hàng đã bị hủy rồi')
             
-            # Hoàn tiền nếu đã thanh toán (chỉ refund khi status=PAID)
+            # Xử lý payment: refund nếu đã trả, hoặc đánh dấu thất bại nếu đang chờ
             if order.payment_id:
                 payment = payment_service.find_by_order_id(order_id)
-                if payment and payment.status == PaymentStatus.PAID:
-                    payment_service.refund(str(order.payment_id))
+                if payment:
+                    if payment.status == PaymentStatus.PAID:
+                        payment_service.refund(str(order.payment_id))
+                    elif payment.status == PaymentStatus.PENDING:
+                        payment_service.mark_failed(str(order.payment_id))
 
             updated = self.cancel_order_in_db(order_id, 'admin', reason)
             if not updated:

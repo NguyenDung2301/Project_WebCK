@@ -48,6 +48,10 @@ class Restaurant(BaseModel):
     map_link: Optional[str] = Field(default=None, alias="mapLink")
     status: bool = Field(default=True, description="Trạng thái hoạt động của nhà hàng")
     
+    # Review statistics
+    average_rating: float = Field(default=0.0, alias="averageRating", description="Điểm đánh giá trung bình")
+    total_reviews: int = Field(default=0, alias="totalReviews", description="Tổng số đánh giá")
+    
     # Menu là list các Category
     menu: Optional[List[MenuCategory]] = Field(default_factory=list)
 
@@ -70,6 +74,8 @@ class Restaurant(BaseModel):
             "closeTime": self.close_time,
             "mapLink": self.map_link,
             "status": self.status,
+            "averageRating": float(self.average_rating),
+            "totalReviews": int(self.total_reviews),
             "menu": [cat.to_dict() for cat in self.menu] if self.menu else []
         }
 
@@ -84,6 +90,8 @@ class Restaurant(BaseModel):
             "closeTime": self.close_time,
             "mapLink": self.map_link,
             "status": self.status,
+            "average_rating": float(self.average_rating),
+            "total_reviews": int(self.total_reviews),
             # Lưu menu dưới dạng dict lồng nhau
             "menu": [cat.to_dict() for cat in self.menu] if self.menu else []
         }
