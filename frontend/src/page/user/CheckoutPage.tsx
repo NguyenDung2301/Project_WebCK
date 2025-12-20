@@ -283,44 +283,63 @@ export const CheckoutPage: React.FC = () => {
 
       {/* PASSWORD MODAL */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="bg-[#EE501C] pt-10 pb-8 px-6 text-center flex flex-col items-center">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-white mb-5 shadow-inner">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#EE501C]"><Lock className="w-6 h-6" /></div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#221510]/60 backdrop-blur-sm" onClick={() => setShowPasswordModal(false)}></div>
+          <div className="relative w-full max-w-[400px] bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            {/* Header */}
+            <div className="bg-[#EE501C] p-6 pb-10 text-center relative overflow-hidden">
+              <div 
+                className="absolute top-0 left-0 w-full h-full opacity-10" 
+                style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/cubes.png')" }}
+              ></div>
+              <div className="inline-flex p-3 rounded-full bg-white/20 backdrop-blur-md mb-4 ring-4 ring-white/10 shadow-inner">
+                <Lock className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-black text-white mb-1">Nhập mật khẩu</h2>
-              <p className="text-sm text-orange-100 font-medium">Để bảo mật, vui lòng xác nhận danh tính</p>
+              <h3 className="text-xl font-bold text-white relative z-10">Nhập mật khẩu</h3>
+              <p className="text-white/80 text-sm mt-1 relative z-10 font-medium">Để bảo mật, vui lòng xác nhận danh tính</p>
             </div>
-            <div className="p-8">
+
+            {/* Body */}
+            <div className="px-6 py-8 -mt-6 bg-white rounded-t-3xl relative">
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-900 ml-1">Mật khẩu tài khoản</label>
-                  <div className="relative">
+                  <label className="text-sm font-bold text-[#1b110d] ml-1 flex items-center justify-between">
+                    Mật khẩu tài khoản
+                  </label>
+                  <div className="relative group">
                     <input 
-                      type={showPasswordText ? "text" : "password"} 
-                      value={password} 
-                      onChange={(e) => { setPassword(e.target.value); if(passwordError) setPasswordError(''); }} 
-                      placeholder="••••••••" 
-                      className={`w-full bg-white border ${passwordError ? 'border-red-400 ring-4 ring-red-50' : 'border-orange-100 ring-4 ring-orange-50'} rounded-full py-4 px-6 text-sm focus:outline-none transition-all text-center text-lg tracking-widest font-bold text-gray-700`} 
                       autoFocus
+                      type={showPasswordText ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); if(passwordError) setPasswordError(''); }}
+                      className="w-full pl-4 pr-12 py-3.5 bg-[#f8f6f6] border-2 border-transparent focus:border-[#EE501C]/20 focus:bg-white focus:ring-0 rounded-xl transition-all font-bold text-[#1b110d] placeholder:text-gray-400 placeholder:font-normal text-lg"
+                      placeholder="••••••••"
                     />
-                    <button onClick={() => setShowPasswordText(!showPasswordText)} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#EE501C] transition-colors">
-                      {showPasswordText ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    <button 
+                      onClick={() => setShowPasswordText(!showPasswordText)}
+                      className="absolute right-0 top-0 h-full px-4 text-gray-400 hover:text-[#EE501C] transition-colors focus:outline-none"
+                    >
+                      {showPasswordText ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
-                  {passwordError && <p className="text-[10px] font-bold text-red-500 ml-1 mt-1">{passwordError}</p>}
+                  
+                  {passwordError && <p className="text-xs font-bold text-red-500 ml-1">{passwordError}</p>}
+
+                  <div className="flex justify-end pt-1">
+                    <a href="#" className="text-xs font-bold text-[#EE501C] hover:text-[#d94110] hover:underline transition-colors">Quên mật khẩu?</a>
+                  </div>
                 </div>
-                <div className="flex gap-4 pt-2">
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
                   <button 
-                    onClick={() => { setShowPasswordModal(false); setPassword(''); setPasswordError(''); }} 
-                    className="flex-1 bg-white border border-gray-100 text-gray-500 font-bold py-4 rounded-full hover:bg-gray-50 transition-all text-sm"
+                    onClick={() => { setShowPasswordModal(false); setPassword(''); setPasswordError(''); }}
+                    className="py-3.5 rounded-xl font-bold text-[#9a5f4c] bg-white border-2 border-[#f3eae7] hover:bg-[#f8f6f6] hover:text-[#1b110d] hover:border-gray-300 transition-all"
                   >
                     Hủy
                   </button>
                   <button 
-                    onClick={handlePasswordConfirm} 
-                    className="flex-1 bg-[#EE501C] text-white font-black py-4 rounded-full shadow-xl shadow-orange-100 hover:bg-[#d44719] transition-all text-sm"
+                    onClick={handlePasswordConfirm}
+                    className="py-3.5 rounded-xl font-bold text-white bg-[#EE501C] hover:bg-[#d94110] shadow-lg shadow-orange-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                   >
                     Xác nhận
                   </button>
