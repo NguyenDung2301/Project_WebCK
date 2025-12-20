@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -20,12 +19,10 @@
                             light: "#fff1ee"
                         },
                         surface: {
-                            light: "#FFFFFF",
-                            dark: "#1F2937"
+                            light: "#FFFFFF"
                         },
                         background: {
-                            light: "#F9FAFB",
-                            dark: "#111827"
+                            light: "#F9FAFB"
                         }
                     },
                     fontFamily: {
@@ -40,7 +37,6 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
-        .dark ::-webkit-scrollbar-thumb { background: #374151; }
     </style>
 <script type="importmap">
 {
@@ -55,7 +51,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 transition-colors duration-200">
+<body class="bg-background-light text-gray-900 transition-colors duration-200">
     <div id="root"></div>
 <script type="module" src="/index.tsx"></script>
 </body>

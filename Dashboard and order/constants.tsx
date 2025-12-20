@@ -8,7 +8,8 @@ export const MOCK_STATS = {
   totalRestaurants: 482
 };
 
-export const MOCK_ORDERS: Order[] = [
+// Tạo bộ dữ liệu đơn hàng lớn hơn để demo phân trang
+const baseOrders: Order[] = [
   { id: '#ORD-9281', customer: 'Nguyễn Thị A', restaurant: 'Cơm Tấm Sài Gòn', total: 125000, status: OrderStatus.COMPLETED, timestamp: '15/12/2025 10:30', avatar: 'N' },
   { id: '#ORD-9282', customer: 'Lê Minh B', restaurant: 'Phở Lý Quốc Sư', total: 85000, status: OrderStatus.DELIVERING, timestamp: '15/12/2025 11:15', avatar: 'L' },
   { id: '#ORD-9283', customer: 'Trần Hoàng C', restaurant: "Pizza 4P's", total: 350000, status: OrderStatus.PREPARING, timestamp: '15/12/2025 11:45', avatar: 'T' },
@@ -16,6 +17,13 @@ export const MOCK_ORDERS: Order[] = [
   { id: '#ORD-9286', customer: 'Phạm Thị F', restaurant: 'Highlands Coffee', total: 95000, status: OrderStatus.COMPLETED, timestamp: '15/12/2025 08:30', avatar: 'P' },
   { id: '#ORD-9287', customer: 'Đặng Văn G', restaurant: 'KFC', total: 215000, status: OrderStatus.PREPARING, timestamp: '15/12/2025 08:15', avatar: 'D' },
   { id: '#ORD-9288', customer: 'Hoàng Thị H', restaurant: 'Bún Chả Hương Liên', total: 110000, status: OrderStatus.COMPLETED, timestamp: '15/12/2025 08:05', avatar: 'H' },
+];
+
+// Nhân bản dữ liệu để có 21 đơn hàng (3 trang, mỗi trang 7 đơn)
+export const MOCK_ORDERS: Order[] = [
+  ...baseOrders.map(o => ({...o, id: o.id + '-1'})),
+  ...baseOrders.map(o => ({...o, id: o.id + '-2', customer: o.customer + ' (Copy)'})),
+  ...baseOrders.map(o => ({...o, id: o.id + '-3', restaurant: o.restaurant + ' - Chi nhánh 2'})),
 ];
 
 export const MOCK_ACTIVITIES: Activity[] = [
