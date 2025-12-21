@@ -24,8 +24,16 @@ export { setAdminInfo } from '../utils';
  * Helper để tạo Fake JWT cho mục đích test (Bypass Backend)
  */
 const createMockToken = (payload: any) => {
-  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const body = btoa(JSON.stringify(payload));
+  // Fix: Encode Unicode strings (like Vietnamese names) before btoa
+  const encode = (str: string) => {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+      function toSolidBytes(match, p1) {
+          return String.fromCharCode(parseInt(p1, 16));
+      }));
+  };
+
+  const header = encode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const body = encode(JSON.stringify(payload));
   const signature = "mock_signature";
   return `${header}.${body}.${signature}`;
 };
@@ -57,6 +65,14 @@ export const login = async (credentials: LoginRequest): Promise<LoginResult> => 
         role: 'user', // BackendRole
         exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
       };
+    } else if (credentials.email === 'shipper@food.com') {
+        mockPayload = {
+          user_id: 'mock-shipper-id',
+          email: 'shipper@food.com',
+          fullname: 'Nguyễn Văn A',
+          role: 'shipper', // BackendRole
+          exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
+        };
     }
 
     if (mockPayload) {
