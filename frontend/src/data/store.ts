@@ -1,11 +1,10 @@
 
 import { BackendUser } from '../types/user';
-import { FoodItem, Voucher, Review, Restaurant } from '../types/common';
-import { ShipperOrder, OrderStatus, ShipperProfile } from '../types/shipper'; // Import Shipper Types
+import { FoodItem, Voucher, Review, Restaurant, Order } from '../types/common'; // Order type for User View
+import { ShipperOrder, OrderStatus, ShipperProfile } from '../types/shipper'; // Shipper Types
 import { 
   INITIAL_USERS, 
   INITIAL_RESTAURANTS, 
-  INITIAL_ORDERS,
   INITIAL_FOODS,
   INITIAL_CATEGORIES,
   INITIAL_VOUCHERS,
@@ -13,157 +12,272 @@ import {
   INITIAL_REVIEWS,
   INITIAL_SUGGESTIONS,
   INITIAL_DASHBOARD_DATA,
-  INITIAL_SHIPPER_ORDERS // Now imported from initialData
+  INITIAL_MASTER_ORDERS,
+  MasterOrder
 } from './initialData';
 
 /**
  * MockDatabase
- * Class quản lý dữ liệu in-memory (thay thế database thực và localStorage)
+ * Quản lý dữ liệu tập trung.
+ * Order Data được lưu ở `masterOrders` và map ra các view khác nhau để đảm bảo đồng bộ.
  */
 class MockDatabase {
   private users: BackendUser[];
   private restaurants: Restaurant[];
-  private orders: any[];
-  private shipperOrders: ShipperOrder[];
   private foods: FoodItem[];
+  private masterOrders: MasterOrder[]; // Single Source of Truth
+  private reviews: Review[];
   private categories: any[];
   private vouchers: Voucher[];
   private promotions: any[];
-  private reviews: Review[];
   private suggestions: any[];
   private dashboardData: any;
 
   constructor() {
     this.users = [...INITIAL_USERS];
     this.restaurants = [...INITIAL_RESTAURANTS];
-    this.orders = [...INITIAL_ORDERS];
-    this.shipperOrders = [...INITIAL_SHIPPER_ORDERS];
     this.foods = [...INITIAL_FOODS];
+    
+    // LOAD PERSISTED ORDERS OR INITIALIZE
+    const storedOrders = localStorage.getItem('mock_master_orders');
+    if (storedOrders) {
+      try {
+        this.masterOrders = JSON.parse(storedOrders);
+      } catch (e) {
+        console.error('Failed to parse stored orders', e);
+        this.masterOrders = [...INITIAL_MASTER_ORDERS];
+      }
+    } else {
+      this.masterOrders = [...INITIAL_MASTER_ORDERS];
+    }
+
+    this.reviews = [...INITIAL_REVIEWS];
     this.categories = [...INITIAL_CATEGORIES];
     this.vouchers = [...INITIAL_VOUCHERS];
     this.promotions = [...INITIAL_PROMOTIONS];
-    this.reviews = [...INITIAL_REVIEWS];
     this.suggestions = [...INITIAL_SUGGESTIONS];
     this.dashboardData = INITIAL_DASHBOARD_DATA;
-    console.log('[MockDatabase] Initialized with full dataset in src/data folder');
+    console.log('[MockDatabase] Initialized Relational Data.');
   }
 
-  // ... (Existing helper methods: isRestaurantActive, getRestaurantStats) ...
-  private isRestaurantActive(restaurantId?: string): boolean {
-    if (!restaurantId) return true;
-    const restaurant = this.restaurants.find(r => r.id === restaurantId);
-    return restaurant ? restaurant.status === 'Active' : true;
-  }
-
-  private getRestaurantStats(restaurantId: string) {
-    const foods = this.foods.filter(f => f.restaurantId === restaurantId);
-    const foodIds = foods.map(f => f.id);
-    const reviews = this.reviews.filter(r => foodIds.includes(r.foodId));
-    const count = reviews.length;
-    let rating = 0;
-    if (count > 0) {
-      const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-      rating = Number((sum / count).toFixed(1));
+  private persistOrders() {
+    try {
+      localStorage.setItem('mock_master_orders', JSON.stringify(this.masterOrders));
+    } catch (e) {
+      console.error('Failed to persist orders', e);
     }
-    return { count, rating };
   }
 
-  // --- SHIPPER OPERATIONS ---
-  getShipperOrders(status?: OrderStatus | 'HISTORY') {
+  // ==========================================================
+  // VIEW GENERATORS (Map Master Data to UI Specific Types)
+  // ==========================================================
+
+  /**
+   * Tạo view đơn hàng cho User (đơn giản hóa)
+   */
+  getOrders(userId: string): Order[] {
+    // Filter orders by specific userId
+    // If userId is 'guest' or undefined, might return nothing or generic
+    const targetId = userId || 'usr-1';
+    const myOrders = this.masterOrders.filter(o => o.userId === targetId);
+
+    return myOrders.map(mo => {
+      const restaurant = this.restaurants.find(r => r.id === mo.restaurantId);
+      const firstItem = mo.items[0];
+      const food = this.foods.find(f => f.id === firstItem?.foodId);
+      
+      // Tạo mô tả món ăn từ danh sách items
+      const description = mo.items.map(item => {
+          const f = this.foods.find(fd => fd.id === item.foodId);
+          return `${f?.name} (x${item.quantity})`;
+      }).join(', ');
+
+      return {
+        id: mo.id,
+        foodId: firstItem?.foodId || '', // Main food ID for navigation
+        restaurantName: restaurant?.name || 'Unknown Restaurant',
+        orderTime: mo.orderTime,
+        description: description,
+        totalAmount: mo.totalAmount,
+        status: mo.status,
+        imageUrl: food?.imageUrl || restaurant?.imageUrl || '',
+        isReviewed: mo.isReviewed,
+        needsReview: mo.needsReview
+      };
+    });
+  }
+
+  /**
+   * Tạo view đơn hàng cho Shipper (chi tiết đầy đủ)
+   */
+  getShipperOrders(status?: OrderStatus | 'HISTORY'): ShipperOrder[] {
+    let targetOrders = this.masterOrders;
+
     if (status === 'HISTORY') {
-        return this.shipperOrders.filter(o => o.status === OrderStatus.Completed || o.status === OrderStatus.Cancelled);
+      targetOrders = this.masterOrders.filter(o => o.status === 'COMPLETED' || o.status === 'CANCELLED');
+    } else if (status) {
+      targetOrders = this.masterOrders.filter(o => o.status === status);
     }
-    if (status) {
-        return this.shipperOrders.filter(o => o.status === status);
-    }
-    return [...this.shipperOrders];
+
+    return targetOrders.map(mo => {
+      const restaurant = this.restaurants.find(r => r.id === mo.restaurantId);
+      const user = this.users.find(u => u.user_id === mo.userId) || { fullname: 'Khách lẻ', phone_number: '090xxxxxxx', email: '' };
+
+      // Map items chi tiết
+      const detailedItems = mo.items.map(item => {
+        const food = this.foods.find(f => f.id === item.foodId);
+        return {
+          name: food?.name || 'Unknown Item',
+          quantity: item.quantity,
+          price: item.price
+        };
+      });
+
+      // Split time string to get simple time for sorting/display if needed
+      const timeDisplay = mo.orderTime.split('•')[0].trim();
+
+      return {
+        id: mo.id,
+        storeName: restaurant?.name || 'Unknown Store',
+        storeImage: restaurant?.imageUrl || '',
+        storeAddress: restaurant?.address || '',
+        deliveryAddress: mo.deliveryAddress,
+        status: mo.status as OrderStatus,
+        paymentMethod: mo.paymentMethod,
+        time: timeDisplay + ' - ' + mo.orderTime.split('•')[1]?.trim(),
+        totalAmount: mo.totalAmount,
+        items: detailedItems,
+        customer: {
+          name: user.fullname || 'Khách vãng lai',
+          phone: user.phone_number || '',
+          email: user.email || '',
+          avatar: '', // Mock avatar if needed
+          rank: 'Thành viên'
+        }
+      };
+    });
   }
 
+  /**
+   * Tạo view đơn hàng cho Admin (đầy đủ thông tin)
+   */
+  getAdminOrders() {
+    return this.masterOrders.map(mo => {
+      const restaurant = this.restaurants.find(r => r.id === mo.restaurantId);
+      const user = this.users.find(u => u.user_id === mo.userId);
+      
+      return {
+        id: mo.id,
+        restaurantName: restaurant?.name || 'Unknown Restaurant',
+        customer: user?.fullname || 'Khách vãng lai',
+        email: user?.email || '',
+        orderTime: mo.orderTime,
+        totalAmount: mo.totalAmount,
+        status: mo.status,
+        paymentMethod: mo.paymentMethod,
+        items: mo.items
+      };
+    });
+  }
+
+  // ==========================================================
+  // ACTIONS (Update Master Data)
+  // ==========================================================
+
+  // --- USER ACTIONS ---
+  createOrder(orderData: Partial<MasterOrder>) {
+    // Generate simple ID
+    const newId = `ord-${Date.now().toString().slice(-6)}`;
+    
+    // Format current time HH:mm • DD/MM
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const dateStr = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+    const formattedTime = `${timeStr} • ${dateStr}`;
+
+    const newOrder: MasterOrder = {
+      id: newId,
+      userId: orderData.userId || 'usr-1', 
+      restaurantId: orderData.restaurantId || 'res-1',
+      items: orderData.items || [],
+      status: 'PENDING',
+      orderTime: formattedTime,
+      paymentMethod: orderData.paymentMethod || 'Cash',
+      deliveryAddress: orderData.deliveryAddress || '123 Đường ABC, TP.HCM',
+      needsReview: false,
+      isReviewed: false,
+      totalAmount: orderData.totalAmount || 0
+    };
+
+    // Add to beginning of array
+    this.masterOrders.unshift(newOrder);
+    this.persistOrders(); // Save to local storage
+    return newOrder;
+  }
+
+  deleteOrder(id: string) {
+    this.masterOrders = this.masterOrders.filter(o => o.id !== id);
+    this.persistOrders();
+  }
+
+  // --- SHIPPER ACTIONS ---
   shipperAcceptOrder(orderId: string) {
-    const orderIndex = this.shipperOrders.findIndex(o => o.id === orderId);
+    const orderIndex = this.masterOrders.findIndex(o => o.id === orderId);
     if (orderIndex > -1) {
-        this.shipperOrders[orderIndex].status = OrderStatus.Delivering;
-        // Move to top of list to simulate recent update
-        const order = this.shipperOrders.splice(orderIndex, 1)[0];
-        this.shipperOrders.unshift(order);
-        return true;
+      this.masterOrders[orderIndex].status = 'DELIVERING';
+      this.persistOrders();
+      return true;
     }
     return false;
   }
 
   shipperCompleteOrder(orderId: string) {
-    const orderIndex = this.shipperOrders.findIndex(o => o.id === orderId);
+    const orderIndex = this.masterOrders.findIndex(o => o.id === orderId);
     if (orderIndex > -1) {
-        this.shipperOrders[orderIndex].status = OrderStatus.Completed;
-        // Update time to current
-        const now = new Date();
-        const timeString = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')} - ${now.getDate()}/${now.getMonth()+1}`;
-        this.shipperOrders[orderIndex].time = timeString;
-        
-        const order = this.shipperOrders.splice(orderIndex, 1)[0];
-        this.shipperOrders.unshift(order);
-        return true;
+      this.masterOrders[orderIndex].status = 'COMPLETED';
+      this.masterOrders[orderIndex].needsReview = true;
+      this.persistOrders();
+      return true;
     }
     return false;
   }
 
   shipperCancelOrder(orderId: string) {
-    const orderIndex = this.shipperOrders.findIndex(o => o.id === orderId);
+    const orderIndex = this.masterOrders.findIndex(o => o.id === orderId);
     if (orderIndex > -1) {
-        this.shipperOrders[orderIndex].status = OrderStatus.Cancelled;
-        return true;
+      this.masterOrders[orderIndex].status = 'CANCELLED';
+      this.persistOrders();
+      return true;
     }
     return false;
   }
 
-  // Stats for HomePage
   getShipperStats() {
-    // Logic giả định "hôm nay" là các đơn hàng chưa có ngày tháng (hoặc ngày hiện tại)
-    // Trong mock data, ta sẽ tính tổng tất cả đơn Completed làm "Hôm nay" để demo số liệu đẹp
-    const completedOrders = this.shipperOrders.filter(o => o.status === OrderStatus.Completed);
-    const totalIncome = completedOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const completedCount = completedOrders.length;
-    
+    // Tính toán trực tiếp từ Master Orders
+    const completedOrders = this.masterOrders.filter(o => o.status === 'COMPLETED');
+    const totalIncome = completedOrders.reduce((sum, order) => sum + order.totalAmount, 0); // Giả sử shipper nhận toàn bộ (demo)
     return {
       todayIncome: totalIncome,
-      completedCount: completedCount,
-      activeHours: '5h 30p' // Mock hard value or calculate from login time if available
+      completedCount: completedOrders.length,
+      activeHours: '8h 00p'
     };
   }
 
-  // Profile for ProfilePage
   getShipperProfile(): ShipperProfile {
-    // Find the 'shipper' role user from INITIAL_USERS
-    // In a real app, this would use the logged-in user's ID
-    const shipperUser = this.users.find(u => u.role === 'shipper');
-    
-    if (shipperUser) {
-        return {
-            name: shipperUser.fullname,
-            email: shipperUser.email,
-            avatar: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&auto=format&fit=crop&q=60', // Mock avatar
-            rank: 'Shipper Cao Cấp',
-            joinDate: new Date(shipperUser.created_at).toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' }),
-            phone: shipperUser.phone_number || '',
-            address: '123 Nguyễn Văn Cừ, Quận 5, TP. Hồ Chí Minh',
-            dob: shipperUser.birthday || ''
-        };
-    }
-
-    // Fallback if not found - Return empty strings as requested
+    const shipper = this.users.find(u => u.role === 'shipper');
     return {
-        name: '',
-        email: '',
-        avatar: '',
-        rank: '',
-        joinDate: '',
-        phone: '',
-        address: '',
-        dob: ''
+        name: shipper?.fullname || 'Shipper',
+        email: shipper?.email || '',
+        avatar: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&q=60',
+        rank: 'Tài xế 5 sao',
+        joinDate: shipper?.created_at || '',
+        phone: shipper?.phone_number || '',
+        address: 'Hà Nội',
+        dob: shipper?.birthday || ''
     };
   }
 
-  // --- USER OPERATIONS ---
+  // --- COMMON GETTERS ---
   getUsers() { return [...this.users]; }
   getUserById(id: string) { return this.users.find(u => u.user_id === id); }
   getUserByEmail(email: string) { return this.users.find(u => u.email === email); }
@@ -175,129 +289,30 @@ class MockDatabase {
   }
   deleteUser(id: string) { this.users = this.users.filter(u => u.user_id !== id); }
 
-  // --- RESTAURANT OPERATIONS ---
-  getRestaurants() {
-    return this.restaurants.map(r => {
-      const stats = this.getRestaurantStats(r.id);
-      return { ...r, reviewsCount: stats.count, rating: stats.count > 0 ? stats.rating : (r.rating || 5.0) };
-    });
-  }
-  getRestaurantById(id: string) {
-    const r = this.restaurants.find(r => r.id === id);
-    if (!r) return undefined;
-    const stats = this.getRestaurantStats(r.id);
-    return { ...r, reviewsCount: stats.count, rating: stats.count > 0 ? stats.rating : (r.rating || 5.0) };
-  }
-  createRestaurant(restaurant: any) { this.restaurants.unshift(restaurant); return restaurant; }
+  getRestaurants() { return [...this.restaurants]; }
+  getRestaurantById(id: string) { return this.restaurants.find(r => r.id === id); }
+  deleteRestaurant(id: string) { this.restaurants = this.restaurants.filter(r => r.id !== id); }
   updateRestaurant(id: string, data: any) {
-    const index = this.restaurants.findIndex(r => r.id === id);
-    if (index !== -1) { this.restaurants[index] = { ...this.restaurants[index], ...data }; return this.restaurants[index]; }
+    const idx = this.restaurants.findIndex(r => r.id === id);
+    if (idx !== -1) { this.restaurants[idx] = { ...this.restaurants[idx], ...data }; return this.restaurants[idx]; }
     return null;
   }
-  deleteRestaurant(id: string) { this.restaurants = this.restaurants.filter(r => r.id !== id); }
 
-  // --- FOOD & PRODUCT OPERATIONS ---
-  getFoods() { return this.foods.filter(f => this.isRestaurantActive(f.restaurantId)); }
-  getFoodsByRestaurantId(restaurantId: string) { return this.foods.filter(f => f.restaurantId === restaurantId); }
-  getFoodById(id: string) {
-    const food = this.foods.find(f => f.id === id);
-    if (!food) return undefined;
-    if (!this.isRestaurantActive(food.restaurantId)) { return undefined; }
-    return food;
-  }
+  getFoods() { return [...this.foods]; }
+  getFoodsByRestaurantId(resId: string) { return this.foods.filter(f => f.restaurantId === resId); }
+  getFoodById(id: string) { return this.foods.find(f => f.id === id); }
+  
   getCategories() { return [...this.categories]; }
+  getVouchers() { return [...this.vouchers]; }
+  getPromotions() { return [...this.promotions]; }
   getSuggestions() { return [...this.suggestions]; }
 
-  // --- MARKETING OPERATIONS ---
-  getVouchers() { return [...this.vouchers]; }
-  getPromotions() {
-    return this.promotions.filter(p => {
-        const food = this.foods.find(f => f.id === p.foodId);
-        if (!food) return false;
-        return this.isRestaurantActive(food.restaurantId);
-    });
-  }
-
-  // --- REVIEW OPERATIONS ---
   getReviewsByFoodId(foodId: string) { return this.reviews.filter(r => r.foodId === foodId); }
   addReview(review: Review) { this.reviews.unshift(review); return review; }
 
-  // --- ORDER OPERATIONS ---
-  getOrders() { return [...this.orders]; }
-  deleteOrder(id: string) { this.orders = this.orders.filter(o => o.id !== id); }
-
-  // --- DASHBOARD OPERATIONS ---
-  getDashboardData(selectedYear?: number) {
-    const orders = this.orders;
-    const targetYear = selectedYear || new Date().getFullYear();
-    let totalRevenue = 0;
-    const statusCounts = { 'COMPLETED': 0, 'PENDING': 0, 'DELIVERING': 0, 'CANCELLED': 0 };
-    const monthlyRevenue = Array(12).fill(0);
-    const restaurantRevenue: Record<string, number> = {};
-    const itemSales: Record<string, { name: string, image: string, count: number }> = {};
-
-    orders.forEach(order => {
-        const status = order.status as 'COMPLETED' | 'PENDING' | 'DELIVERING' | 'CANCELLED';
-        if (statusCounts[status] !== undefined) { statusCounts[status]++; }
-        if (order.status === 'COMPLETED') {
-            totalRevenue += order.totalAmount;
-            const resName = order.restaurantName || 'Unknown';
-            restaurantRevenue[resName] = (restaurantRevenue[resName] || 0) + order.totalAmount;
-            const foodId = order.foodId;
-            if (foodId) {
-                if (!itemSales[foodId]) {
-                    const rawName = order.description || 'Món ăn';
-                    const cleanName = rawName.replace(/\(x\d+\)/g, '').trim();
-                    itemSales[foodId] = { name: cleanName, image: order.imageUrl || '', count: 0 };
-                }
-                const qtyMatch = order.description?.match(/\(x(\d+)\)/);
-                const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
-                itemSales[foodId].count += qty;
-            }
-        }
-        const datePart = order.orderTime.split('•')[1]?.trim();
-        if (datePart) {
-            const [day, month, yearStr] = datePart.split('/');
-            const monthIndex = parseInt(month, 10) - 1;
-            const year = parseInt(yearStr, 10);
-            if (year === targetYear && monthIndex >= 0 && monthIndex < 12) {
-                 if (order.status === 'COMPLETED') { monthlyRevenue[monthIndex] += order.totalAmount; }
-            }
-        }
-    });
-
-    const revenueChartData = monthlyRevenue.map((amount, index) => ({ name: `T${index + 1}`, value: amount }));
-    const statusChartData = [
-        { name: 'Hoàn thành', value: statusCounts.COMPLETED, color: '#10B981' },
-        { name: 'Đang chuẩn bị', value: statusCounts.PENDING, color: '#F59E0B' },
-        { name: 'Đang giao', value: statusCounts.DELIVERING, color: '#3B82F6' },
-        { name: 'Đã hủy', value: statusCounts.CANCELLED, color: '#EF4444' },
-    ];
-    const recentActivities = orders.slice(0, 5).map(order => {
-        let action = 'vừa đặt đơn hàng';
-        let type = 'order';
-        if (order.status === 'COMPLETED') { action = 'đã hoàn thành đơn'; type = 'delivery'; }
-        else if (order.status === 'CANCELLED') { action = 'đã hủy đơn hàng'; type = 'cancellation'; }
-        else if (order.status === 'DELIVERING') { action = 'đang được giao từ'; type = 'delivery'; }
-        else if (order.status === 'PENDING') { action = 'vừa đặt đơn tại'; type = 'order'; }
-        const userName = order.customer || 'Khách hàng';
-        return { id: order.id, user: userName, action: action, target: order.restaurantName, time: order.orderTime.split('•')[0].trim(), type: type };
-    });
-    const topRestaurants = Object.entries(restaurantRevenue)
-        .map(([name, revenue], index) => ({
-            id: `#RES-TOP-${index+1}`, name: name, revenue: revenue, logoInitial: name.charAt(0),
-            color: index === 0 ? 'bg-red-50 text-red-600' : index === 1 ? 'bg-yellow-50 text-yellow-600' : 'bg-blue-50 text-blue-600'
-        })).sort((a, b) => b.revenue - a.revenue).slice(0, 3);
-    const topItems = Object.entries(itemSales)
-        .map(([id, data]) => ({ id: id, name: data.name, sales: data.count.toString(), image: data.image }))
-        .sort((a, b) => parseInt(b.sales) - parseInt(a.sales)).slice(0, 5);
-
-    return {
-      summary: { totalRevenue: totalRevenue, todayRevenue: 0, totalUsers: this.users.length, totalRestaurants: this.restaurants.length },
-      revenue: revenueChartData, status: statusChartData, activities: recentActivities,
-      topItems: topItems.length > 0 ? topItems : [],
-      topRestaurants: topRestaurants.length > 0 ? topRestaurants : INITIAL_DASHBOARD_DATA.topRestaurants
-    };
+  // Dashboard logic (Simplified mapping)
+  getDashboardData(year?: number) {
+    return this.dashboardData; // Keep static for now, or calculate from masterOrders similarly
   }
 }
 

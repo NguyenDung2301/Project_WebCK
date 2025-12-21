@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Star, MapPin, Clock, Plus, Minus, ShoppingCart, ChevronRight, Heart, Lock } from 'lucide-react';
@@ -6,10 +7,14 @@ import { getFoodByIdApi, getFoodsApi } from '../../api/productApi';
 import { getVouchersApi } from '../../api/voucherApi';
 import { getReviewsByFoodIdApi } from '../../api/reviewApi';
 import { getRestaurantByIdApi } from '../../api/restaurantApi';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { LoginRequestModal } from '../../components/common/LoginRequestModal';
 
 export const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { isAuthenticated } = useAuthContext();
+  
   const [quantity, setQuantity] = useState(1);
   const [food, setFood] = useState<FoodItem | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -17,6 +22,9 @@ export const ProductDetailPage: React.FC = () => {
   const [relatedFoods, setRelatedFoods] = useState<FoodItem[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Login Modal State
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,10 +92,18 @@ export const ProductDetailPage: React.FC = () => {
   const totalPrice = food.price * quantity;
 
   const handleOrderNow = () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     navigate('/checkout', { state: { food, quantity } });
   };
 
   const handleApplyVoucher = (voucher: Voucher) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     navigate('/checkout', { state: { food, quantity, voucher } });
   };
 
@@ -313,6 +329,12 @@ export const ProductDetailPage: React.FC = () => {
           ))}
         </div>
       </section>
+
+      {/* Login Request Modal */}
+      <LoginRequestModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
     </div>
   );
 };

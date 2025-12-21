@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Ticket, CreditCard, ChevronRight, CheckCircle2, Lock, Eye, EyeOff, Check, Wallet, Search, Plus, Heart } from 'lucide-react';
+import { MapPin, Ticket, CreditCard, ChevronRight, CheckCircle2, Lock, Eye, EyeOff, Check, Wallet, Search, Plus, Heart, Loader2 } from 'lucide-react';
 import { FoodItem, UserProfile, Voucher } from '../../types/common';
 import { getVouchersApi } from '../../api/voucherApi';
+import { createOrderApi } from '../../api/orderApi';
 import { useAuthContext } from '../../contexts/AuthContext';
 
 const DEFAULT_FOOD: FoodItem = {
@@ -12,7 +14,8 @@ const DEFAULT_FOOD: FoodItem = {
   imageUrl: 'https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=200&auto=format&fit=crop',
   rating: 4.8,
   description: '',
-  category: 'noodles'
+  category: 'noodles',
+  restaurantId: 'res-1'
 };
 
 export const CheckoutPage: React.FC = () => {
@@ -49,7 +52,8 @@ export const CheckoutPage: React.FC = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   
-  // Password Logic
+  // States
+  const [isProcessing, setIsProcessing] = useState(false);
   const [password, setPassword] = useState('');
   const [showPasswordText, setShowPasswordText] = useState(false);
   const [passwordError, setPasswordError] = useState('');
@@ -78,9 +82,40 @@ export const CheckoutPage: React.FC = () => {
   // Ensure total doesn't go below 0
   const total = Math.max(0, subtotal + deliveryFee - discount);
 
+  // Helper to submit order
+  const submitOrder = async () => {
+    setIsProcessing(true);
+    try {
+      // Build Payload based on MasterOrder structure
+      const payload = {
+        userId: user?.id || 'usr-1',
+        restaurantId: food.restaurantId || 'res-1',
+        items: [{ 
+          foodId: food.id, 
+          quantity: quantity, 
+          price: food.price 
+        }],
+        totalAmount: total,
+        deliveryAddress: userProfile.address,
+        paymentMethod: paymentMethod === 'wallet' ? 'Wallet' : 'Cash',
+      };
+
+      // Call API
+      await createOrderApi(payload as any);
+      
+      // Show success
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error('Failed to create order', error);
+      alert('Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleConfirmClick = () => {
     if (paymentMethod === 'cash') {
-      setShowSuccessModal(true);
+      submitOrder();
     } else {
       if (userProfile.balance < total) {
           alert('Số dư không đủ');
@@ -90,14 +125,13 @@ export const CheckoutPage: React.FC = () => {
     }
   };
 
-  const handlePasswordConfirm = () => {
+  const handlePasswordConfirm = async () => {
     // Simple mock validation
     if (password.length > 0) { 
-      // In real app, verify against API
+      setPasswordError('');
       setShowPasswordModal(false);
       setPassword('');
-      setPasswordError('');
-      setTimeout(() => setShowSuccessModal(true), 300);
+      await submitOrder();
     } else {
       setPasswordError('Vui lòng nhập mật khẩu.');
     }
@@ -267,12 +301,25 @@ export const CheckoutPage: React.FC = () => {
                 <span className="font-bold text-gray-800">Tổng thanh toán</span>
                 <span className="text-3xl font-black text-[#EE501C]">{total.toLocaleString()}đ</span>
               </div>
+              
               <button 
                 onClick={handleConfirmClick}
-                disabled={paymentMethod === 'wallet' && userProfile.balance < total}
-                className={`w-full text-white font-bold py-4 rounded-2xl shadow-xl transform active:scale-95 transition-all mt-4 ${paymentMethod === 'wallet' && userProfile.balance < total ? 'bg-gray-300 cursor-not-allowed shadow-none' : 'bg-[#EE501C] hover:bg-[#d44719] shadow-orange-100'}`}
+                disabled={(paymentMethod === 'wallet' && userProfile.balance < total) || isProcessing}
+                className={`w-full text-white font-bold py-4 rounded-2xl shadow-xl transform active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 ${
+                  (paymentMethod === 'wallet' && userProfile.balance < total) || isProcessing 
+                    ? 'bg-gray-300 cursor-not-allowed shadow-none' 
+                    : 'bg-[#EE501C] hover:bg-[#d44719] shadow-orange-100'
+                }`}
               >
-                {paymentMethod === 'wallet' && userProfile.balance < total ? 'Số dư không đủ' : 'Xác nhận thanh toán'}
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> Đang xử lý...
+                  </>
+                ) : (
+                  paymentMethod === 'wallet' && userProfile.balance < total 
+                    ? 'Số dư không đủ' 
+                    : 'Xác nhận thanh toán'
+                )}
               </button>
             </div>
           </div>
@@ -284,7 +331,7 @@ export const CheckoutPage: React.FC = () => {
       {/* PASSWORD MODAL */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#221510]/60 backdrop-blur-sm" onClick={() => setShowPasswordModal(false)}></div>
+          <div className="absolute inset-0 bg-[#221510]/60 backdrop-blur-sm" onClick={() => !isProcessing && setShowPasswordModal(false)}></div>
           <div className="relative w-full max-w-[400px] bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             {/* Header */}
             <div className="bg-[#EE501C] p-6 pb-10 text-center relative overflow-hidden">
@@ -311,6 +358,7 @@ export const CheckoutPage: React.FC = () => {
                       autoFocus
                       type={showPasswordText ? "text" : "password"}
                       value={password}
+                      disabled={isProcessing}
                       onChange={(e) => { setPassword(e.target.value); if(passwordError) setPasswordError(''); }}
                       className="w-full pl-4 pr-12 py-3.5 bg-[#f8f6f6] border-2 border-transparent focus:border-[#EE501C]/20 focus:bg-white focus:ring-0 rounded-xl transition-all font-bold text-[#1b110d] placeholder:text-gray-400 placeholder:font-normal text-lg"
                       placeholder="••••••••"
@@ -332,15 +380,18 @@ export const CheckoutPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <button 
+                    disabled={isProcessing}
                     onClick={() => { setShowPasswordModal(false); setPassword(''); setPasswordError(''); }}
                     className="py-3.5 rounded-xl font-bold text-[#9a5f4c] bg-white border-2 border-[#f3eae7] hover:bg-[#f8f6f6] hover:text-[#1b110d] hover:border-gray-300 transition-all"
                   >
                     Hủy
                   </button>
                   <button 
+                    disabled={isProcessing}
                     onClick={handlePasswordConfirm}
-                    className="py-3.5 rounded-xl font-bold text-white bg-[#EE501C] hover:bg-[#d94110] shadow-lg shadow-orange-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                    className="py-3.5 rounded-xl font-bold text-white bg-[#EE501C] hover:bg-[#d94110] shadow-lg shadow-orange-200 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
                   >
+                    {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
                     Xác nhận
                   </button>
                 </div>

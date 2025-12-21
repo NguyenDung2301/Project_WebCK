@@ -1,9 +1,9 @@
 
 export enum OrderStatus {
-  Pending = 'Pending',
-  Delivering = 'Delivering',
-  Completed = 'Completed',
-  Cancelled = 'Cancelled'
+  Pending = 'PENDING',
+  Delivering = 'DELIVERING',
+  Completed = 'COMPLETED',
+  Cancelled = 'CANCELLED'
 }
 
 export enum Page {
@@ -19,6 +19,14 @@ export interface OrderItem {
   price: number;
 }
 
+export interface ShipperCustomer {
+  name: string;
+  phone: string;
+  email?: string;
+  avatar?: string;
+  rank?: string;
+}
+
 export interface ShipperOrder {
   id: string;
   storeName: string;
@@ -30,6 +38,7 @@ export interface ShipperOrder {
   time: string;
   totalAmount: number;
   items: OrderItem[];
+  customer?: ShipperCustomer;
 }
 
 export interface ShipperProfile {

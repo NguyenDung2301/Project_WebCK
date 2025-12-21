@@ -1,3 +1,4 @@
+
 /**
  * Authentication Service
  * File này chứa các nghiệp vụ liên quan đến xác thực người dùng
@@ -51,7 +52,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginResult> => 
 
     if (credentials.email === 'admin@gmail.com') {
       mockPayload = {
-        user_id: 'mock-admin-id',
+        user_id: 'usr-admin',
         email: 'admin@gmail.com',
         fullname: 'Admin Test',
         role: 'admin', // BackendRole
@@ -59,17 +60,17 @@ export const login = async (credentials: LoginRequest): Promise<LoginResult> => 
       };
     } else if (credentials.email === 'user@gmail.com') {
       mockPayload = {
-        user_id: 'mock-user-id',
+        user_id: 'usr-1', // Match INITIAL_DATA user
         email: 'user@gmail.com',
-        fullname: 'User Test',
+        fullname: 'Nguyễn Văn A',
         role: 'user', // BackendRole
         exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
       };
     } else if (credentials.email === 'shipper@food.com') {
         mockPayload = {
-          user_id: 'mock-shipper-id',
+          user_id: 'usr-shipper',
           email: 'shipper@food.com',
-          fullname: 'Nguyễn Văn A',
+          fullname: 'Trần Văn Shipper',
           role: 'shipper', // BackendRole
           exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
         };

@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
@@ -7,6 +8,8 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl';
+  hideCloseButton?: boolean;
+  className?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({ 
@@ -14,7 +17,9 @@ export const Modal: React.FC<ModalProps> = ({
   onClose, 
   title, 
   children, 
-  maxWidth = 'md' 
+  maxWidth = 'md',
+  hideCloseButton = false,
+  className = ''
 }) => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -54,20 +59,22 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       {/* Modal Content */}
-      <div className={`relative bg-white text-gray-900 rounded-2xl shadow-2xl w-full ${maxWidthClasses[maxWidth]} transform transition-all animate-in fade-in zoom-in-95 duration-200 overflow-hidden`}>
+      <div className={`relative bg-white text-gray-900 shadow-2xl w-full ${maxWidthClasses[maxWidth]} transform transition-all animate-in fade-in zoom-in-95 duration-200 overflow-hidden ${className ? className : 'rounded-2xl'}`}>
         {/* Header */}
         {(title) && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h3 className="text-lg font-bold text-gray-800">{title}</h3>
-            <button 
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition-colors"
-            >
-              <X size={20} />
-            </button>
+            {!hideCloseButton && (
+              <button 
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            )}
           </div>
         )}
-        {!title && (
+        {!title && !hideCloseButton && (
            <button 
            onClick={onClose}
            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-full transition-colors z-10"

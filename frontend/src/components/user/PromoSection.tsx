@@ -1,12 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getPromotionsApi } from '../../api/productApi';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { LoginRequestModal } from '../common/LoginRequestModal';
 
 export const PromoSection: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthContext();
   const [promotions, setPromotions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     const fetchPromos = async () => {
@@ -23,6 +28,10 @@ export const PromoSection: React.FC = () => {
   }, []);
 
   const handlePromoClick = (foodId: string) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     navigate(`/product/${foodId}`);
   };
 
@@ -62,6 +71,11 @@ export const PromoSection: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <LoginRequestModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
     </section>
   );
 };

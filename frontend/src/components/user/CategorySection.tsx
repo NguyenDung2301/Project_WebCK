@@ -1,12 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCategoriesApi } from '../../api/productApi';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { LoginRequestModal } from '../common/LoginRequestModal';
 
 export const CategorySection: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthContext();
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -23,6 +28,10 @@ export const CategorySection: React.FC = () => {
   }, []);
 
   const handleCategoryClick = (categoryName: string) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
     navigate('/search', { state: { query: categoryName } });
   };
 
@@ -52,6 +61,11 @@ export const CategorySection: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <LoginRequestModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
     </section>
   );
 };
