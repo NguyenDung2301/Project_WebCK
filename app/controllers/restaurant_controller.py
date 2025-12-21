@@ -10,15 +10,35 @@ class RestaurantController:
     """Restaurant Controller - Xử lý HTTP requests cho nhà hàng"""
 
     def list_all(self):
+        """User xem danh sách nhà hàng đang hoạt động"""
         try:
             data = restaurant_service.get_all_restaurants()
             return jsonify({'success': True, 'data': data}), 200
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
+    def admin_list_all(self):
+        """Admin xem TẤT CẢ nhà hàng (bao gồm cả bị khóa)"""
+        try:
+            data = restaurant_service.admin_get_all_restaurants()
+            return jsonify({'success': True, 'data': data}), 200
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
     def get_by_id(self, restaurant_id: str):
+        """User xem chi tiết nhà hàng (chỉ nếu đang hoạt động)"""
         try:
             data = restaurant_service.get_restaurant_by_id(restaurant_id)
+            return jsonify({'success': True, 'data': data}), 200
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 404
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def admin_get_by_id(self, restaurant_id: str):
+        """Admin xem chi tiết nhà hàng (kể cả bị khóa)"""
+        try:
+            data = restaurant_service.admin_get_restaurant_by_id(restaurant_id)
             return jsonify({'success': True, 'data': data}), 200
         except ValueError as e:
             return jsonify({'success': False, 'message': str(e)}), 404
@@ -81,6 +101,23 @@ class RestaurantController:
                 return jsonify({'success': False, 'message': 'Thiếu tham số q'}), 400
             data = restaurant_service.search_for_admin(q)
             return jsonify({'success': True, 'data': data}), 200
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def toggle_status(self, restaurant_id: str):
+        """Admin kích hoạt/vô hiệu hóa nhà hàng"""
+        try:
+            if not request.json:
+                return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
+            
+            status = request.json.get('status')
+            if status is None:
+                return jsonify({'success': False, 'message': 'Thiếu trường status (true/false)'}), 400
+            
+            result = restaurant_service.toggle_restaurant_status(restaurant_id, status)
+            return jsonify({'success': True, 'message': result['message'], 'data': result['restaurant']}), 200
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 400
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 

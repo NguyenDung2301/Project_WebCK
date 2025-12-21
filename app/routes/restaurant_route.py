@@ -4,26 +4,42 @@ from middlewares.auth_middleware import admin_required, user_required, auth_requ
 
 restaurant_router = Blueprint("restaurant_router", __name__)
 
-# ==================== PUBLIC ROUTES ====================
+# ==================== USER ROUTES ====================
+# Lấy danh sách nhà hàng đang hoạt động
 @restaurant_router.route('/all', methods=['GET'])
 @auth_required
 def list_all():
+    """User xem danh sách nhà hàng đang hoạt động"""
     return restaurant_controller.list_all()
 
-# Lấy chi tiết nhà hàng theo ID (đầy đủ menu) - Chỉ user và admin
+# Lấy chi tiết nhà hàng (chỉ nếu đang hoạt động)
 @restaurant_router.route('/<restaurant_id>', methods=['GET'])
 @user_or_admin_required
 def get_by_id(restaurant_id: str):
+    """User xem chi tiết nhà hàng đang hoạt động"""
     return restaurant_controller.get_by_id(restaurant_id)
 
-# ==================== USER ROUTES ====================
-# Search cho user: chỉ tìm food và category
+# Search cho user: chỉ tìm food và category ở quán đang hoạt động
 @restaurant_router.route('/search', methods=['GET'])
 @user_required
 def search_for_users():
     return restaurant_controller.search_for_users()
 
 # ==================== ADMIN ROUTES ====================
+# Admin lấy TẤT CẢ nhà hàng (bao gồm cả bị khóa)
+@restaurant_router.route('/admin/all', methods=['GET'])
+@admin_required
+def admin_list_all():
+    """Admin xem TẤT CẢ nhà hàng"""
+    return restaurant_controller.admin_list_all()
+
+# Admin xem chi tiết nhà hàng (kể cả bị khóa)
+@restaurant_router.route('/admin/<restaurant_id>', methods=['GET'])
+@admin_required
+def admin_get_by_id(restaurant_id: str):
+    """Admin xem chi tiết nhà hàng (kể cả bị khóa)"""
+    return restaurant_controller.admin_get_by_id(restaurant_id)
+
 # Search cho admin: tìm restaurant, food và category
 @restaurant_router.route('/search_admin', methods=['GET'])
 @admin_required
@@ -47,3 +63,13 @@ def update(restaurant_id: str):
 @admin_required
 def delete(restaurant_id: str):
     return restaurant_controller.delete(restaurant_id)
+
+# Kích hoạt/Vô hiệu hóa nhà hàng - Chỉ admin
+@restaurant_router.route('/<restaurant_id>/toggle-status', methods=['PUT'])
+@admin_required
+def toggle_status(restaurant_id: str):
+    """
+    PUT /api/restaurants/<restaurant_id>/toggle-status - Admin kích hoạt/vô hiệu hóa nhà hàng
+    Body: {"status": true/false}
+    """
+    return restaurant_controller.toggle_status(restaurant_id)

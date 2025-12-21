@@ -28,6 +28,12 @@ def auth_required(f):
             if not security.validate_token_payload(payload):
                 return jsonify({'success': False,'message': 'Token không chứa đủ thông tin cần thiết'}), 401
             
+            # Kiểm tra tài khoản có bị khóa không
+            from services.user_service import user_service
+            user = user_service.find_by_id(payload['user_id'])
+            if user and not user.is_active:
+                return jsonify({'success': False,'message': 'Tài khoản của bạn đã bị khóa'}), 403
+            
             # Gắn user info vào request
             request.user_id = payload['user_id']
             request.user_email = payload['email']
@@ -95,6 +101,12 @@ def admin_required(f):
             
             payload = security.verify_token(token)
             
+            # Kiểm tra tài khoản có bị khóa không
+            from services.user_service import user_service
+            user = user_service.find_by_id(payload['user_id'])
+            if user and not user.is_active:
+                return jsonify({'success': False,'message': 'Tài khoản của bạn đã bị khóa'}), 403
+            
             # Check role
             token_role = payload.get('role')
             if token_role != Role.ADMIN.value:
@@ -129,6 +141,12 @@ def shipper_required(f):
                 return jsonify({'success': False,'message': 'Format token không hợp lệ'}), 401
 
             payload = security.verify_token(token)
+
+            # Kiểm tra tài khoản có bị khóa không
+            from services.user_service import user_service
+            user = user_service.find_by_id(payload['user_id'])
+            if user and not user.is_active:
+                return jsonify({'success': False,'message': 'Tài khoản của bạn đã bị khóa'}), 403
 
             token_role = payload.get('role')
             if token_role != Role.SHIPPER.value:
@@ -165,6 +183,12 @@ def user_required(f):
 
             payload = security.verify_token(token)
 
+            # Kiểm tra tài khoản có bị khóa không
+            from services.user_service import user_service
+            user = user_service.find_by_id(payload['user_id'])
+            if user and not user.is_active:
+                return jsonify({'success': False, 'message': 'Tài khoản của bạn đã bị khóa'}), 403
+
             token_role = payload.get('role')
             if token_role != Role.USER.value:
                 return jsonify({'success': False, 'message': f'Bạn không có quyền truy cập. Role hiện tại: {token_role}'}), 403
@@ -200,6 +224,12 @@ def user_or_admin_required(f):
                 return jsonify({'success': False, 'message': 'Format token không hợp lệ'}), 401
 
             payload = security.verify_token(token)
+
+            # Kiểm tra tài khoản có bị khóa không
+            from services.user_service import user_service
+            user = user_service.find_by_id(payload['user_id'])
+            if user and not user.is_active:
+                return jsonify({'success': False, 'message': 'Tài khoản của bạn đã bị khóa'}), 403
 
             token_role = payload.get('role')
             if token_role not in [Role.USER.value, Role.ADMIN.value]:

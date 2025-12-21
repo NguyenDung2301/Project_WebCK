@@ -175,5 +175,22 @@ class UserController:
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
+    def toggle_user_status(self, user_id: str):
+        """Admin khóa/mở khóa tài khoản user"""
+        try:
+            if not request.json:
+                return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
+            
+            is_active = request.json.get('is_active')
+            if is_active is None:
+                return jsonify({'success': False, 'message': 'Thiếu trường is_active (true/false)'}), 400
+            
+            result = user_service.toggle_user_status(user_id, is_active)
+            return jsonify({'success': True, 'message': result['message'], 'data': result['user']}), 200
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
 # Khởi tạo controller instance
 user_controller = UserController()

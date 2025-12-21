@@ -50,6 +50,7 @@ class UserResponse(BaseModel):
     balance: float
     birthday: Optional[datetime] = None    
     gender: Optional[GenderEnum] = None
+    is_active: bool = Field(default=True, description="Trạng thái tài khoản (True: hoạt động, False: bị khóa)")
     created_at: datetime
     role: Role
 

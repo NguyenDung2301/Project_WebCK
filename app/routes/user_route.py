@@ -63,3 +63,12 @@ def withdraw_balance():
     Body rỗng hoặc không có amount: Rút toàn bộ
     """
     return user_controller.withdraw()
+
+@user_router.route('/<user_id>/toggle-status', methods=['PUT'])
+@admin_required
+def toggle_user_status(user_id):
+    """
+    PUT /api/users/<user_id>/toggle-status - Admin khóa/mở khóa tài khoản
+    Body: {"is_active": true/false}
+    """
+    return user_controller.toggle_user_status(user_id)

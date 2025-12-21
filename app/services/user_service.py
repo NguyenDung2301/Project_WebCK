@@ -15,6 +15,7 @@ from schemas.user_schema import (
     UserLoginResponse,
     UserRoleUpdateRequest,
     UserTopUpRequest,
+    WithdrawRequest
 )
 from utils.roles import Role
 
@@ -51,6 +52,7 @@ class UserService:
                 balance=0.0,
                 birthday=user_data.birthday,
                 gender=user_data.gender,
+                is_active=True,
                 created_at=datetime.now(),
                 role=Role.USER,
             )
@@ -120,6 +122,10 @@ class UserService:
         user = self.find_by_email(login_data.email)
         if not user:
             raise ValueError('Email hoặc mật khẩu không đúng')
+        
+        # Kiểm tra tài khoản có bị khóa không
+        if not user.is_active:
+            raise ValueError('Tài khoản của bạn đã bị khóa')
         
         # Kiểm tra password
         if not security.verify_password(login_data.password, user.password):
@@ -276,7 +282,6 @@ class UserService:
 
     def withdraw_balance(self, user_id: str, withdraw_data: 'WithdrawRequest') -> Dict:
         """Shipper rút tiền từ balance (rút toàn bộ hoặc một phần)"""
-        from schemas.user_schema import WithdrawRequest
         
         # Kiểm tra user tồn tại và là shipper
         user = self.find_by_id(user_id)
@@ -318,6 +323,39 @@ class UserService:
             'message': f'Rút tiền thành công {amount_to_withdraw:,.0f} VNĐ',
             'withdrawn_amount': float(amount_to_withdraw),
             'remaining_balance': float(updated_user.balance),
+            'user': UserResponse(**updated_user.to_dict()).model_dump()
+        }
+
+    def toggle_user_status(self, user_id: str, is_active: bool) -> Dict:
+        """Admin khóa/mở khóa tài khoản user"""
+        # Kiểm tra user tồn tại
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+        
+        # Không cho khóa tài khoản admin
+        if user.role == Role.ADMIN:
+            raise ValueError('Không thể khóa tài khoản admin')
+        
+        # Cập nhật trạng thái
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {
+                '$set': {
+                    'is_active': is_active,
+                    'updated_at': datetime.now()
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật trạng thái tài khoản')
+        
+        updated_user = self.find_by_id(user_id)
+        action = "mở khóa" if is_active else "khóa"
+        
+        return {
+            'message': f'Đã {action} tài khoản thành công',
             'user': UserResponse(**updated_user.to_dict()).model_dump()
         }
 

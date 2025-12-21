@@ -20,6 +20,7 @@ class User(BaseModel):
     balance: float = 0.0
     birthday: Optional[datetime] = None
     gender: Optional[GenderEnum] = None
+    is_active: bool = Field(default=True, description="Trạng thái tài khoản (True: hoạt động, False: bị khóa)")
     created_at: datetime = Field(default_factory=datetime.now)
     role: Role
 
@@ -39,6 +40,7 @@ class User(BaseModel):
             'balance': float(self.balance),
             'birthday': self.birthday.isoformat() if self.birthday else None,
             'gender': self.gender.value if self.gender else None,
+            'is_active': self.is_active,
             'created_at': self.created_at.isoformat(),
             'role': self.role.value if self.role else None
         }
@@ -54,6 +56,7 @@ class User(BaseModel):
             'balance': float(self.balance),
             'birthday': self.birthday,
             'gender': self.gender.value if self.gender else None,
+            'is_active': self.is_active,
             'created_at': self.created_at,
             'role': self.role.value if self.role else None
         }

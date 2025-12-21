@@ -102,11 +102,12 @@ class RestaurantService:
             return False
 
     def search_foods_by_name_and_category(self, query: str) -> List[Dict]:
-        """Tìm món ăn (Aggregation phức tạp) - Trả về List Dict (đã format sẵn để dùng)"""
+        """Tìm món ăn (Aggregation phức tạp) - CHỈ TÌM Ở QUÁN ĐANG HOẠT ĐỘNG - Trả về List Dict (đã format sẵn để dùng)"""
         results: List[Dict] = []
         
         # 1. Pipeline Search món ăn
         pipeline_food = [
+            {'$match': {'status': True}},  # CHỈ LẤY QUÁN ĐANG HOẠT ĐỘNG
             {'$unwind': {'path': '$menu', 'preserveNullAndEmptyArrays': False}},
             {'$unwind': {'path': '$menu.items', 'preserveNullAndEmptyArrays': False}},
             {'$match': {'menu.items.name': {'$regex': query, '$options': 'i'}}},
@@ -153,6 +154,7 @@ class RestaurantService:
         
         # 2. Pipeline Search Category
         pipeline_category = [
+            {'$match': {'status': True}},  # CHỈ LẤY QUÁN ĐANG HOẠT ĐỘNG
             {'$unwind': {'path': '$menu', 'preserveNullAndEmptyArrays': False}},
             {'$match': {'menu.category': {'$regex': query, '$options': 'i'}}},
             {'$unwind': {'path': '$menu.items', 'preserveNullAndEmptyArrays': False}},
@@ -180,7 +182,15 @@ class RestaurantService:
         return results
 
     def search_restaurants_by_name(self, query: str) -> List[Dict]:
-        """Tìm nhà hàng theo tên - Trả về List Simple Response Dict"""
+        """Tìm nhà hàng theo tên (CHỈ QUÁN ĐANG HOẠT ĐỘNG) - Trả về List Simple Response Dict"""
+        restaurants_cursor = self.collection.find({
+            'name': {'$regex': query, '$options': 'i'},
+            'status': True  # Chỉ tìm quán đang hoạt động
+        })
+        return [self._to_simple_response(self._to_model(doc)) for doc in restaurants_cursor]
+
+    def admin_search_restaurants_by_name(self, query: str) -> List[Dict]:
+        """Admin tìm nhà hàng theo tên (TẤT CẢ) - Trả về List Simple Response Dict"""
         restaurants_cursor = self.collection.find({'name': {'$regex': query, '$options': 'i'}})
         return [self._to_simple_response(self._to_model(doc)) for doc in restaurants_cursor]
 
@@ -202,19 +212,38 @@ class RestaurantService:
     # ==================== LAYER 2: Business Logic (Service Layer) ====================
 
     def get_all_restaurants(self) -> List[Dict]:
-        """Lấy danh sách tất cả nhà hàng (rút gọn)"""
+        """Lấy danh sách nhà hàng đang hoạt động (cho User)"""
         try:
-            restaurants = self.find_all() # Gọi CRUD
-            return [self._to_simple_response(r) for r in restaurants] # Format
+            # Chỉ lấy nhà hàng có status: True
+            restaurants_cursor = self.collection.find({'status': True})
+            return [self._to_simple_response(self._to_model(doc)) for doc in restaurants_cursor]
+        except Exception as e:
+            raise ValueError(f'Lỗi khi lấy danh sách nhà hàng: {str(e)}')
+
+    def admin_get_all_restaurants(self) -> List[Dict]:
+        """Lấy TẤT CẢ nhà hàng (bao gồm cả bị khóa) - CHỈ ADMIN"""
+        try:
+            restaurants = self.find_all()  # Lấy tất cả không filter
+            return [self._to_simple_response(r) for r in restaurants]
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy danh sách nhà hàng: {str(e)}')
 
     def get_restaurant_by_id(self, restaurant_id: str) -> Dict:
-        """Lấy thông tin nhà hàng đầy đủ theo ID"""
-        restaurant = self.find_by_id(restaurant_id) # Gọi CRUD
-        if not restaurant: # Logic kiểm tra
+        """Lấy thông tin nhà hàng đầy đủ theo ID (CHỈ NẾU ĐANG HOẠT ĐỘNG)"""
+        restaurant = self.find_by_id(restaurant_id)
+        if not restaurant:
             raise ValueError('Không tìm thấy nhà hàng')
-        return self._to_full_response(restaurant) # Format
+        # Kiểm tra status - User không thể xem quán bị khóa
+        if not restaurant.status:
+            raise ValueError('Nhà hàng này hiện không hoạt động')
+        return self._to_full_response(restaurant)
+
+    def admin_get_restaurant_by_id(self, restaurant_id: str) -> Dict:
+        """Admin lấy thông tin nhà hàng (kể cả bị khóa)"""
+        restaurant = self.find_by_id(restaurant_id)
+        if not restaurant:
+            raise ValueError('Không tìm thấy nhà hàng')
+        return self._to_full_response(restaurant)
 
     def create_restaurant(self, req: CreateRestaurantRequest) -> Dict:
         """Tạo nhà hàng mới - Kiểm tra trùng theo (name + address)"""
@@ -271,12 +300,12 @@ class RestaurantService:
             raise ValueError(f'Lỗi khi tìm kiếm: {str(e)}')
     
     def search_for_admin(self, query: str) -> Dict:
-        """Search cho ADMIN: Kết hợp 2 hàm CRUD khác nhau"""
+        """Search cho ADMIN: Kết hợp 2 hàm CRUD khác nhau (TẤT CẢ NHÀ HÀNG)"""
         try:
             # Logic: Admin cần cả 2 luồng dữ liệu riêng biệt
             result = {
-                'restaurants': self.search_restaurants_by_name(query), # CRUD 1
-                'foods': self.search_foods_by_name_and_category(query) # CRUD 2
+                'restaurants': self.admin_search_restaurants_by_name(query),  # Lấy tất cả
+                'foods': self.search_foods_by_name_and_category(query)  # Vẫn chỉ active (để test search)
             }
             return result
         except Exception as e:
@@ -298,5 +327,29 @@ class RestaurantService:
             raise ValueError(f'Không tìm thấy món ăn "{food_name}" trong nhà hàng')
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy giá món: {str(e)}')
+
+    def toggle_restaurant_status(self, restaurant_id: str, status: bool) -> Dict:
+        """Admin kích hoạt/vô hiệu hóa nhà hàng"""
+        # Kiểm tra nhà hàng tồn tại
+        restaurant = self.find_by_id(restaurant_id)
+        if not restaurant:
+            raise ValueError('Không tìm thấy nhà hàng')
+        
+        # Cập nhật trạng thái
+        result = self.collection.update_one(
+            {'_id': ObjectId(restaurant_id)},
+            {'$set': {'status': status}}
+        )
+        
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật trạng thái nhà hàng')
+        
+        updated_restaurant = self.find_by_id(restaurant_id)
+        action = "kích hoạt" if status else "vô hiệu hóa"
+        
+        return {
+            'message': f'Đã {action} nhà hàng thành công',
+            'restaurant': self._to_simple_response(updated_restaurant)
+        }
 
 restaurant_service = RestaurantService()
