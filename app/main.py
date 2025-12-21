@@ -13,6 +13,7 @@ from routes.payment_route import payment_router
 from routes.voucher_route import voucher_router
 from routes.review_route import review_router
 from routes.dashboard_route import dashboard_router
+from routes.cart_route import cart_router
 from db.connection import ping_db, init_indexes
 
 app = Flask(__name__)
@@ -36,6 +37,7 @@ app.register_blueprint(payment_router, url_prefix='/api/payments')
 app.register_blueprint(voucher_router, url_prefix='/api/vouchers')
 app.register_blueprint(review_router, url_prefix='/api/reviews')
 app.register_blueprint(dashboard_router, url_prefix='/api/dashboard')
+app.register_blueprint(cart_router, url_prefix='/api/cart')
 
 
 @app.route('/')

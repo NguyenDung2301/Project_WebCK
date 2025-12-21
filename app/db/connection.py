@@ -14,6 +14,7 @@ orders_collection = db['orders']
 payments_collection = db['payments']
 vouchers_collection = db['vouchers']
 reviews_collection = db['reviews']
+cart_collection = db['cart']
 
 def get_db():
     """Trả về database instance"""
@@ -84,6 +85,9 @@ def init_indexes():
         reviews_collection.create_index('restaurantId')
         reviews_collection.create_index([('restaurantId', 1), ('createdAt', -1)])  # Restaurant reviews sorted
         reviews_collection.create_index([('userId', 1), ('createdAt', -1)])  # User reviews sorted
+        
+        # Index cho cart collection
+        cart_collection.create_index('userId', unique=True)  # 1 cart per user
         
         print("MongoDB indexes created successfully")
     except Exception as e:
