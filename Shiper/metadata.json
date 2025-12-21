@@ -1,0 +1,7 @@
+{
+  "name": "Shipper Pro Dashboard",
+  "description": "A comprehensive dashboard for delivery partners to manage profiles, accept orders, track active deliveries, and view earnings history with AI-powered performance insights.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
