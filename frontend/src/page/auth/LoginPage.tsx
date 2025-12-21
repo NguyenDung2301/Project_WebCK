@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { AuthLayout } from '../../components/common/AuthLayout';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { getTokenPayload } from '../../services/authService';
 
 type LoginForm = {
   email: string;
@@ -42,9 +44,15 @@ export const LoginPage: React.FC = () => {
       setStatus('success');
       setMessage(result.message);
       
-      // Logic phân quyền: Admin vào Dashboard, User vào Trang chủ
-      if (result.isAdmin) {
+      // Logic phân quyền
+      // Lấy payload để check role chính xác hơn (isAdmin trong result đôi khi chỉ check admin)
+      const payload = getTokenPayload();
+      const role = payload?.role;
+
+      if (role === 'admin') {
         navigate('/admin');
+      } else if (role === 'shipper') {
+        navigate('/shipper');
       } else {
         navigate('/');
       }
@@ -136,6 +144,7 @@ export const LoginPage: React.FC = () => {
           <p className="font-bold">Tài khoản Test (Mock):</p>
           <p>User: user@gmail.com / 123456</p>
           <p>Admin: admin@gmail.com / 123456</p>
+          <p>Shipper: shipper@food.com / 123456 (Cần tạo nếu chưa có)</p>
         </div>
       </form>
     </AuthLayout>

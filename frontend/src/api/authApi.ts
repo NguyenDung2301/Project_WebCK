@@ -14,8 +14,16 @@ export type { LoginRequest, RegisterRequest, AuthResponse } from '../types/auth'
  * Mock JWT generation
  */
 const createMockToken = (user: BackendUser) => {
-  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = btoa(JSON.stringify({
+  // Fix: Encode Unicode strings (like Vietnamese names) before btoa
+  const encode = (str: string) => {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+      function toSolidBytes(match, p1) {
+          return String.fromCharCode(parseInt(p1, 16));
+      }));
+  };
+
+  const header = encode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const payload = encode(JSON.stringify({
     user_id: user.user_id,
     email: user.email,
     fullname: user.fullname,

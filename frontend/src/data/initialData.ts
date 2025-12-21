@@ -1,5 +1,17 @@
+
 import { BackendUser } from '../types/user';
 import { FoodItem, Voucher, Review, Restaurant } from '../types/common';
+import { ShipperOrder, OrderStatus } from '../types/shipper';
+
+// --- HELPER FOR DYNAMIC DATES ---
+// Returns date string in format DD/MM based on daysAgo offset from today
+const getDateStr = (daysAgo: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  return `${day}/${month}`;
+};
 
 // --- DASHBOARD DATA ---
 export const INITIAL_DASHBOARD_DATA = {
@@ -302,6 +314,198 @@ export const INITIAL_ORDERS: any[] = [
     totalAmount: 89000,
     status: 'CANCELLED',
     imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=200&auto=format&fit=crop',
+  }
+];
+
+// --- SHIPPER ORDERS DATA (Sync with Store) ---
+export const INITIAL_SHIPPER_ORDERS: ShipperOrder[] = [
+  // Delivering Orders
+  {
+    id: '#OD-9921',
+    storeName: 'Trà Sữa Koi Thé',
+    storeImage: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072914_omsuvg.png',
+    storeAddress: '45 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM',
+    deliveryAddress: 'Landmark 81, 720A Điện Biên Phủ, Bình Thạnh',
+    status: OrderStatus.Delivering,
+    paymentMethod: 'Cash',
+    time: '10:30',
+    totalAmount: 155000,
+    items: [
+      { name: 'Trà sữa trân châu hoàng kim (L)', quantity: 2, price: 55000 },
+      { name: 'Hồng trà macchiato (M)', quantity: 1, price: 45000 }
+    ]
+  },
+  {
+    id: '#OD-9922',
+    storeName: 'Cơm Tấm Cali',
+    storeImage: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=200&auto=format&fit=crop',
+    storeAddress: '236 Phan Xích Long, Phú Nhuận',
+    deliveryAddress: '12 Nguyễn Văn Bảo, Gò Vấp',
+    status: OrderStatus.Delivering,
+    paymentMethod: 'Wallet',
+    time: '11:15',
+    totalAmount: 89000,
+    items: [
+      { name: 'Cơm sườn non nướng', quantity: 1, price: 89000 }
+    ]
+  },
+  // Pending Orders
+  {
+    id: '#OD-9925',
+    storeName: 'Cơm Tấm Sài Gòn',
+    storeImage: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764460831/Screenshot_2025-11-30_070009_s8hzez.png',
+    storeAddress: '123 Nguyễn Huệ, Phường Bến Nghé, Quận 1',
+    deliveryAddress: 'Chung cư Millennium, 132 Bến Vân Đồn, Quận 4',
+    status: OrderStatus.Pending,
+    paymentMethod: 'Wallet',
+    time: '12:00',
+    totalAmount: 85000,
+    items: [
+      { name: 'Cơm sườn bì chả', quantity: 1, price: 65000 },
+      { name: 'Canh khổ qua', quantity: 1, price: 15000 },
+      { name: 'Trà đá', quantity: 1, price: 5000 }
+    ]
+  },
+  {
+    id: '#OD-9932',
+    storeName: 'Phúc Long Coffee & Tea',
+    storeImage: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070905_sde2iv.png',
+    storeAddress: '42 Ngô Đức Kế, Quận 1, TP.HCM',
+    deliveryAddress: 'Bitexco Financial Tower, Quận 1',
+    status: OrderStatus.Pending,
+    paymentMethod: 'Cash',
+    time: '14:20',
+    totalAmount: 110000,
+    items: [
+      { name: 'Trà đào cam sả (L)', quantity: 2, price: 55000 }
+    ]
+  },
+  {
+    id: '#OD-9940',
+    storeName: 'Gà Rán KFC',
+    storeImage: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462793/Screenshot_2025-11-29_092812_fgyur2.png',
+    storeAddress: 'Lotte Mart, Quận 7',
+    deliveryAddress: 'RMIT University, Quận 7',
+    status: OrderStatus.Pending,
+    paymentMethod: 'Cash',
+    time: '12:30',
+    totalAmount: 250000,
+    items: [
+      { name: 'Combo Gà Rán Gia Đình', quantity: 1, price: 250000 }
+    ]
+  },
+  // History Orders (Dynamic Dates)
+  // TODAY
+  {
+    id: '#OD-TODAY-01',
+    storeName: 'Trà Sữa Koi Thé',
+    storeImage: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072914_omsuvg.png',
+    storeAddress: '10 Nguyễn Thị Minh Khai, Quận 1',
+    deliveryAddress: '...',
+    status: OrderStatus.Completed,
+    paymentMethod: 'Cash',
+    time: `10:15 - ${getDateStr(0)}`,
+    totalAmount: 55000,
+    items: []
+  },
+  {
+    id: '#OD-TODAY-02',
+    storeName: 'Phở 24',
+    storeImage: 'https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=200&auto=format&fit=crop',
+    storeAddress: 'Vincom Đồng Khởi',
+    deliveryAddress: '...',
+    status: OrderStatus.Completed,
+    paymentMethod: 'Wallet',
+    time: `08:00 - ${getDateStr(0)}`,
+    totalAmount: 75000,
+    items: []
+  },
+  // YESTERDAY
+  {
+    id: '#OD-YESTERDAY-01',
+    storeName: 'Bún Đậu Mắm Tôm',
+    storeImage: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=200&h=200',
+    storeAddress: 'Hẻm 51, Cao Thắng, Q3',
+    deliveryAddress: '...',
+    status: OrderStatus.Completed,
+    paymentMethod: 'Cash',
+    time: `12:00 - ${getDateStr(1)}`,
+    totalAmount: 120000,
+    items: []
+  },
+  {
+    id: '#OD-YESTERDAY-02',
+    storeName: 'Highlands Coffee',
+    storeImage: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072914_omsuvg.png',
+    storeAddress: 'Diamond Plaza, Q1',
+    deliveryAddress: '...',
+    status: OrderStatus.Completed,
+    paymentMethod: 'Wallet',
+    time: `14:30 - ${getDateStr(1)}`,
+    totalAmount: 49000,
+    items: []
+  },
+  {
+    id: '#OD-YESTERDAY-03',
+    storeName: 'Gà Rán Popeyes',
+    storeImage: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462283/Screenshot_2025-11-30_072347_zzyj7x.png',
+    storeAddress: '72 Lê Thánh Tôn, Quận 1, TP.HCM',
+    deliveryAddress: '...',
+    status: OrderStatus.Cancelled,
+    paymentMethod: 'Cash',
+    time: `19:40 - ${getDateStr(1)}`,
+    totalAmount: 42000,
+    items: []
+  },
+  // 3 DAYS AGO
+  {
+    id: '#OD-OLD-01',
+    storeName: 'Starbucks',
+    storeImage: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462794/Screenshot_2025-11-29_093114_pqnet4.png',
+    storeAddress: 'New World Hotel, Q1',
+    deliveryAddress: '...',
+    status: OrderStatus.Completed,
+    paymentMethod: 'Wallet',
+    time: `09:00 - ${getDateStr(3)}`,
+    totalAmount: 110000,
+    items: []
+  },
+  {
+    id: '#OD-OLD-02',
+    storeName: 'Bánh Mì Huỳnh Hoa',
+    storeImage: 'https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=400&auto=format&fit=crop',
+    storeAddress: '26 Lê Thị Riêng, Q1',
+    deliveryAddress: '...',
+    status: OrderStatus.Completed,
+    paymentMethod: 'Cash',
+    time: `16:00 - ${getDateStr(3)}`,
+    totalAmount: 68000,
+    items: []
+  },
+  // 4 DAYS AGO
+  {
+    id: '#OD-OLD-03',
+    storeName: 'Hủ Tiếu Nam Vang',
+    storeImage: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?q=80&w=200&auto=format&fit=crop',
+    storeAddress: 'Võ Văn Tần, Q3',
+    deliveryAddress: '...',
+    status: OrderStatus.Completed,
+    paymentMethod: 'Cash',
+    time: `19:00 - ${getDateStr(4)}`,
+    totalAmount: 55000,
+    items: []
+  },
+  {
+    id: '#OD-OLD-04',
+    storeName: 'Gong Cha',
+    storeImage: 'https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?q=80&w=200&auto=format&fit=crop',
+    storeAddress: 'Hồ Tùng Mậu, Q1',
+    deliveryAddress: '...',
+    status: OrderStatus.Completed,
+    paymentMethod: 'Wallet',
+    time: `20:30 - ${getDateStr(4)}`,
+    totalAmount: 65000,
+    items: []
   }
 ];
 

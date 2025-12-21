@@ -1,8 +1,12 @@
+
 import React from 'react';
 import { HashRouter, Route, Routes, Navigate } from 'react-router-dom';
 
 import { MainLayout } from './layouts/MainLayout';
-import { AdminRoute, PublicRoute } from './routes';
+import { AdminLayout } from './layouts/AdminLayout'; // Explicit import needed if AdminRoute doesn't wrap layout
+import { ShipperLayout } from './layouts/ShipperLayout';
+import { AdminRoute, PublicRoute, ShipperRoute } from './routes';
+
 import { HomePage } from './page/user/HomePage';
 import { LoginPage } from './page/auth/LoginPage';
 import { RegisterPage } from './page/auth/RegisterPage';
@@ -19,12 +23,18 @@ import { ProfilePage } from './page/user/ProfilePage';
 import { ReviewPage } from './page/user/ReviewPage';
 import { AuthProvider } from './contexts/AuthContext';
 
+// Shipper Pages
+import { ShipperHomePage } from './page/shipper/ShipperHomePage';
+import { ShipperHistoryPage } from './page/shipper/ShipperHistoryPage';
+import { ShipperPendingPage } from './page/shipper/ShipperPendingPage';
+import { ShipperProfilePage } from './page/shipper/ShipperProfilePage';
+
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <HashRouter>
         <Routes>
-          {/* Admin routes - protected, no header/footer */}
+          {/* Admin routes - protected */}
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           
           <Route 
@@ -59,8 +69,52 @@ const App: React.FC = () => {
               </AdminRoute>
             } 
           />
+
+          {/* Shipper routes - protected */}
+          <Route path="/shipper" element={<Navigate to="/shipper/home" replace />} />
           
-          {/* Auth routes - only for guests (not logged in) */}
+          <Route 
+            path="/shipper/home" 
+            element={
+              <ShipperRoute>
+                <ShipperLayout>
+                  <ShipperHomePage />
+                </ShipperLayout>
+              </ShipperRoute>
+            } 
+          />
+          <Route 
+            path="/shipper/history" 
+            element={
+              <ShipperRoute>
+                <ShipperLayout>
+                  <ShipperHistoryPage />
+                </ShipperLayout>
+              </ShipperRoute>
+            } 
+          />
+          <Route 
+            path="/shipper/pending" 
+            element={
+              <ShipperRoute>
+                <ShipperLayout>
+                  <ShipperPendingPage />
+                </ShipperLayout>
+              </ShipperRoute>
+            } 
+          />
+          <Route 
+            path="/shipper/profile" 
+            element={
+              <ShipperRoute>
+                <ShipperLayout>
+                  <ShipperProfilePage />
+                </ShipperLayout>
+              </ShipperRoute>
+            } 
+          />
+          
+          {/* Auth routes - only for guests */}
           <Route path="/login" element={
             <PublicRoute>
               <MainLayout>
@@ -83,56 +137,50 @@ const App: React.FC = () => {
             </PublicRoute>
           } />
           
-          {/* Public routes - with header/footer */}
+          {/* Public routes */}
           <Route path="/" element={
             <MainLayout>
               <HomePage />
             </MainLayout>
           } />
 
-          {/* Search Route */}
           <Route path="/search" element={
             <MainLayout>
               <SearchPage />
             </MainLayout>
           } />
 
-          {/* Product Detail Route */}
           <Route path="/product/:id" element={
             <MainLayout>
               <ProductDetailPage />
             </MainLayout>
           } />
 
-          {/* Product Review Route */}
           <Route path="/product/:id/reviews" element={
             <MainLayout>
               <ReviewPage />
             </MainLayout>
           } />
 
-          {/* Checkout Route */}
           <Route path="/checkout" element={
             <MainLayout>
               <CheckoutPage />
             </MainLayout>
           } />
 
-          {/* Orders Route */}
           <Route path="/orders" element={
             <MainLayout>
               <OrdersPage />
             </MainLayout>
           } />
 
-          {/* Profile Route */}
           <Route path="/profile" element={
             <MainLayout>
               <ProfilePage />
             </MainLayout>
           } />
           
-          {/* 404 - Redirect to home */}
+          {/* 404 */}
           <Route path="*" element={
             <MainLayout>
               <HomePage />
