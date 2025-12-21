@@ -145,45 +145,6 @@ class OrderController:
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
-    def get_shipper_statistics(self):
-        """Shipper xem thống kê đơn hàng của mình"""
-        try:
-            shipper_id = request.user_id
-            result = order_service.get_shipper_stats(shipper_id)
-            return jsonify({'success': True, 'data': result}), 200
-        except ValueError as e:
-            return jsonify({'success': False, 'message': str(e)}), 400
-        except Exception as e:
-            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
-
-    def get_shipper_monthly_revenue(self):
-        """Shipper xem doanh thu theo tháng (mặc định năm hiện tại, có thể truyền ?year=YYYY)"""
-        try:
-            shipper_id = request.user_id
-            year_param = request.args.get('year')
-            year = int(year_param) if year_param else None
-            result = order_service.get_shipper_monthly_revenue(shipper_id, year)
-            return jsonify({'success': True, 'data': result}), 200
-        except ValueError as e:
-            return jsonify({'success': False, 'message': str(e)}), 400
-        except Exception as e:
-            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
-
-    def get_shipper_current_month_revenue(self):
-        """Shipper xem doanh thu tháng hiện tại (hoặc truyền ?year=YYYY&month=MM)"""
-        try:
-            shipper_id = request.user_id
-            year_param = request.args.get('year')
-            month_param = request.args.get('month')
-            year = int(year_param) if year_param else None
-            month = int(month_param) if month_param else None
-            result = order_service.get_shipper_current_month_revenue(shipper_id, year, month)
-            return jsonify({'success': True, 'data': result}), 200
-        except ValueError as e:
-            return jsonify({'success': False, 'message': str(e)}), 400
-        except Exception as e:
-            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
-
     def get_deliveries_by_status(self):
         """Shipper lọc đơn hàng theo trạng thái"""
         try:

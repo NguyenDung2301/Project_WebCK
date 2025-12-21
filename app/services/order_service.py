@@ -439,10 +439,24 @@ class OrderService:
             if order.status != OrderStatus.PENDING:
                 raise ValueError(f'Chỉ có thể nhận đơn ở trạng thái PENDING, hiện tại: {order.status.value}')
             
-            updated = self.update_order_status_in_db(order_id, OrderStatus.SHIPPING.value, shipper_id)
-            if not updated:
+            # Cập nhật status và lưu thời gian nhận đơn
+            now = datetime.now()
+            result = self.collection.update_one(
+                {'_id': ObjectId(order_id)},
+                {
+                    '$set': {
+                        'status': OrderStatus.SHIPPING.value,
+                        'shipperId': ObjectId(shipper_id),
+                        'pickedAt': now,
+                        'updatedAt': now
+                    }
+                }
+            )
+            
+            if result.matched_count == 0:
                 raise ValueError('Không thể cập nhật trạng thái')
             
+            updated = self.find_by_id(order_id)
             return self._to_full_response(updated)
         except ValueError:
             raise
@@ -500,13 +514,14 @@ class OrderService:
             if str(order.shipper_id) != shipper_id:
                 raise ValueError('Chỉ shipper nhận đơn mới có thể từ chối')
             
-            # Reset về PENDING, xóa shipperId và lưu lịch sử từ chối
+            # Reset về PENDING, xóa shipperId, xóa pickedAt và lưu lịch sử từ chối
             result = self.collection.update_one(
                 {'_id': ObjectId(order_id)},
                 {
                     '$set': {
                         'status': OrderStatus.PENDING.value,
                         'shipperId': None,
+                        'pickedAt': None,  # Xóa thời gian nhận đơn của shipper cũ
                         'updatedAt': datetime.now()
                     },
                     '$push': {
@@ -545,159 +560,6 @@ class OrderService:
             raise
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy chi tiết đơn: {str(e)}')
-
-    def get_shipper_stats(self, shipper_id: str) -> Dict:
-        """Lấy thống kê đơn hàng của shipper"""
-        try:
-            # Đếm đơn theo từng trạng thái
-            total_orders = self.collection.count_documents({'shipperId': ObjectId(shipper_id)})
-            pending_orders = self.collection.count_documents({
-                'shipperId': ObjectId(shipper_id),
-                'status': OrderStatus.PENDING.value
-            })
-            shipping_orders = self.collection.count_documents({
-                'shipperId': ObjectId(shipper_id),
-                'status': OrderStatus.SHIPPING.value
-            })
-            completed_orders = self.collection.count_documents({
-                'shipperId': ObjectId(shipper_id),
-                'status': OrderStatus.COMPLETED.value
-            })
-            cancelled_orders = self.collection.count_documents({
-                'shipperId': ObjectId(shipper_id),
-                'status': OrderStatus.CANCELLED.value
-            })
-            
-            # Tính tổng thu nhập (từ các đơn đã hoàn thành)
-            pipeline = [
-                {'$match': {
-                    'shipperId': ObjectId(shipper_id),
-                    'status': OrderStatus.COMPLETED.value
-                }},
-                {'$group': {
-                    '_id': None,
-                    'total_revenue': {'$sum': '$shipping_fee'}
-                }}
-            ]
-            revenue_result = list(self.collection.aggregate(pipeline))
-            total_revenue = revenue_result[0]['total_revenue'] if revenue_result else 0
-            
-            return {
-                'total_orders': total_orders,
-                'pending_orders': pending_orders,
-                'shipping_orders': shipping_orders,
-                'completed_orders': completed_orders,
-                'cancelled_orders': cancelled_orders,
-                'total_revenue': float(total_revenue)
-            }
-        except Exception as e:
-            raise ValueError(f'Lỗi khi lấy thống kê: {str(e)}')
-
-    def get_shipper_monthly_revenue(self, shipper_id: str, year: Optional[int] = None) -> Dict:
-        """Tính doanh thu (shipping_fee) theo tháng cho shipper trong 1 năm.
-
-        - Mặc định lấy năm hiện tại nếu không truyền `year`.
-        - Chỉ tính các đơn ở trạng thái COMPLETED.
-        - Dựa trên mốc thời gian `updatedAt` (khi đơn được hoàn thành).
-        """
-        try:
-            year = year or datetime.now().year
-
-            start = datetime(year, 1, 1)
-            end = datetime(year + 1, 1, 1)
-
-            pipeline = [
-                {
-                    '$match': {
-                        'shipperId': ObjectId(shipper_id),
-                        'status': OrderStatus.COMPLETED.value,
-                        'updatedAt': {'$gte': start, '$lt': end}
-                    }
-                },
-                {
-                    '$group': {
-                        '_id': { 'month': { '$month': '$updatedAt' } },
-                        'orders': { '$sum': 1 },
-                        'revenue': { '$sum': '$shipping_fee' }
-                    }
-                },
-                { '$sort': { '_id.month': 1 } }
-            ]
-
-            agg = list(self.collection.aggregate(pipeline))
-
-            # Chuẩn hóa đủ 12 tháng
-            month_map = { doc['_id']['month']: doc for doc in agg }
-            monthly = []
-            for m in range(1, 13):
-                if m in month_map:
-                    monthly.append({
-                        'month': m,
-                        'orders': int(month_map[m]['orders']),
-                        'revenue': float(month_map[m]['revenue'])
-                    })
-                else:
-                    monthly.append({ 'month': m, 'orders': 0, 'revenue': 0.0 })
-
-            total_orders = sum(item['orders'] for item in monthly)
-            total_revenue = sum(item['revenue'] for item in monthly)
-
-            return {
-                'year': year,
-                'monthly': monthly,
-                'total_orders': int(total_orders),
-                'total_revenue': float(total_revenue)
-            }
-        except Exception as e:
-            raise ValueError(f'Lỗi khi tính doanh thu theo tháng: {str(e)}')
-
-    def get_shipper_current_month_revenue(self, shipper_id: str, year: Optional[int] = None, month: Optional[int] = None) -> Dict:
-        """Tính doanh thu tháng hiện tại (hoặc theo `year`, `month` truyền vào).
-
-        - Mặc định: dùng tháng/năm hiện tại nếu không truyền.
-        - Chỉ tính các đơn ở trạng thái COMPLETED, dựa trên `updatedAt` trong khoảng tháng.
-        """
-        try:
-            now = datetime.now()
-            year = year or now.year
-            month = month or now.month
-
-            start = datetime(year, month, 1)
-            # Tính ngày đầu tháng kế tiếp
-            if month == 12:
-                end = datetime(year + 1, 1, 1)
-            else:
-                end = datetime(year, month + 1, 1)
-
-            pipeline = [
-                {
-                    '$match': {
-                        'shipperId': ObjectId(shipper_id),
-                        'status': OrderStatus.COMPLETED.value,
-                        'updatedAt': {'$gte': start, '$lt': end}
-                    }
-                },
-                {
-                    '$group': {
-                        '_id': None,
-                        'orders': { '$sum': 1 },
-                        'revenue': { '$sum': '$shipping_fee' }
-                    }
-                }
-            ]
-
-            agg = list(self.collection.aggregate(pipeline))
-            orders = int(agg[0]['orders']) if agg else 0
-            revenue = float(agg[0]['revenue']) if agg else 0.0
-
-            return {
-                'year': year,
-                'month': month,
-                'orders': orders,
-                'revenue': revenue
-            }
-        except Exception as e:
-            raise ValueError(f'Lỗi khi tính doanh thu tháng hiện tại: {str(e)}')
 
     def get_shipper_orders_by_status(self, shipper_id: str, status: Optional[str] = None) -> List[Dict]:
         """Lấy đơn hàng của shipper theo trạng thái (filter)"""

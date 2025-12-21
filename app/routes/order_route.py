@@ -74,24 +74,6 @@ def get_order_detail_for_shipper(order_id: str):
     """GET /api/orders/shipper/<order_id> - Shipper xem chi tiết đơn hàng"""
     return order_controller.get_order_detail_for_shipper(order_id)
 
-@order_router.route('/shipper/statistics', methods=['GET'])
-@shipper_required
-def get_shipper_statistics():
-    """GET /api/orders/shipper/statistics - Shipper xem thống kê đơn hàng"""
-    return order_controller.get_shipper_statistics()
-
-@order_router.route('/shipper/revenue/monthly', methods=['GET'])
-@shipper_required
-def get_shipper_monthly_revenue():
-    """GET /api/orders/shipper/revenue/monthly?year=YYYY - Shipper xem doanh thu theo tháng"""
-    return order_controller.get_shipper_monthly_revenue()
-
-@order_router.route('/shipper/revenue/current_month', methods=['GET'])
-@shipper_required
-def get_shipper_current_month_revenue():
-    """GET /api/orders/shipper/revenue/current_month?year=YYYY&month=MM - Doanh thu tháng hiện tại"""
-    return order_controller.get_shipper_current_month_revenue()
-
 @order_router.route('/shipper/filter', methods=['GET'])
 @shipper_required
 def get_deliveries_by_status():

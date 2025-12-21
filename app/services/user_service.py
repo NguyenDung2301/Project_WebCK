@@ -274,4 +274,51 @@ class UserService:
         updated_user = self.find_by_id(user_id)
         return UserResponse(**updated_user.to_dict()).model_dump()
 
+    def withdraw_balance(self, user_id: str, withdraw_data: 'WithdrawRequest') -> Dict:
+        """Shipper rút tiền từ balance (rút toàn bộ hoặc một phần)"""
+        from schemas.user_schema import WithdrawRequest
+        
+        # Kiểm tra user tồn tại và là shipper
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+        
+        if user.role != Role.SHIPPER:
+            raise ValueError('Chỉ shipper mới được phép rút tiền')
+        
+        # Xác định số tiền rút
+        if withdraw_data.amount is None:
+            # Rút toàn bộ
+            amount_to_withdraw = user.balance
+        else:
+            amount_to_withdraw = withdraw_data.amount
+        
+        # Kiểm tra số dư
+        if amount_to_withdraw <= 0:
+            raise ValueError('Số tiền rút phải lớn hơn 0')
+        
+        if amount_to_withdraw > user.balance:
+            raise ValueError(f'Số dư không đủ. Số dư hiện tại: {user.balance}')
+        
+        # Trừ tiền
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {
+                '$inc': {'balance': -float(amount_to_withdraw)},
+                '$set': {'updated_at': datetime.now()}
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise ValueError('Không thể thực hiện rút tiền')
+        
+        updated_user = self.find_by_id(user_id)
+        
+        return {
+            'message': f'Rút tiền thành công {amount_to_withdraw:,.0f} VNĐ',
+            'withdrawn_amount': float(amount_to_withdraw),
+            'remaining_balance': float(updated_user.balance),
+            'user': UserResponse(**updated_user.to_dict()).model_dump()
+        }
+
 user_service = UserService()

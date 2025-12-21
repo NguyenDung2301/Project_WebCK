@@ -1,5 +1,5 @@
 from flask import Blueprint
-from middlewares.auth_middleware import admin_required, user_required, auth_required
+from middlewares.auth_middleware import admin_required, user_required, auth_required, shipper_required
 from controllers.user_controller import user_controller
 
 user_router = Blueprint("user_router", __name__)
@@ -7,8 +7,7 @@ user_router = Blueprint("user_router", __name__)
 @user_router.route("/profile_me", methods=["GET"])
 @auth_required
 def get_profile():
-    """GET /api/users/profile_me - Lấy profile của user hiện tại"""
-    print("[DEBUG route] get_profile route called")
+    """GET /api/users/profile - Lấy profile của user hiện tại (public)"""
     return user_controller.get_profile()
 
 @user_router.route('/update_profile', methods=['PUT'])
@@ -54,3 +53,13 @@ def get_all_users():
 def top_up_balance():
     """POST /api/users/balance/topup - Nạp tiền cho tài khoản hiện tại"""
     return user_controller.top_up()
+
+@user_router.route('/balance/withdraw', methods=['POST'])
+@shipper_required
+def withdraw_balance():
+    """
+    POST /api/users/balance/withdraw - Shipper rút tiền từ balance
+    Body (optional): {"amount": 500000} - Rút một phần
+    Body rỗng hoặc không có amount: Rút toàn bộ
+    """
+    return user_controller.withdraw()

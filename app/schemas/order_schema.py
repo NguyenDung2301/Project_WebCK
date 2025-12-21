@@ -107,6 +107,7 @@ class OrderResponse(BaseModel):
     cancelled_by: Optional[str] = None
     cancellation_reason: Optional[str] = None
     shipper_rejections: List[ShipperRejectionResponse] = Field(default_factory=list, alias="shipperRejections")
+    picked_at: Optional[datetime] = Field(None, alias="pickedAt")
     created_at: datetime = Field(..., alias="createdAt")
     updated_at: datetime = Field(..., alias="updatedAt")
 
@@ -139,6 +140,7 @@ class OrderResponse(BaseModel):
             "cancelled_by": self.cancelled_by,
             "cancellation_reason": self.cancellation_reason,
             "shipperRejections": self.shipper_rejections,
+            "pickedAt": self.picked_at,
             "createdAt": self.created_at,
             "updatedAt": self.updated_at,
         }

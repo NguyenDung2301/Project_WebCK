@@ -106,6 +106,7 @@ class Order(BaseModel):
     # === Thời gian ===
     created_at: datetime = Field(default_factory=datetime.now, alias="createdAt")
     updated_at: datetime = Field(default_factory=datetime.now, alias="updatedAt")
+    picked_at: Optional[datetime] = Field(default=None, alias="pickedAt", description="Thời điểm shipper nhận đơn")
 
     class Config:
         populate_by_name = True
@@ -145,6 +146,7 @@ class Order(BaseModel):
             "shipperRejections": [entry.to_dict() for entry in self.shipper_rejections],
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),
+            "pickedAt": self.picked_at.isoformat() if self.picked_at else None,
         }
 
     def to_mongo(self):
@@ -183,6 +185,7 @@ class Order(BaseModel):
             ],
             "createdAt": self.created_at,
             "updatedAt": self.updated_at,
+            "pickedAt": self.picked_at,
         }
         if self.order_id:
             doc["_id"] = self.order_id

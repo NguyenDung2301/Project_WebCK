@@ -70,3 +70,11 @@ class UserTopUpRequest(BaseModel):
 
     class Config:
         json_schema_extra = {"example": {"amount": 100000}}
+
+
+class WithdrawRequest(BaseModel):
+    """Schema cho shipper rút tiền từ balance"""
+    amount: Optional[float] = Field(None, gt=0, description="Số tiền rút (> 0), nếu không truyền thì rút toàn bộ")
+
+    class Config:
+        json_schema_extra = {"example": {"amount": 500000}}

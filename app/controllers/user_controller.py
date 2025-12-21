@@ -6,6 +6,7 @@ from schemas.user_schema import (
     UserUpdateRequest,
     UserRoleUpdateRequest,
     UserTopUpRequest,
+    WithdrawRequest,
 )
 from pydantic import ValidationError
 
@@ -147,6 +148,26 @@ class UserController:
             topup = UserTopUpRequest(**request.json)
             result = user_service.top_up_balance(user_id, topup)
             return jsonify({'success': True, 'message': 'Nạp tiền thành công', 'data': result}), 200
+        except ValidationError as e:
+            return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def withdraw(self):
+        """API shipper rút tiền từ balance"""
+        try:
+            user_id = request.user_id
+            
+            # Nếu không có body hoặc body rỗng, rút toàn bộ
+            if not request.json or not request.json:
+                withdraw_data = WithdrawRequest()
+            else:
+                withdraw_data = WithdrawRequest(**request.json)
+            
+            result = user_service.withdraw_balance(user_id, withdraw_data)
+            return jsonify({'success': True, 'data': result}), 200
         except ValidationError as e:
             return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
         except ValueError as e:
