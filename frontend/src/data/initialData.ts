@@ -19,12 +19,27 @@ const getIsoDate = (daysAgo: number) => {
 
 // --- 1. USERS (Master Data) ---
 export const INITIAL_USERS: BackendUser[] = [
-  { user_id: 'usr-admin', fullname: 'Administrator', email: 'admin@gmail.com', phone_number: '0909000001', birthday: '1990-01-01', gender: 'Male', created_at: '2023-01-01', role: 'admin' },
-  { user_id: 'usr-shipper', fullname: 'Trần Văn Shipper', email: 'shipper@food.com', phone_number: '0909888777', birthday: '1992-08-20', gender: 'Male', created_at: '2023-02-20', role: 'shipper' },
+  { 
+    user_id: 'usr-admin', fullname: 'Administrator', email: 'admin@gmail.com', phone_number: '0909000001', birthday: '1990-01-01', gender: 'Male', created_at: '2023-01-01', role: 'admin',
+    address: 'Văn phòng Admin, Hà Nội', balance: 0 
+  },
+  { 
+    user_id: 'usr-shipper', fullname: 'Trần Văn Shipper', email: 'shipper@food.com', phone_number: '0909888777', birthday: '1992-08-20', gender: 'Male', created_at: '2023-02-20', role: 'shipper',
+    address: 'Kho giao hàng trung tâm', balance: 5000000, rank: 'Tài xế 5 sao'
+  },
   // Customers
-  { user_id: 'usr-1', fullname: 'Nguyễn Văn A', email: 'user@gmail.com', phone_number: '0901234567', birthday: '1995-05-15', gender: 'Male', created_at: '2023-03-10', role: 'user' },
-  { user_id: 'usr-2', fullname: 'Lê Thị Mai', email: 'lethimai@example.com', phone_number: '0912223333', birthday: '1998-11-11', gender: 'Female', created_at: '2023-04-05', role: 'user' },
-  { user_id: 'usr-3', fullname: 'Phạm Minh Tuấn', email: 'tuanpm@example.com', phone_number: '0988777666', birthday: '1993-02-28', gender: 'Male', created_at: '2023-06-15', role: 'user' },
+  { 
+    user_id: 'usr-1', fullname: 'Nguyễn Văn A', email: 'user@gmail.com', phone_number: '0901234567', birthday: '1995-05-15', gender: 'Male', created_at: '2023-03-10', role: 'user',
+    address: '123 Đường Láng, Đống Đa, Hà Nội', balance: 1500000, rank: 'Thành viên Vàng'
+  },
+  { 
+    user_id: 'usr-2', fullname: 'Lê Thị Mai', email: 'lethimai@example.com', phone_number: '0912223333', birthday: '1998-11-11', gender: 'Female', created_at: '2023-04-05', role: 'user',
+    address: '45 Nguyễn Trãi, Thanh Xuân, Hà Nội', balance: 200000 
+  },
+  { 
+    user_id: 'usr-3', fullname: 'Phạm Minh Tuấn', email: 'tuanpm@example.com', phone_number: '0988777666', birthday: '1993-02-28', gender: 'Male', created_at: '2023-06-15', role: 'user',
+    address: '12 Hàng Bài, Hoàn Kiếm, Hà Nội', balance: 50000 
+  },
   { user_id: 'usr-4', fullname: 'Trần Ngọc Lan', email: 'lanngoc@example.com', phone_number: '0933444555', birthday: '2000-10-10', gender: 'Female', created_at: '2023-08-20', role: 'user' },
   { user_id: 'usr-5', fullname: 'Hoàng Văn Ba', email: 'bahoang@example.com', phone_number: '0977888999', birthday: '1985-12-25', gender: 'Male', created_at: '2023-01-20', role: 'user' },
 ];
@@ -95,21 +110,16 @@ export interface MasterOrder {
 }
 
 export const INITIAL_MASTER_ORDERS: MasterOrder[] = [
-  { id: 'ord-101', userId: 'usr-1', restaurantId: 'res-4', items: [{ foodId: 'f-4', quantity: 1, price: 159000 }], status: 'DELIVERING', orderTime: `10:30 • ${getDateStr(0)}`, paymentMethod: 'Wallet', deliveryAddress: 'Landmark 81, TP.HCM', needsReview: false, isReviewed: false, totalAmount: 159000 + 15000 },
-  { id: 'ord-103', userId: 'usr-1', restaurantId: 'res-3', items: [{ foodId: 'f-3', quantity: 2, price: 55000 }], status: 'COMPLETED', orderTime: `09:00 • ${getDateStr(0)}`, paymentMethod: 'Wallet', deliveryAddress: 'Bitexco Tower, Q1', needsReview: true, isReviewed: false, totalAmount: 110000 + 15000 },
+  { id: 'ord-101', userId: 'usr-1', restaurantId: 'res-4', items: [{ foodId: 'f-4', quantity: 1, price: 159000 }], status: 'DELIVERING', orderTime: `10:30 • ${getDateStr(0)}`, paymentMethod: 'Wallet', deliveryAddress: '123 Đường Láng, Đống Đa, Hà Nội', needsReview: false, isReviewed: false, totalAmount: 159000 + 15000 },
+  { id: 'ord-103', userId: 'usr-1', restaurantId: 'res-3', items: [{ foodId: 'f-3', quantity: 2, price: 55000 }], status: 'COMPLETED', orderTime: `09:00 • ${getDateStr(0)}`, paymentMethod: 'Wallet', deliveryAddress: '123 Đường Láng, Đống Đa, Hà Nội', needsReview: true, isReviewed: false, totalAmount: 110000 + 15000 },
   { id: 'ord-104', userId: 'usr-1', restaurantId: 'res-1', items: [{ foodId: 'f-1', quantity: 1, price: 78000 }, { foodId: 'f-1b', quantity: 1, price: 45000 }], status: 'COMPLETED', orderTime: `18:30 • ${getDateStr(5)}`, paymentMethod: 'Cash', deliveryAddress: 'Nhà riêng, Q3', needsReview: false, isReviewed: true, totalAmount: 78000 + 45000 + 15000 },
   { id: 'ord-105', userId: 'usr-1', restaurantId: 'res-5', items: [{ foodId: 'f-5', quantity: 3, price: 65000 }], status: 'CANCELLED', orderTime: `12:00 • ${getDateStr(2)}`, paymentMethod: 'Cash', deliveryAddress: 'Công ty, Q1', needsReview: false, isReviewed: false, totalAmount: 195000 + 15000 },
-  { id: 'ord-201', userId: 'usr-2', restaurantId: 'res-2', items: [{ foodId: 'f-2', quantity: 2, price: 89000 }, { foodId: 'f-2b', quantity: 1, price: 35000 }], status: 'DELIVERING', orderTime: `11:45 • ${getDateStr(0)}`, paymentMethod: 'Cash', deliveryAddress: '12 Nguyễn Văn Bảo, Gò Vấp', needsReview: false, isReviewed: false, totalAmount: 178000 + 35000 + 15000 },
-  { id: 'ord-202', userId: 'usr-3', restaurantId: 'res-6', items: [{ foodId: 'f-6', quantity: 1, price: 120000 }, { foodId: 'f-6b', quantity: 1, price: 180000 }], status: 'DELIVERING', orderTime: `12:10 • ${getDateStr(0)}`, paymentMethod: 'Wallet', deliveryAddress: '55 Nam Kỳ Khởi Nghĩa, Q1', needsReview: false, isReviewed: false, totalAmount: 120000 + 180000 + 15000 },
+  { id: 'ord-201', userId: 'usr-2', restaurantId: 'res-2', items: [{ foodId: 'f-2', quantity: 2, price: 89000 }, { foodId: 'f-2b', quantity: 1, price: 35000 }], status: 'DELIVERING', orderTime: `11:45 • ${getDateStr(0)}`, paymentMethod: 'Cash', deliveryAddress: '45 Nguyễn Trãi, Thanh Xuân, Hà Nội', needsReview: false, isReviewed: false, totalAmount: 178000 + 35000 + 15000 },
+  { id: 'ord-202', userId: 'usr-3', restaurantId: 'res-6', items: [{ foodId: 'f-6', quantity: 1, price: 120000 }, { foodId: 'f-6b', quantity: 1, price: 180000 }], status: 'DELIVERING', orderTime: `12:10 • ${getDateStr(0)}`, paymentMethod: 'Wallet', deliveryAddress: '12 Hàng Bài, Hoàn Kiếm, Hà Nội', needsReview: false, isReviewed: false, totalAmount: 120000 + 180000 + 15000 },
   { id: 'ord-203', userId: 'usr-4', restaurantId: 'res-8', items: [{ foodId: 'f-8', quantity: 4, price: 39000 }], status: 'DELIVERING', orderTime: `13:00 • ${getDateStr(0)}`, paymentMethod: 'Cash', deliveryAddress: 'Đại học Sài Gòn, Q5', needsReview: false, isReviewed: false, totalAmount: 39000 * 4 + 15000 },
   { id: 'ord-301', userId: 'usr-5', restaurantId: 'res-7', items: [{ foodId: 'f-7', quantity: 2, price: 70000 }], status: 'PENDING', orderTime: `13:15 • ${getDateStr(0)}`, paymentMethod: 'Cash', deliveryAddress: 'Khu chung cư Masteri, Thảo Điền', needsReview: false, isReviewed: false, totalAmount: 140000 + 15000 },
-  { id: 'ord-302', userId: 'usr-2', restaurantId: 'res-1', items: [{ foodId: 'f-1', quantity: 5, price: 78000 }], status: 'PENDING', orderTime: `13:20 • ${getDateStr(0)}`, paymentMethod: 'Wallet', deliveryAddress: 'Vincom Center, Q1', needsReview: false, isReviewed: false, totalAmount: 78000 * 5 + 15000 },
+  { id: 'ord-302', userId: 'usr-2', restaurantId: 'res-1', items: [{ foodId: 'f-1', quantity: 5, price: 78000 }], status: 'PENDING', orderTime: `13:20 • ${getDateStr(0)}`, paymentMethod: 'Wallet', deliveryAddress: '45 Nguyễn Trãi, Thanh Xuân, Hà Nội', needsReview: false, isReviewed: false, totalAmount: 78000 * 5 + 15000 },
   { id: 'ord-303', userId: 'usr-4', restaurantId: 'res-9', items: [{ foodId: 'f-9', quantity: 1, price: 65000 }], status: 'PENDING', orderTime: `13:30 • ${getDateStr(0)}`, paymentMethod: 'Cash', deliveryAddress: 'Hẻm 51, Thành Thái, Q10', needsReview: false, isReviewed: false, totalAmount: 65000 + 15000 },
-  { id: 'ord-401', userId: 'usr-2', restaurantId: 'res-2', items: [{ foodId: 'f-2', quantity: 1, price: 89000 }], status: 'COMPLETED', orderTime: `10:00 • ${getDateStr(1)}`, paymentMethod: 'Cash', deliveryAddress: '...', needsReview: false, isReviewed: true, totalAmount: 104000 },
-  { id: 'ord-402', userId: 'usr-3', restaurantId: 'res-3', items: [{ foodId: 'f-3', quantity: 3, price: 55000 }], status: 'COMPLETED', orderTime: `14:00 • ${getDateStr(1)}`, paymentMethod: 'Wallet', deliveryAddress: '...', needsReview: false, isReviewed: true, totalAmount: 180000 },
-  { id: 'ord-403', userId: 'usr-5', restaurantId: 'res-5', items: [{ foodId: 'f-5', quantity: 2, price: 65000 }], status: 'CANCELLED', orderTime: `19:00 • ${getDateStr(1)}`, paymentMethod: 'Cash', deliveryAddress: '...', needsReview: false, isReviewed: false, totalAmount: 145000 },
-  { id: 'ord-404', userId: 'usr-1', restaurantId: 'res-6', items: [{ foodId: 'f-6', quantity: 1, price: 120000 }], status: 'COMPLETED', orderTime: `11:30 • ${getDateStr(2)}`, paymentMethod: 'Wallet', deliveryAddress: '...', needsReview: false, isReviewed: false, totalAmount: 135000 },
-  { id: 'ord-405', userId: 'usr-4', restaurantId: 'res-8', items: [{ foodId: 'f-8', quantity: 2, price: 39000 }], status: 'COMPLETED', orderTime: `08:00 • ${getDateStr(2)}`, paymentMethod: 'Cash', deliveryAddress: '...', needsReview: false, isReviewed: true, totalAmount: 93000 },
 ];
 
 // --- 5. REVIEWS ---
@@ -120,14 +130,17 @@ export const INITIAL_REVIEWS: Review[] = [
   { id: 'rv-4', foodId: 'f-4', userId: 'usr-4', userName: 'Trần Ngọc Lan', rating: 3, comment: 'Đế bánh hơi cứng, nhân hải sản hơi ít.', date: getIsoDate(15) },
   { id: 'rv-5', foodId: 'f-6', userId: 'usr-5', userName: 'Hoàng Văn Ba', rating: 5, comment: 'Cá hồi tươi rói, cắt miếng dày. Đáng tiền!', date: getIsoDate(1) },
   { id: 'rv-6', foodId: 'f-8', userId: 'usr-1', userName: 'Nguyễn Văn A', rating: 5, comment: 'Cà phê thơm, uống tỉnh táo cả ngày.', date: getIsoDate(20) },
-  // Reviews for Cơm Tấm Cali (f-9)
   { id: 'rv-7', foodId: 'f-9', userId: 'usr-1', userName: 'Nguyễn Văn A', rating: 4, comment: 'Cơm tấm ngon, sườn nướng vừa vị.', date: getIsoDate(3) },
   { id: 'rv-8', foodId: 'f-9', userId: 'usr-2', userName: 'Lê Thị Mai', rating: 5, comment: 'Sườn to, chả trứng béo ngậy. Sẽ ủng hộ dài dài.', date: getIsoDate(7) },
-  { id: 'rv-9', foodId: 'f-9', userId: 'usr-3', userName: 'Phạm Minh Tuấn', rating: 4, comment: 'Giao hàng hơi lâu chút nhưng đồ ăn nóng hổi.', date: getIsoDate(12) },
-  { id: 'rv-10', foodId: 'f-9', userId: 'usr-4', userName: 'Trần Ngọc Lan', rating: 3, comment: 'Nước mắm hơi ngọt quá.', date: getIsoDate(1) },
-  // Additional reviews for variety
-  { id: 'rv-11', foodId: 'f-5', userId: 'usr-5', userName: 'Hoàng Văn Ba', rating: 5, comment: 'Bánh mì đầy đặn, pate ngon xuất sắc!', date: getIsoDate(4) },
-  { id: 'rv-12', foodId: 'f-7', userId: 'usr-2', userName: 'Lê Thị Mai', rating: 4, comment: 'Nước dùng đậm đà, nhiều thịt.', date: getIsoDate(6) },
+];
+
+// --- 6. SEARCH HISTORY ---
+export const INITIAL_SEARCH_HISTORY: string[] = [
+  'Gà Rán KFC',
+  'Trà sữa Phúc Long',
+  'Bún bò Huế',
+  'Pizza',
+  'Cơm tấm sườn bì'
 ];
 
 // --- OTHER STATIC DATA ---
@@ -143,10 +156,13 @@ export const INITIAL_CATEGORIES = [
 ];
 
 export const INITIAL_VOUCHERS: Voucher[] = [
-  { id: 'v1', title: 'Freeship 15k', code: 'FS15', discountValue: 15000, minOrderValue: 50000, type: 'FREESHIP', condition: 'Đơn tối thiểu 50k', isExpired: false },
-  { id: 'v2', title: 'Giảm 10%', code: 'SALE10', discountValue: 10000, minOrderValue: 80000, type: 'DISCOUNT', condition: 'Giảm tối đa 10k', isExpired: false },
-  { id: 'v3', title: 'Giảm 50k', code: 'SUPER50', discountValue: 50000, minOrderValue: 200000, type: 'DISCOUNT', condition: 'Đơn tối thiểu 200k', isExpired: true },
-  { id: 'v4', title: 'Freeship Xtra', code: 'FSXTRA', discountValue: 30000, minOrderValue: 150000, type: 'FREESHIP', condition: 'Đơn tối thiểu 150k', isExpired: false },
+  { id: 'v1', code: 'SUMMER2025', title: 'Chào hè rực rỡ', description: 'Giảm giá đồ uống mùa hè', type: 'Percent', discountValue: 20, maxDiscount: 50000, minOrderValue: 100000, startDate: '2025-06-01', endDate: '2025-06-30', status: 'Active', condition: 'Đơn tối thiểu 100k' },
+  { id: 'v2', code: 'WELCOMEFD', title: 'Người mới', description: 'Dành cho đơn hàng đầu tiên', type: 'Fixed', discountValue: 50000, minOrderValue: 150000, startDate: '2025-01-01', endDate: '2025-12-31', status: 'Active', condition: 'Đơn tối thiểu 150k' },
+  { id: 'v3', code: 'FREESHIP10', title: 'Miễn phí vận chuyển', description: 'Đơn từ 150k', type: 'FreeShip', discountValue: 15000, maxDiscount: 15000, minOrderValue: 150000, startDate: '2025-12-10', endDate: '2025-12-20', status: 'Inactive', condition: 'Đơn tối thiểu 150k' },
+  { id: 'v4', code: 'BLACKFRIDAY', title: 'Black Friday Sale', description: 'Siêu giảm giá', type: 'Percent', discountValue: 40, maxDiscount: 200000, minOrderValue: 500000, startDate: '2025-11-25', endDate: '2025-11-28', status: 'Expired', condition: 'Đơn tối thiểu 500k', isExpired: true },
+  { id: 'v5', code: 'LUNCHTIME', title: 'Bữa trưa vui vẻ', description: 'Áp dụng khung giờ 11h-13h', type: 'Percent', discountValue: 15, maxDiscount: 30000, minOrderValue: 0, startDate: '2025-12-01', endDate: '2025-12-31', status: 'Active', condition: 'Khung giờ 11h-13h' },
+  { id: 'v6', code: 'WEEKENDVIBE', title: 'Cuối tuần chill', description: 'Chỉ áp dụng T7 & CN', type: 'Fixed', discountValue: 25000, minOrderValue: 200000, startDate: '2025-12-01', endDate: '2025-12-31', status: 'Active', condition: 'Áp dụng T7 & CN' },
+  { id: 'v7', code: 'TET2026', title: 'Sắm Tết', description: 'Giảm giá combo Tết', type: 'Percent', discountValue: 10, maxDiscount: 100000, minOrderValue: 300000, startDate: '2026-01-15', endDate: '2026-01-30', status: 'Inactive', condition: 'Đơn tối thiểu 300k' },
 ];
 
 export const INITIAL_PROMOTIONS = [

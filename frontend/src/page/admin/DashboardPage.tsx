@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { AdminLayout } from '../../layouts/AdminLayout';
 import { 
@@ -38,8 +39,10 @@ const StatCard = ({ title, value, icon: Icon, iconBg, iconColor }: any) => (
 export const DashboardPage: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  // Default to 2023 because our mock data is from late 2023
-  const [year, setYear] = useState(2023); 
+  
+  // Default to current year
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState(currentYear); 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -131,9 +134,9 @@ export const DashboardPage: React.FC = () => {
                     value={year}
                     onChange={(e) => setYear(parseInt(e.target.value))}
                 >
-                  <option value={2023}>2023</option>
-                  <option value={2024}>2024</option>
-                  <option value={2025}>2025</option>
+                  <option value={currentYear}>{currentYear}</option>
+                  <option value={currentYear - 1}>{currentYear - 1}</option>
+                  <option value={currentYear - 2}>{currentYear - 2}</option>
                 </select>
               </div>
             </div>

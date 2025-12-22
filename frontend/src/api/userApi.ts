@@ -1,9 +1,10 @@
+
 /**
  * User API
  * Sử dụng Mock Database (src/data/store.ts) thay vì fetch API thực
  */
 
-import { BackendUser as AdminUser, CreateUserRequest, UpdateUserRequest } from '../types/user';
+import { BackendUser as AdminUser, CreateUserRequest, UpdateUserRequest, APIUserProfile } from '../types/user';
 import { db } from '../data/store';
 
 // Re-export for backward compatibility
@@ -16,6 +17,14 @@ export const getAllUsersApi = async (): Promise<AdminUser[]> => {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 300));
   return db.getUsers();
+};
+
+/**
+ * Get User Profile (Unified)
+ */
+export const getUserProfileApi = async (userId: string): Promise<APIUserProfile> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
+  return db.getUserProfile(userId);
 };
 
 /**

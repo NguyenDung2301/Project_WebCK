@@ -1,3 +1,4 @@
+
 /**
  * Common Types
  * Các types dùng chung trong toàn bộ ứng dụng
@@ -58,13 +59,18 @@ export interface FoodItem {
 
 export interface Voucher {
   id: string;
-  title: string;
   code: string;
-  discountValue: number; // Amount to subtract
+  title: string;
+  description?: string;
+  type: 'Fixed' | 'Percent' | 'FreeShip'; // Updated types
+  discountValue: number; // Amount or Percent value
+  maxDiscount?: number; // For percent types
   minOrderValue: number;
-  type: 'FREESHIP' | 'DISCOUNT' | 'PROMO' | 'CASHBACK';
-  condition: string;
-  isExpired?: boolean;
+  startDate?: string; // ISO Date
+  endDate?: string; // ISO Date
+  status: 'Active' | 'Inactive' | 'Expired';
+  condition: string; // Display text
+  isExpired?: boolean; // Keep for backward compatibility logic
 }
 
 export interface UserProfile {

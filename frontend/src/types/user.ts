@@ -1,3 +1,4 @@
+
 /**
  * User Types
  * Các types liên quan đến người dùng
@@ -31,6 +32,11 @@ export interface BackendUser {
   gender: Gender | null;
   created_at: string;
   role: BackendRole;
+  // Extended fields for Profile unification
+  address?: string;
+  balance?: number;
+  rank?: string; // e.g., 'Thành viên Bạc'
+  avatar?: string;
 }
 
 // Request types for API calls
@@ -50,6 +56,7 @@ export interface UpdateUserRequest {
   phone_number?: string;
   birthday?: string;
   gender?: Gender;
+  address?: string; // Added
 }
 
 // User profile
@@ -63,4 +70,6 @@ export interface APIUserProfile {
   avatar?: string;
   role: BackendRole;
   created_at: string;
+  address?: string;
+  balance?: number;
 }

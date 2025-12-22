@@ -1,15 +1,7 @@
+
 import React, { KeyboardEvent, useState, useEffect } from 'react';
 import { Clock, X, TrendingUp, Search as SearchIcon, ArrowRight, Trash2 } from 'lucide-react';
-import { getSuggestionsApi } from '../../api/productApi';
-
-// Mock recent searches locally for now, could be in store/localstorage in real app
-const MOCK_RECENT_SEARCHES = [
-  'Cơm tấm sườn bì',
-  'Trà sữa trân châu',
-  'Bún bò Huế',
-  'Pizza Company',
-  'Bánh xèo giòn'
-];
+import { getSuggestionsApi, getSearchHistoryApi, addSearchHistoryApi, clearSearchHistoryApi } from '../../api/productApi';
 
 interface SearchProps {
   onSearch: (term: string) => void;
@@ -18,29 +10,43 @@ interface SearchProps {
 }
 
 export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, onSearchChange }) => {
-  const [history, setHistory] = useState<string[]>(MOCK_RECENT_SEARCHES);
+  const [history, setHistory] = useState<string[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
+  // Load initial data
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      const data = await getSuggestionsApi();
-      setSuggestions(data);
+    const fetchData = async () => {
+      const [historyData, suggestionsData] = await Promise.all([
+        getSearchHistoryApi(),
+        getSuggestionsApi()
+      ]);
+      setHistory(historyData);
+      setSuggestions(suggestionsData);
     };
-    fetchSuggestions();
+    fetchData();
   }, []);
+
+  const handleSearchTrigger = async (term: string) => {
+      // Add to history store
+      const newHistory = await addSearchHistoryApi(term);
+      setHistory(newHistory);
+      onSearch(term);
+  };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchValue.trim()) {
-      onSearch(searchValue);
+      handleSearchTrigger(searchValue);
     }
   };
 
   const handleRemoveHistoryItem = (e: React.MouseEvent, term: string) => {
-    e.stopPropagation(); // Prevent triggering the search when clicking 'X'
+    e.stopPropagation(); 
+    // In real app, we might need a specific remove API, for now filter local visual
     setHistory(prev => prev.filter(item => item !== term));
   };
 
-  const handleClearAllHistory = () => {
+  const handleClearAllHistory = async () => {
+    await clearSearchHistoryApi();
     setHistory([]);
   };
 
@@ -61,7 +67,7 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
           <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-[#EE501C] w-5 h-5" />
           {searchValue && (
             <button 
-              onClick={() => onSearch(searchValue)}
+              onClick={() => handleSearchTrigger(searchValue)}
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#EE501C] text-white p-2 rounded-xl hover:bg-[#d44719] transition-colors"
             >
               <ArrowRight className="w-5 h-5" />
@@ -90,7 +96,7 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
             {history.slice(0, 5).map((term, idx) => (
               <div 
                 key={`${term}-${idx}`} 
-                onClick={() => onSearch(term)}
+                onClick={() => handleSearchTrigger(term)}
                 className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full cursor-pointer hover:bg-orange-50 group transition-all"
               >
                 <Clock className="w-3 h-3 text-gray-400 group-hover:text-orange-400" />
@@ -117,7 +123,7 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
           {suggestions.slice(0, 6).map((item, idx) => (
             <div 
               key={idx} 
-              onClick={() => onSearch(item.name)}
+              onClick={() => handleSearchTrigger(item.name)}
               className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md hover:border-orange-100 cursor-pointer transition-all group"
             >
               <div className="w-14 h-14 md:w-16 md:h-16 shrink-0 rounded-xl overflow-hidden">
