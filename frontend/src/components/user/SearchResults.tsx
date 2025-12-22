@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { ChevronDown, Star, Heart } from 'lucide-react';
 import { FoodItem } from '../../types/common';
@@ -91,7 +92,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                   <div className="flex items-center gap-4 text-xs font-semibold text-gray-500 mb-4">
                     <div className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                      <span className="text-[#EE501C]">{food.rating}</span>
+                      <span className="text-[#EE501C]">{typeof food.rating === 'number' ? food.rating.toFixed(1) : food.rating}</span>
                     </div>
                     <span>•</span>
                     <span>{food.distance || '1.5'} km</span>

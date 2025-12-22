@@ -1,14 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ChevronRight, User, Ticket, Heart, CreditCard, Wallet, LogOut, 
-  ChevronDown, Truck, Mail, Phone, Calendar, MapPin, 
+  Truck, Mail, Phone, Calendar, MapPin, 
   CreditCard as CardIcon
 } from 'lucide-react';
 import { FoodItem, ProfileSubPage, UserProfile, Voucher } from '../../types/common';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { getVouchersApi } from '../../api/voucherApi';
 import { getFoodsApi } from '../../api/productApi';
+import { getUserProfileApi, updateUserApi } from '../../api/userApi';
+import { formatDateISO, formatDateVN } from '../../utils';
 
 const ProfileItem = ({ 
   icon: Icon, 
@@ -49,6 +52,7 @@ const ProfileItem = ({
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuthContext();
   const [subPage, setSubPage] = useState<ProfileSubPage>('MAIN');
   const [paymentMethod, setPaymentMethod] = useState<'APP' | 'COD'>('COD');
@@ -57,44 +61,100 @@ export const ProfilePage: React.FC = () => {
   
   // Data State
   const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: user?.name || 'Nguyễn Văn Khách',
-    email: user?.email || 'email@example.com',
-    phone: '(+84) 901 234 567',
-    address: '123 Đường ABC, Phường Bến Nghé, Quận 1, TP.HCM',
-    balance: 500000
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    balance: 0
   });
+  const [dob, setDob] = useState<string>('');
 
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [favoriteFoods, setFavoriteFoods] = useState<FoodItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Local form state for editing
+  const [formName, setFormName] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formPhone, setFormPhone] = useState('');
+  const [formAddress, setFormAddress] = useState('');
+
+  // Handle incoming navigation state (e.g. from ProductDetail "See All Vouchers")
+  useEffect(() => {
+    if (location.state && location.state.view) {
+        setSubPage(location.state.view as ProfileSubPage);
+        // Clear state to prevent stuck navigation if needed, 
+        // though strictly not necessary if we only read on mount/update
+    }
+  }, [location.state]);
 
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
-        const vData = await getVouchersApi();
-        setVouchers(vData);
+        setLoading(true);
+        try {
+            // Get user ID from Auth Context, default to 'usr-1' for demo if not logged in
+            const userId = user?.id || 'usr-1';
+            
+            // 1. Fetch Profile
+            const profileData = await getUserProfileApi(userId);
+            setUserProfile({
+                name: profileData.fullname,
+                email: profileData.email,
+                phone: profileData.phone,
+                address: profileData.address || '',
+                balance: profileData.balance || 0
+            });
+            setDob(formatDateISO(profileData.birthday));
+            setGender((profileData.gender === 'Male' ? 'male' : profileData.gender === 'Female' ? 'female' : 'other'));
 
-        const fData = await getFoodsApi();
-        // Simulate favorites by picking random 2
-        setFavoriteFoods(fData.slice(0, 2));
+            // Init form data
+            setFormName(profileData.fullname);
+            setFormEmail(profileData.email);
+            setFormPhone(profileData.phone);
+            setFormAddress(profileData.address || '');
+
+            // 2. Fetch Vouchers & Favorites
+            const vData = await getVouchersApi();
+            setVouchers(vData);
+
+            const fData = await getFoodsApi();
+            // Simulate favorites by picking random 2
+            setFavoriteFoods(fData.slice(0, 2));
+        } catch (error) {
+            console.error("Error fetching profile", error);
+        } finally {
+            setLoading(false);
+        }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
-  // Local form state for editing
-  const [formName, setFormName] = useState(userProfile.name);
-  const [formEmail, setFormEmail] = useState(userProfile.email);
-  const [formPhone, setFormPhone] = useState(userProfile.phone);
-  const [formAddress, setFormAddress] = useState(userProfile.address);
-
-  const handleSaveProfile = () => {
-    setUserProfile({
-      ...userProfile,
-      name: formName,
-      email: formEmail,
-      phone: formPhone,
-      address: formAddress
-    });
-    setSubPage('MAIN');
+  const handleSaveProfile = async () => {
+    try {
+        const userId = user?.id || 'usr-1';
+        await updateUserApi(userId, {
+            fullname: formName,
+            email: formEmail,
+            phone_number: formPhone,
+            address: formAddress,
+            // dob and gender update logic to be added
+        });
+        
+        // Update local state
+        setUserProfile(prev => ({
+            ...prev,
+            name: formName,
+            email: formEmail,
+            phone: formPhone,
+            address: formAddress
+        }));
+        
+        alert('Cập nhật thành công!');
+        setSubPage('MAIN');
+    } catch (error) {
+        alert('Cập nhật thất bại.');
+    }
   };
 
   const onLogout = () => {
@@ -109,6 +169,26 @@ export const ProfilePage: React.FC = () => {
   const onOrderNow = (item: FoodItem) => {
     navigate(`/checkout`, { state: { food: item, quantity: 1 } });
   };
+
+  // Helper function to check voucher validity dynamically
+  const isVoucherValid = (v: Voucher) => {
+    const now = new Date();
+    // 1. Check Status
+    if (v.status === 'Expired' || v.status === 'Inactive') return false;
+    if (v.isExpired) return false; 
+    
+    // 2. Check Date
+    if (v.endDate) {
+      const end = new Date(v.endDate);
+      // Set time to end of day to be generous
+      end.setHours(23, 59, 59, 999);
+      if (end < now) return false;
+    }
+    
+    return true;
+  };
+
+  const validVoucherCount = vouchers.filter(isVoucherValid).length;
 
   const renderBreadcrumb = () => {
     const pages = [
@@ -212,8 +292,8 @@ export const ProfilePage: React.FC = () => {
           <ProfileItem 
             icon={Ticket} 
             title="Ví vouchers" 
-            subtitle={`${vouchers.filter(v => !v.isExpired).length} mã giảm giá đang chờ bạn`} 
-            badge={vouchers.filter(v => !v.isExpired).length.toString()}
+            subtitle={`${validVoucherCount} mã giảm giá đang chờ bạn`} 
+            badge={validVoucherCount > 0 ? validVoucherCount.toString() : undefined}
             onClick={() => setSubPage('VOUCHERS')}
           />
           <ProfileItem 
@@ -291,7 +371,10 @@ export const ProfilePage: React.FC = () => {
   );
 
   const renderVouchersView = () => {
-    const displayedVouchers = vouchers.filter(v => voucherTab === 'AVAILABLE' ? !v.isExpired : v.isExpired);
+    const displayedVouchers = vouchers.filter(v => {
+        const valid = isVoucherValid(v);
+        return voucherTab === 'AVAILABLE' ? valid : !valid;
+    });
     
     return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -326,37 +409,40 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          {displayedVouchers.length > 0 ? displayedVouchers.map((v, idx) => (
+          {displayedVouchers.length > 0 ? displayedVouchers.map((v, idx) => {
+            const isActuallyExpired = !isVoucherValid(v);
+            return (
             <div 
               key={idx} 
-              className={`bg-white border border-gray-50 rounded-[2rem] p-6 flex gap-6 items-center shadow-sm hover:shadow-md transition-all group relative overflow-hidden ${v.isExpired ? 'opacity-60' : ''}`}
+              className={`bg-white border border-gray-50 rounded-[2rem] p-6 flex gap-6 items-center shadow-sm hover:shadow-md transition-all group relative overflow-hidden ${isActuallyExpired ? 'opacity-60' : ''}`}
             >
-              <div className={`w-20 h-20 rounded-2xl flex flex-col items-center justify-center shrink-0 ${v.type === 'FREESHIP' ? 'bg-orange-50' : 'bg-orange-100'}`}>
-                {v.type === 'FREESHIP' ? <Truck className={`w-8 h-8 ${v.isExpired ? 'text-gray-400' : 'text-[#EE501C]'}`} /> : <span className={`text-3xl ${v.isExpired ? 'text-gray-400' : 'text-[#EE501C]'}`}>%</span>}
-                <span className={`text-[8px] font-black uppercase mt-1 tracking-widest ${v.isExpired ? 'text-gray-400' : 'text-[#EE501C]'}`}>{v.type}</span>
+              <div className={`w-20 h-20 rounded-2xl flex flex-col items-center justify-center shrink-0 ${v.type === 'FreeShip' ? 'bg-orange-50' : 'bg-orange-100'}`}>
+                {v.type === 'FreeShip' ? <Truck className={`w-8 h-8 ${isActuallyExpired ? 'text-gray-400' : 'text-[#EE501C]'}`} /> : <span className={`text-3xl ${isActuallyExpired ? 'text-gray-400' : 'text-[#EE501C]'}`}>%</span>}
+                <span className={`text-[8px] font-black uppercase mt-1 tracking-widest ${isActuallyExpired ? 'text-gray-400' : 'text-[#EE501C]'}`}>{v.type}</span>
               </div>
               
               <div className="flex-1">
-                <h4 className={`font-bold text-gray-900 mb-1 ${v.isExpired ? 'text-gray-500' : ''}`}>{v.title}</h4>
+                <h4 className={`font-bold text-gray-900 mb-1 ${isActuallyExpired ? 'text-gray-500' : ''}`}>{v.title}</h4>
                 <p className="text-xs text-gray-400 mb-1">{v.condition}</p>
                 <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400">
                   <span>Mã: {v.code}</span>
+                  {v.endDate && <span>HSD: {formatDateVN(v.endDate)}</span>}
                 </div>
               </div>
 
               <div className="text-right">
-                <div className={`text-2xl font-black mb-2 ${v.isExpired ? 'text-gray-400' : 'text-[#EE501C]'}`}>
-                    {v.type === 'DISCOUNT' ? `-${v.discountValue/1000}k` : v.discountValue > 100 ? `${v.discountValue/1000}k` : `${v.discountValue}%`}
+                <div className={`text-2xl font-black mb-2 ${isActuallyExpired ? 'text-gray-400' : 'text-[#EE501C]'}`}>
+                    {v.type === 'Percent' ? `-${v.discountValue}%` : v.type === 'FreeShip' ? 'FREE' : `-${v.discountValue/1000}k`}
                 </div>
                 <button 
-                  onClick={() => !v.isExpired && setSubPage('FAVORITES')}
-                  className={`text-[10px] font-black uppercase tracking-widest ${v.isExpired ? 'text-gray-400 cursor-default' : 'text-[#EE501C] hover:underline cursor-pointer'}`}
+                  onClick={() => !isActuallyExpired && navigate('/')}
+                  className={`text-[10px] font-black uppercase tracking-widest ${isActuallyExpired ? 'text-gray-400 cursor-default' : 'text-[#EE501C] hover:underline cursor-pointer'}`}
                 >
-                  {v.isExpired ? 'Hết hạn' : 'Dùng ngay'}
+                  {isActuallyExpired ? 'Hết hạn' : 'Dùng ngay'}
                 </button>
               </div>
             </div>
-          )) : (
+          )}) : (
             <div className="text-center py-10 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
                 <p className="text-gray-400 text-sm">Không có voucher nào trong mục này.</p>
             </div>
@@ -418,8 +504,9 @@ export const ProfilePage: React.FC = () => {
             <div className="relative">
               <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5" />
               <input 
-                type="text" 
-                defaultValue="1995-01-01" 
+                type="date" 
+                defaultValue={dob}
+                onChange={(e) => setDob(e.target.value)}
                 className="w-full bg-gray-50 border border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-medium focus:bg-white focus:border-orange-100 focus:ring-4 focus:ring-orange-50 outline-none transition-all text-gray-700"
               />
             </div>
@@ -479,6 +566,10 @@ export const ProfilePage: React.FC = () => {
       </div>
     </div>
   );
+
+  if (loading) {
+      return <div className="min-h-screen flex items-center justify-center">Đang tải hồ sơ...</div>;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 min-h-[80vh]">

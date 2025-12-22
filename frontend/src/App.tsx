@@ -15,6 +15,7 @@ import { UsersManagement } from './page/admin/UsersManagement';
 import { DashboardPage } from './page/admin/DashboardPage';
 import { RestaurantManagement } from './page/admin/RestaurantManagement';
 import { OrderManagement } from './page/admin/OrderManagement';
+import { VoucherManagement } from './page/admin/VoucherManagement'; // Import Voucher Page
 import { SearchPage } from './page/user/SearchPage';
 import { ProductDetailPage } from './page/user/ProductDetailPage';
 import { CheckoutPage } from './page/user/CheckoutPage';
@@ -66,6 +67,14 @@ const App: React.FC = () => {
             element={
               <AdminRoute>
                 <OrderManagement />
+              </AdminRoute>
+            } 
+          />
+          <Route 
+            path="/admin/vouchers" 
+            element={
+              <AdminRoute>
+                <VoucherManagement />
               </AdminRoute>
             } 
           />

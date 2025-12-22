@@ -261,8 +261,8 @@ export const CheckoutPage: React.FC = () => {
                     } ${selectedVoucher?.id === v.id ? 'border-orange-200 bg-orange-50/50' : 'border-gray-100'}`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold ${v.type === 'FREESHIP' ? 'bg-[#EE501C]' : 'bg-orange-300'}`}>
-                        {v.type === 'FREESHIP' ? '🚢' : '%'}
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold ${v.type === 'FreeShip' ? 'bg-[#EE501C]' : 'bg-orange-300'}`}>
+                        {v.type === 'FreeShip' ? '🚢' : '%'}
                       </div>
                       <div className="flex-1">
                         <p className="text-xs font-bold text-gray-800">{v.title}</p>

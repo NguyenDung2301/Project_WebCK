@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { LayoutDashboard, Users, Store, ShoppingBag, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Store, ShoppingBag, LogOut, Ticket } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getAdminInfo } from '../../services/authService';
 
@@ -20,6 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
     { id: 'users', path: '/admin/users', label: 'Quản lý Người dùng', icon: <Users size={20} /> },
     { id: 'restaurants', path: '/admin/restaurants', label: 'Quản lý Nhà hàng', icon: <Store size={20} /> },
     { id: 'orders', path: '/admin/orders', label: 'Quản lý Đơn hàng', icon: <ShoppingBag size={20} /> },
+    { id: 'vouchers', path: '/admin/vouchers', label: 'Quản lý Voucher', icon: <Ticket size={20} /> },
   ];
 
   const isActive = (path: string) => currentPath.startsWith(path);
@@ -28,8 +30,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
     <div className="w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 flex flex-col z-20 hidden md:flex shadow-sm">
       {/* Brand */}
       <div className="h-16 flex items-center px-6 border-b border-gray-100">
-        <div className="w-8 h-8 bg-[#EE501C] rounded-lg flex items-center justify-center text-white font-bold mr-3">
-          FD
+        <div className="w-8 h-8 mr-3">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 48 48" 
+            fill="none"
+            className="w-full h-full object-contain"
+          >
+            <circle cx="24" cy="24" r="24" fill="#EE501C"/>
+            <g stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="translate(12, 10)">
+              <path d="M3 2v7a4 4 0 0 0 4 4v13"/>
+              <path d="M3 2h4"/>
+              <path d="M5 2v7"/>
+              <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3v13"/>
+            </g>
+          </svg>
         </div>
         <span className="text-xl font-bold text-[#EE501C]">FoodDelivery</span>
       </div>

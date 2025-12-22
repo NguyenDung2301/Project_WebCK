@@ -1,3 +1,4 @@
+
 /**
  * Product API
  * Kết nối UI với Mock Database Store cho Món ăn, Danh mục, Khuyến mãi
@@ -30,4 +31,20 @@ export const getPromotionsApi = async () => {
 export const getSuggestionsApi = async () => {
   await new Promise(resolve => setTimeout(resolve, 100));
   return db.getSuggestions();
+};
+
+// Search History APIs
+export const getSearchHistoryApi = async (): Promise<string[]> => {
+  await new Promise(resolve => setTimeout(resolve, 100));
+  return db.getSearchHistory();
+};
+
+export const addSearchHistoryApi = async (term: string): Promise<string[]> => {
+  await new Promise(resolve => setTimeout(resolve, 100));
+  return db.addSearchHistory(term) || [];
+};
+
+export const clearSearchHistoryApi = async (): Promise<void> => {
+  await new Promise(resolve => setTimeout(resolve, 100));
+  db.clearSearchHistory();
 };
