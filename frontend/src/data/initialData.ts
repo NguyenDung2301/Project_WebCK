@@ -19,26 +19,26 @@ const getIsoDate = (daysAgo: number) => {
 
 // --- 1. USERS (Master Data) ---
 export const INITIAL_USERS: BackendUser[] = [
-  { 
+  {
     user_id: 'usr-admin', fullname: 'Administrator', email: 'admin@gmail.com', phone_number: '0909000001', birthday: '1990-01-01', gender: 'Male', created_at: '2023-01-01', role: 'admin',
-    address: 'Văn phòng Admin, Hà Nội', balance: 0 
+    address: 'Văn phòng Admin, Hà Nội', balance: 0
   },
-  { 
+  {
     user_id: 'usr-shipper', fullname: 'Trần Văn Shipper', email: 'shipper@food.com', phone_number: '0909888777', birthday: '1992-08-20', gender: 'Male', created_at: '2023-02-20', role: 'shipper',
     address: 'Kho giao hàng trung tâm', balance: 5000000, rank: 'Tài xế 5 sao'
   },
   // Customers
-  { 
+  {
     user_id: 'usr-1', fullname: 'Nguyễn Văn A', email: 'user@gmail.com', phone_number: '0901234567', birthday: '1995-05-15', gender: 'Male', created_at: '2023-03-10', role: 'user',
     address: '123 Đường Láng, Đống Đa, Hà Nội', balance: 1500000, rank: 'Thành viên Vàng'
   },
-  { 
+  {
     user_id: 'usr-2', fullname: 'Lê Thị Mai', email: 'lethimai@example.com', phone_number: '0912223333', birthday: '1998-11-11', gender: 'Female', created_at: '2023-04-05', role: 'user',
-    address: '45 Nguyễn Trãi, Thanh Xuân, Hà Nội', balance: 200000 
+    address: '45 Nguyễn Trãi, Thanh Xuân, Hà Nội', balance: 200000
   },
-  { 
+  {
     user_id: 'usr-3', fullname: 'Phạm Minh Tuấn', email: 'tuanpm@example.com', phone_number: '0988777666', birthday: '1993-02-28', gender: 'Male', created_at: '2023-06-15', role: 'user',
-    address: '12 Hàng Bài, Hoàn Kiếm, Hà Nội', balance: 50000 
+    address: '12 Hàng Bài, Hoàn Kiếm, Hà Nội', balance: 50000
   },
   { user_id: 'usr-4', fullname: 'Trần Ngọc Lan', email: 'lanngoc@example.com', phone_number: '0933444555', birthday: '2000-10-10', gender: 'Female', created_at: '2023-08-20', role: 'user' },
   { user_id: 'usr-5', fullname: 'Hoàng Văn Ba', email: 'bahoang@example.com', phone_number: '0977888999', birthday: '1985-12-25', gender: 'Male', created_at: '2023-01-20', role: 'user' },
@@ -63,7 +63,7 @@ export const INITIAL_FOODS: FoodItem[] = [
   // KFC (res-1)
   { id: 'f-1', name: 'Gà Rán Giòn Cay (2 Miếng)', price: 78000, originalPrice: 85000, imageUrl: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=800', rating: 4.5, description: 'Gà rán da giòn rụm, thịt mềm.', category: 'fastfood', restaurantId: 'res-1', deliveryTime: '15-20 phút' },
   { id: 'f-1b', name: 'Burger Tôm', price: 45000, imageUrl: 'https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=800', rating: 4.2, description: 'Nhân tôm nguyên con.', category: 'burger', restaurantId: 'res-1', deliveryTime: '15-20 phút' },
-  
+
   // McDonald's (res-2)
   { id: 'f-2', name: 'Burger Bò Phô Mai 2 Tầng', price: 89000, imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800', rating: 4.7, description: 'Burger bò Úc nướng lửa hồng.', category: 'burger', restaurantId: 'res-2', deliveryTime: '20 phút' },
   { id: 'f-2b', name: 'Khoai Tây Chiên (L)', price: 35000, imageUrl: 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?q=80&w=800', rating: 4.8, description: 'Giòn tan, nóng hổi.', category: 'snack', restaurantId: 'res-2', deliveryTime: '15 phút' },
@@ -120,6 +120,7 @@ export const INITIAL_MASTER_ORDERS: MasterOrder[] = [
   { id: 'ord-301', userId: 'usr-5', restaurantId: 'res-7', items: [{ foodId: 'f-7', quantity: 2, price: 70000 }], status: 'PENDING', orderTime: `13:15 • ${getDateStr(0)}`, paymentMethod: 'Cash', deliveryAddress: 'Khu chung cư Masteri, Thảo Điền', needsReview: false, isReviewed: false, totalAmount: 140000 + 15000 },
   { id: 'ord-302', userId: 'usr-2', restaurantId: 'res-1', items: [{ foodId: 'f-1', quantity: 5, price: 78000 }], status: 'PENDING', orderTime: `13:20 • ${getDateStr(0)}`, paymentMethod: 'Wallet', deliveryAddress: '45 Nguyễn Trãi, Thanh Xuân, Hà Nội', needsReview: false, isReviewed: false, totalAmount: 78000 * 5 + 15000 },
   { id: 'ord-303', userId: 'usr-4', restaurantId: 'res-9', items: [{ foodId: 'f-9', quantity: 1, price: 65000 }], status: 'PENDING', orderTime: `13:30 • ${getDateStr(0)}`, paymentMethod: 'Cash', deliveryAddress: 'Hẻm 51, Thành Thái, Q10', needsReview: false, isReviewed: false, totalAmount: 65000 + 15000 },
+  { id: 'ord-106', userId: 'usr-1', restaurantId: 'res-6', items: [{ foodId: 'f-6', quantity: 1, price: 120000 }], status: 'COMPLETED', orderTime: `14:00 • ${getDateStr(1)}`, paymentMethod: 'Wallet', deliveryAddress: '123 Đường Láng, Đống Đa, Hà Nội', needsReview: false, isReviewed: false, totalAmount: 120000 + 15000 },
 ];
 
 // --- 5. REVIEWS ---
@@ -166,10 +167,14 @@ export const INITIAL_VOUCHERS: Voucher[] = [
 ];
 
 export const INITIAL_PROMOTIONS = [
-  { id: 1, name: 'KFC - Tặng Pepsi', vendor: 'KFC Vietnam', image: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462793/Screenshot_2025-11-29_092812_fgyur2.png', action: 'Chi tiết', foodId: 'f-1' },
-  { id: 2, name: 'McDonald\'s - Giảm 50%', vendor: 'McDonald\'s', image: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462710/Screenshot_2025-11-30_072620_ak9ylz.png', action: 'Xem ngay', foodId: 'f-2' },
-  { id: 3, name: 'Phúc Long - Combo 99k', vendor: 'Phúc Long', image: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072914_omsuvg.png', action: 'Đặt ngay', foodId: 'f-3' },
-  { id: 4, name: 'Sushi Tei - Mua 1 Tặng 1', vendor: 'Sushi Tei', image: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462283/Screenshot_2025-11-30_072347_zzyj7x.png', action: 'Ưu đãi', foodId: 'f-6' },
+  { id: 1, name: 'KFC', vendor: 'KFC Vietnam', image: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462793/Screenshot_2025-11-29_092812_fgyur2.png', action: 'Tặng Pepsi', foodId: 'f-1' },
+  { id: 2, name: 'McDonald\'s', vendor: 'McDonald\'s', image: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462710/Screenshot_2025-11-30_072620_ak9ylz.png', action: 'Giảm 50%', foodId: 'f-2' },
+  { id: 3, name: 'Phúc Long', vendor: 'Phúc Long', image: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072914_omsuvg.png', action: 'Free Ship', foodId: 'f-3' },
+  { id: 4, name: 'Sushi Tei', vendor: 'Sushi Tei', image: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462283/Screenshot_2025-11-30_072347_zzyj7x.png', action: 'Mua 1 Tặng 1', foodId: 'f-6' },
+  { id: 5, name: 'Pizza Hut', vendor: 'Pizza Hut', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800', action: 'Giảm 30%', foodId: 'f-4' },
+  { id: 6, name: 'Bánh Mì Huỳnh Hoa', vendor: 'Huỳnh Hoa', image: 'https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=800', action: 'Free Ship', foodId: 'f-5' },
+  { id: 7, name: 'Phở Thìn', vendor: 'Phở Thìn Lò Đúc', image: 'https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=800', action: 'Giảm 20K', foodId: 'f-7' },
+  { id: 8, name: 'The Coffee House', vendor: 'The Coffee House', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=800', action: 'Giảm 25%', foodId: 'f-8' },
 ];
 
 export const INITIAL_SUGGESTIONS = [

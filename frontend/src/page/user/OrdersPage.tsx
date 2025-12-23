@@ -1,9 +1,10 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronRight, ChevronDown, CheckCircle2, XCircle, RotateCcw, FileText, Clock, Utensils, X, Bike, Navigation, AlertTriangle, Phone, Mail, Copy, User, Check, Star, Store } from 'lucide-react';
 import { Order } from '../../types/common';
 import { getAllOrdersApi } from '../../api/orderApi';
+import { getFoodByIdApi } from '../../api/productApi';
 import { submitReviewApi } from '../../api/reviewApi';
 import { Modal } from '../../components/common/Modal';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -19,8 +20,12 @@ const MOCK_SHIPPER_INFO = {
 
 export const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuthContext();
-  const [activeTab, setActiveTab] = useState('all');
+
+  // Get initial tab from navigation state (e.g., from checkout success)
+  const initialTab = (location.state as { tab?: string })?.tab || 'all';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +33,7 @@ export const OrdersPage: React.FC = () => {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  
+
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [selectedOrderForReview, setSelectedOrderForReview] = useState<Order | null>(null);
 
@@ -76,11 +81,11 @@ export const OrdersPage: React.FC = () => {
       case 'delivering': return deliveringOrders;
       case 'delivered': return completedOrders;
       case 'review': return reviewOrders;
-      case 'all': 
-      default: 
-        return orders; 
+      case 'all':
+      default:
+        return allOrders;
     }
-  }, [activeTab, orders, pendingOrders, deliveringOrders, completedOrders, reviewOrders]);
+  }, [activeTab, allOrders, pendingOrders, deliveringOrders, completedOrders, reviewOrders]);
 
   const handleCancelClick = (orderId: string) => {
     setSelectedOrderId(orderId);
@@ -94,14 +99,14 @@ export const OrdersPage: React.FC = () => {
 
   const handleConfirmCancel = () => {
     if (selectedOrderId) {
-        setOrders(prev => prev.map(o => o.id === selectedOrderId ? { ...o, status: 'CANCELLED' } : o));
-        setCancelModalOpen(false);
-        setSelectedOrderId(null);
+      setOrders(prev => prev.map(o => o.id === selectedOrderId ? { ...o, status: 'CANCELLED' } : o));
+      setCancelModalOpen(false);
+      setSelectedOrderId(null);
     }
   };
 
   const handleConfirmReceived = (orderId: string) => {
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'COMPLETED', needsReview: true } : o));
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'COMPLETED', needsReview: true } : o));
   };
 
   // --- REVIEW HANDLERS ---
@@ -126,9 +131,9 @@ export const OrdersPage: React.FC = () => {
       });
 
       // 2. Update local state
-      setOrders(prev => prev.map(o => 
-        o.id === selectedOrderForReview.id 
-          ? { ...o, isReviewed: true, needsReview: false } 
+      setOrders(prev => prev.map(o =>
+        o.id === selectedOrderForReview.id
+          ? { ...o, isReviewed: true, needsReview: false }
           : o
       ));
 
@@ -164,6 +169,21 @@ export const OrdersPage: React.FC = () => {
     navigate(`/product/${foodId}`);
   };
 
+  const handleReorder = async (order: Order) => {
+    try {
+      const food = await getFoodByIdApi(order.foodId);
+      if (food) {
+        navigate('/checkout', { state: { food, quantity: 1 } });
+      } else {
+        // Fallback nếu không tìm thấy food, chuyển đến trang chi tiết sản phẩm
+        navigate(`/product/${order.foodId}`);
+      }
+    } catch (error) {
+      console.error('Failed to get food data', error);
+      navigate(`/product/${order.foodId}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -191,9 +211,8 @@ export const OrdersPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`pb-4 text-sm font-bold whitespace-nowrap transition-all relative ${
-                activeTab === tab.id ? 'text-[#EE501C]' : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`pb-4 text-sm font-bold whitespace-nowrap transition-all relative ${activeTab === tab.id ? 'text-[#EE501C]' : 'text-gray-500 hover:text-gray-700'
+                }`}
             >
               {tab.label}
               {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EE501C] rounded-full" />}
@@ -205,18 +224,18 @@ export const OrdersPage: React.FC = () => {
       <div className="space-y-6">
         {filteredOrders.length > 0 ? (
           filteredOrders.map((order) => (
-            <div 
-              key={order.id} 
+            <div
+              key={order.id}
               className="bg-white rounded-3xl overflow-hidden border border-gray-50 shadow-sm flex flex-col hover:shadow-md transition-all"
             >
               <div className="p-6 flex flex-col md:flex-row gap-6">
-                <div 
+                <div
                   onClick={() => handleViewDetail(order.foodId)}
                   className="w-full md:w-48 h-36 rounded-2xl overflow-hidden shrink-0 cursor-pointer group"
                 >
-                  <img 
-                    src={order.imageUrl} 
-                    alt={order.restaurantName} 
+                  <img
+                    src={order.imageUrl}
+                    alt={order.restaurantName}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
@@ -224,17 +243,21 @@ export const OrdersPage: React.FC = () => {
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <h3 
+                      <h3
                         onClick={() => handleViewDetail(order.foodId)}
                         className="text-lg font-bold text-gray-900 cursor-pointer hover:text-[#EE501C] transition-colors flex items-center gap-2"
                       >
                         <Store className="w-4 h-4 text-gray-400" />
                         {order.restaurantName}
                       </h3>
-                      
+
                       {order.isReviewed ? (
-                        <div className="bg-orange-50 text-orange-600 text-[10px] font-bold px-3 py-1 rounded-full border border-orange-100 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Đã đánh giá
+                        <div className="bg-green-50 text-green-600 text-[10px] font-bold px-3 py-1 rounded-full border border-green-100 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Hoàn thành
+                        </div>
+                      ) : order.status === 'COMPLETED' && order.needsReview ? (
+                        <div className="bg-yellow-50 text-yellow-600 text-[10px] font-bold px-3 py-1 rounded-full border border-yellow-200 flex items-center gap-1">
+                          <Star className="w-3 h-3" /> Cần đánh giá
                         </div>
                       ) : order.status === 'COMPLETED' ? (
                         <div className="bg-green-50 text-green-600 text-[10px] font-bold px-3 py-1 rounded-full border border-green-100 flex items-center gap-1">
@@ -254,16 +277,16 @@ export const OrdersPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
                       <Clock className="w-3.5 h-3.5" />
                       <span>Đặt lúc {order.orderTime}</span>
                     </div>
-                    
+
                     <div className="bg-gray-50 rounded-xl p-3 mb-4 border border-gray-100">
-                        <p className="text-sm text-gray-800 font-medium leading-relaxed">
-                            {order.description}
-                        </p>
+                      <p className="text-sm text-gray-800 font-medium leading-relaxed">
+                        {order.description}
+                      </p>
                     </div>
                   </div>
 
@@ -272,32 +295,32 @@ export const OrdersPage: React.FC = () => {
                       <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Tổng thanh toán</span>
                       <span className="text-xl font-black text-[#EE501C]">{order.totalAmount.toLocaleString()}đ</span>
                     </div>
-                    
+
                     <div className="flex gap-3">
                       {order.isReviewed ? (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleViewDetail(order.foodId)}
-                            className="flex-1 md:flex-none border border-gray-100 text-gray-500 font-bold py-2.5 px-8 rounded-2xl hover:bg-gray-50 transition-colors text-sm flex items-center justify-center"
+                            className="flex-1 md:flex-none border border-gray-100 text-gray-500 font-bold py-2.5 px-8 rounded-2xl hover:bg-gray-50 transition-colors text-sm flex items-center justify-center gap-2"
                           >
-                            Đặt lại
+                            <FileText className="w-4 h-4" /> Chi tiết
                           </button>
-                          <button 
-                            disabled
-                            className="flex-1 md:flex-none bg-gray-100 text-gray-400 font-bold py-2.5 px-8 rounded-2xl transition-all text-sm flex items-center justify-center"
+                          <button
+                            onClick={() => handleReorder(order)}
+                            className="flex-1 md:flex-none bg-[#EE501C] text-white font-bold py-2.5 px-8 rounded-2xl shadow-lg shadow-orange-100 hover:bg-[#d44719] transition-all text-sm flex items-center justify-center gap-2"
                           >
-                            Đã đánh giá
+                            <RotateCcw className="w-4 h-4" /> Đặt lại
                           </button>
                         </>
                       ) : order.status === 'PENDING' ? (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleCancelClick(order.id)}
                             className="flex-1 md:flex-none border border-gray-100 text-gray-500 font-bold py-2.5 px-6 rounded-2xl hover:bg-gray-50 transition-colors text-sm flex items-center justify-center gap-2"
                           >
                             <X className="w-4 h-4" /> Huỷ đơn
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleViewDetail(order.foodId)}
                             className="flex-1 md:flex-none bg-[#EE501C] text-white font-bold py-2.5 px-8 rounded-2xl shadow-lg shadow-orange-100 hover:bg-[#d44719] transition-all text-sm flex items-center justify-center"
                           >
@@ -306,7 +329,7 @@ export const OrdersPage: React.FC = () => {
                         </>
                       ) : order.status === 'DELIVERING' ? (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleViewDetail(order.foodId)}
                             className="flex-1 md:flex-none border border-gray-100 text-gray-500 font-bold py-2.5 px-8 rounded-2xl hover:bg-gray-50 transition-colors text-sm flex items-center justify-center"
                           >
@@ -318,21 +341,21 @@ export const OrdersPage: React.FC = () => {
                         </>
                       ) : order.status === 'COMPLETED' ? (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleViewDetail(order.foodId)}
-                            className="flex-1 md:flex-none border border-gray-100 text-gray-500 font-bold py-2.5 px-8 rounded-2xl hover:bg-gray-50 transition-colors text-sm flex items-center justify-center"
+                            className="flex-1 md:flex-none border border-gray-100 text-gray-500 font-bold py-2.5 px-8 rounded-2xl hover:bg-gray-50 transition-colors text-sm flex items-center justify-center gap-2"
                           >
-                            Đặt lại
+                            <FileText className="w-4 h-4" /> Chi tiết
                           </button>
                           {order.needsReview ? (
-                            <button 
+                            <button
                               onClick={() => handleOpenReviewModal(order)}
                               className="flex-1 md:flex-none bg-[#EE501C] text-white font-bold py-2.5 px-8 rounded-2xl shadow-lg shadow-orange-100 hover:bg-[#d44719] transition-all text-sm flex items-center justify-center"
                             >
                               Đánh giá
                             </button>
                           ) : (
-                            <button 
+                            <button
                               onClick={() => handleConfirmReceived(order.id)}
                               className="flex-1 md:flex-none bg-[#EE501C] text-white font-bold py-2.5 px-8 rounded-2xl shadow-lg shadow-orange-100 hover:bg-[#d44719] transition-all text-sm flex items-center justify-center"
                             >
@@ -342,13 +365,13 @@ export const OrdersPage: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          <button 
+                          <button
                             onClick={() => handleViewDetail(order.foodId)}
                             className="flex-1 md:flex-none border border-gray-100 text-gray-500 font-bold py-2.5 px-8 rounded-2xl hover:bg-gray-50 transition-colors text-sm flex items-center justify-center gap-2"
                           >
                             <FileText className="w-4 h-4" /> Chi tiết
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleViewDetail(order.foodId)}
                             className="flex-1 md:flex-none bg-[#EE501C] text-white font-bold py-2.5 px-8 rounded-2xl shadow-lg shadow-orange-100 hover:bg-[#d44719] transition-all text-sm flex items-center justify-center gap-2"
                           >
@@ -369,7 +392,7 @@ export const OrdersPage: React.FC = () => {
                     </div>
                     <span className="text-xs font-bold text-gray-700">Dự kiến giao trong 10-15 phút</span>
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleContactClick(order.id)}
                     className="text-xs font-bold text-[#EE501C] hover:underline transition-all"
                   >
@@ -427,13 +450,12 @@ export const OrdersPage: React.FC = () => {
                     onClick={() => setReviewRating(star)}
                     className="focus:outline-none transition-transform active:scale-95"
                   >
-                    <Star 
+                    <Star
                       size={32}
-                      className={`transition-all ${
-                        star <= (hoverRating || reviewRating) 
-                          ? 'text-[#EE501C] fill-[#EE501C] scale-110 drop-shadow-sm' 
-                          : 'text-gray-200'
-                      }`} 
+                      className={`transition-all ${star <= (hoverRating || reviewRating)
+                        ? 'text-[#EE501C] fill-[#EE501C] scale-110 drop-shadow-sm'
+                        : 'text-gray-200'
+                        }`}
                     />
                   </button>
                 ))}
@@ -446,7 +468,7 @@ export const OrdersPage: React.FC = () => {
             {/* Comment */}
             <div>
               <label className="text-sm font-bold text-gray-900 mb-2 block">Nhận xét của bạn</label>
-              <textarea 
+              <textarea
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
                 placeholder="Hãy chia sẻ nhận xét cho món ăn này nhé! (Tối thiểu 10 ký tự)"
@@ -456,13 +478,13 @@ export const OrdersPage: React.FC = () => {
 
             {/* Actions */}
             <div className="flex gap-4 pt-2">
-              <button 
+              <button
                 onClick={() => setReviewModalOpen(false)}
                 className="flex-1 py-3.5 rounded-xl bg-gray-50 text-gray-600 font-bold hover:bg-gray-100 transition-all text-sm"
               >
                 Trở lại
               </button>
-              <button 
+              <button
                 onClick={handleSubmitReview}
                 disabled={reviewComment.length < 5}
                 className="flex-1 py-3.5 rounded-xl bg-[#EE501C] text-white font-bold shadow-lg shadow-orange-200 hover:bg-[#d44719] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -475,39 +497,39 @@ export const OrdersPage: React.FC = () => {
       </Modal>
 
       {/* CANCEL ORDER MODAL */}
-      <Modal 
-        isOpen={cancelModalOpen} 
-        onClose={() => setCancelModalOpen(false)} 
+      <Modal
+        isOpen={cancelModalOpen}
+        onClose={() => setCancelModalOpen(false)}
         maxWidth="md"
-        hideCloseButton={false} 
+        hideCloseButton={false}
       >
         <div className="flex flex-col items-center text-center p-2">
-           <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-5 border border-red-100">
-              <AlertTriangle size={32} />
-           </div>
-           <h3 className="text-xl font-bold text-gray-900 mb-2">Xác nhận hủy đơn</h3>
-           <p className="text-sm text-gray-500 mb-6 px-4">
-             Bạn có chắc muốn hủy đơn tại <strong className="text-gray-900">{getSelectedOrderName()}</strong> không?
-           </p>
-           <div className="w-full bg-[#FFF5F5] border border-red-100 rounded-2xl p-4 mb-8">
-             <p className="text-xs text-red-500 font-medium leading-relaxed">
-               Lưu ý: Hủy đơn hàng nhiều lần có thể ảnh hưởng đến điểm tín nhiệm của bạn.
-             </p>
-           </div>
-           <div className="flex w-full gap-4">
-             <button 
-                onClick={() => setCancelModalOpen(false)}
-                className="flex-1 py-3.5 rounded-full border border-red-200 text-red-500 font-bold hover:bg-red-50 transition-all text-sm" 
-             >
-                Không hủy
-             </button>
-             <button 
-                onClick={handleConfirmCancel}
-                className="flex-1 py-3.5 rounded-full bg-[#EE501C] text-white font-bold hover:bg-[#d44719] shadow-lg shadow-orange-100 transition-all text-sm" 
-             >
-                Xác nhận hủy
-             </button>
-           </div>
+          <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-5 border border-red-100">
+            <AlertTriangle size={32} />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Xác nhận hủy đơn</h3>
+          <p className="text-sm text-gray-500 mb-6 px-4">
+            Bạn có chắc muốn hủy đơn tại <strong className="text-gray-900">{getSelectedOrderName()}</strong> không?
+          </p>
+          <div className="w-full bg-[#FFF5F5] border border-red-100 rounded-2xl p-4 mb-8">
+            <p className="text-xs text-red-500 font-medium leading-relaxed">
+              Lưu ý: Hủy đơn hàng nhiều lần có thể ảnh hưởng đến điểm tín nhiệm của bạn.
+            </p>
+          </div>
+          <div className="flex w-full gap-4">
+            <button
+              onClick={() => setCancelModalOpen(false)}
+              className="flex-1 py-3.5 rounded-full border border-red-200 text-red-500 font-bold hover:bg-red-50 transition-all text-sm"
+            >
+              Không hủy
+            </button>
+            <button
+              onClick={handleConfirmCancel}
+              className="flex-1 py-3.5 rounded-full bg-[#EE501C] text-white font-bold hover:bg-[#d44719] shadow-lg shadow-orange-100 transition-all text-sm"
+            >
+              Xác nhận hủy
+            </button>
+          </div>
         </div>
       </Modal>
 
@@ -521,101 +543,101 @@ export const OrdersPage: React.FC = () => {
         <div className="flex flex-col -m-6 bg-white relative rounded-2xl overflow-hidden">
           {/* Orange Header */}
           <div className="bg-[#EE501C] h-32 px-6 pt-6 relative">
-             {/* Decorative circle top right */}
-             <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full"></div>
-             
-             <div className="relative z-10 flex justify-between items-start">
-                <div className="text-white">
-                   <div className="flex items-center gap-2 mb-1">
-                      <User size={20} className="fill-white" />
-                      <h3 className="font-bold text-lg">Liên hệ Shipper</h3>
-                   </div>
-                   <p className="text-white/90 text-xs font-medium">Tài xế đang giao đơn hàng của bạn</p>
+            {/* Decorative circle top right */}
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full"></div>
+
+            <div className="relative z-10 flex justify-between items-start">
+              <div className="text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <User size={20} className="fill-white" />
+                  <h3 className="font-bold text-lg">Liên hệ Shipper</h3>
                 </div>
-                <button 
-                  onClick={() => setContactModalOpen(false)}
-                  className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-sm"
-                >
-                  <X size={20} />
-                </button>
-             </div>
+                <p className="text-white/90 text-xs font-medium">Tài xế đang giao đơn hàng của bạn</p>
+              </div>
+              <button
+                onClick={() => setContactModalOpen(false)}
+                className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-sm"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Body Content */}
           <div className="px-6 pb-8 pt-14 relative">
-             {/* Floating Avatar */}
-             <div className="absolute -top-12 left-1/2 -translate-x-1/2">
-                <div className="relative">
-                   <div className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden bg-gray-200">
-                      <img src={MOCK_SHIPPER_INFO.avatar} alt="Shipper" className="w-full h-full object-cover" />
-                   </div>
-                   {/* Verified Badge */}
-                   <div className="absolute bottom-0 right-0 bg-[#00C853] text-white p-1 rounded-full border-[3px] border-white flex items-center justify-center">
-                      <Check size={12} strokeWidth={4} />
-                   </div>
+            {/* Floating Avatar */}
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden bg-gray-200">
+                  <img src={MOCK_SHIPPER_INFO.avatar} alt="Shipper" className="w-full h-full object-cover" />
                 </div>
-             </div>
-
-             {/* Name & ID */}
-             <div className="text-center mb-8">
-                <h4 className="text-xl font-bold text-gray-900 mb-2">{MOCK_SHIPPER_INFO.name}</h4>
-                <span className="inline-block bg-gray-100 text-gray-600 text-xs font-bold px-4 py-1.5 rounded-full">
-                   Mã tài xế: {MOCK_SHIPPER_INFO.id}
-                </span>
-             </div>
-
-             {/* Contact Cards */}
-             <div className="space-y-4 mb-8">
-                {/* Phone */}
-                <div className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center shadow-sm">
-                   <div className="w-12 h-12 rounded-2xl bg-[#FFF5F1] flex items-center justify-center text-[#EE501C] mr-4 shrink-0">
-                      <Phone size={24} />
-                   </div>
-                   <div className="flex-1">
-                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">SỐ ĐIỆN THOẠI</p>
-                      <p className="text-base font-bold text-gray-900">{MOCK_SHIPPER_INFO.phone}</p>
-                   </div>
-                   <button 
-                      onClick={() => handleCopy(MOCK_SHIPPER_INFO.phone)}
-                      className="text-gray-400 hover:text-[#EE501C] p-2"
-                   >
-                      <Copy size={20} />
-                   </button>
+                {/* Verified Badge */}
+                <div className="absolute bottom-0 right-0 bg-[#00C853] text-white p-1 rounded-full border-[3px] border-white flex items-center justify-center">
+                  <Check size={12} strokeWidth={4} />
                 </div>
+              </div>
+            </div>
 
-                {/* Email */}
-                <div className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center shadow-sm">
-                   <div className="w-12 h-12 rounded-2xl bg-[#FFF5F1] flex items-center justify-center text-[#EE501C] mr-4 shrink-0">
-                      <Mail size={24} />
-                   </div>
-                   <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">EMAIL</p>
-                      <p className="text-base font-bold text-gray-900 truncate">{MOCK_SHIPPER_INFO.email}</p>
-                   </div>
-                   <button 
-                      onClick={() => handleCopy(MOCK_SHIPPER_INFO.email)}
-                      className="text-gray-400 hover:text-[#EE501C] p-2"
-                   >
-                      <Copy size={20} />
-                   </button>
+            {/* Name & ID */}
+            <div className="text-center mb-8">
+              <h4 className="text-xl font-bold text-gray-900 mb-2">{MOCK_SHIPPER_INFO.name}</h4>
+              <span className="inline-block bg-gray-100 text-gray-600 text-xs font-bold px-4 py-1.5 rounded-full">
+                Mã tài xế: {MOCK_SHIPPER_INFO.id}
+              </span>
+            </div>
+
+            {/* Contact Cards */}
+            <div className="space-y-4 mb-8">
+              {/* Phone */}
+              <div className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-[#FFF5F1] flex items-center justify-center text-[#EE501C] mr-4 shrink-0">
+                  <Phone size={24} />
                 </div>
-             </div>
-
-             {/* Actions */}
-             <div className="flex gap-4">
-                <button 
-                   onClick={() => setContactModalOpen(false)}
-                   className="flex-1 py-4 rounded-2xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-all"
+                <div className="flex-1">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">SỐ ĐIỆN THOẠI</p>
+                  <p className="text-base font-bold text-gray-900">{MOCK_SHIPPER_INFO.phone}</p>
+                </div>
+                <button
+                  onClick={() => handleCopy(MOCK_SHIPPER_INFO.phone)}
+                  className="text-gray-400 hover:text-[#EE501C] p-2"
                 >
-                   Hủy
+                  <Copy size={20} />
                 </button>
-                <button 
-                   onClick={() => window.location.href = `tel:${MOCK_SHIPPER_INFO.phone.replace(/\s/g, '')}`}
-                   className="flex-1 py-4 rounded-2xl bg-[#EE501C] text-white font-bold shadow-lg shadow-orange-200 hover:bg-[#d44719] transition-all flex items-center justify-center gap-2"
+              </div>
+
+              {/* Email */}
+              <div className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-[#FFF5F1] flex items-center justify-center text-[#EE501C] mr-4 shrink-0">
+                  <Mail size={24} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">EMAIL</p>
+                  <p className="text-base font-bold text-gray-900 truncate">{MOCK_SHIPPER_INFO.email}</p>
+                </div>
+                <button
+                  onClick={() => handleCopy(MOCK_SHIPPER_INFO.email)}
+                  className="text-gray-400 hover:text-[#EE501C] p-2"
                 >
-                   <Phone size={20} className="fill-white" /> Gọi ngay
+                  <Copy size={20} />
                 </button>
-             </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-4">
+              <button
+                onClick={() => setContactModalOpen(false)}
+                className="flex-1 py-4 rounded-2xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-all"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() => window.location.href = `tel:${MOCK_SHIPPER_INFO.phone.replace(/\s/g, '')}`}
+                className="flex-1 py-4 rounded-2xl bg-[#EE501C] text-white font-bold shadow-lg shadow-orange-200 hover:bg-[#d44719] transition-all flex items-center justify-center gap-2"
+              >
+                <Phone size={20} className="fill-white" /> Gọi ngay
+              </button>
+            </div>
           </div>
         </div>
       </Modal>

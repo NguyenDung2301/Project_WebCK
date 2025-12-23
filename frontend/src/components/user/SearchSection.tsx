@@ -17,10 +17,10 @@ export const SearchSection: React.FC = () => {
           placeholder="Tìm món ăn, quán ăn..."
           onFocus={handleFocus}
           readOnly
-          className="w-full bg-white border border-gray-100 rounded-[1.5rem] py-5 px-14 shadow-lg shadow-orange-100/30 focus:ring-4 focus:ring-orange-50 transition-all outline-none text-base placeholder:text-gray-400 cursor-pointer"
+          className="w-full bg-white border-2 border-gray-300 rounded-[1.5rem] py-5 px-14 shadow-lg shadow-orange-100/30 focus:ring-4 focus:ring-orange-50 focus:border-[#EE501C] transition-all outline-none text-base placeholder:text-gray-400 cursor-pointer hover:border-[#EE501C]"
         />
         <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#EE501C] w-6 h-6" />
-        <button 
+        <button
           onClick={handleFocus}
           className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#EE501C] text-white px-6 py-2.5 rounded-2xl font-bold text-sm hover:bg-[#d44719] transition-colors hidden sm:block shadow-md shadow-orange-200"
         >

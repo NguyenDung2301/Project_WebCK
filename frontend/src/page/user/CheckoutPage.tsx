@@ -6,6 +6,7 @@ import { FoodItem, UserProfile, Voucher } from '../../types/common';
 import { getVouchersApi } from '../../api/voucherApi';
 import { createOrderApi } from '../../api/orderApi';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { PasswordModal } from '../../components/common/PasswordModal';
 
 const DEFAULT_FOOD: FoodItem = {
   id: '1',
@@ -23,11 +24,11 @@ export const CheckoutPage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuthContext();
   const state = location.state as { food: FoodItem, quantity: number, voucher?: Voucher } | undefined;
-  
+
   // Use passed data or fall back to default
   const food = state?.food || DEFAULT_FOOD;
   const quantity = state?.quantity || 2;
-  
+
   // Construct UserProfile from AuthContext or fallback
   const userProfile: UserProfile = {
     name: user?.name || 'Khách hàng',
@@ -47,16 +48,13 @@ export const CheckoutPage: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'cash'>('wallet');
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(initialVoucher);
   const [availableVouchers, setAvailableVouchers] = useState<Voucher[]>([]);
-  
+
   // Modals
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  
+
   // States
   const [isProcessing, setIsProcessing] = useState(false);
-  const [password, setPassword] = useState('');
-  const [showPasswordText, setShowPasswordText] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
 
   // Fetch vouchers
   useEffect(() => {
@@ -66,8 +64,8 @@ export const CheckoutPage: React.FC = () => {
         setAvailableVouchers(data);
         // Auto select best voucher if none selected
         if (!initialVoucher) {
-            const valid = data.find(v => subtotal >= v.minOrderValue && !v.isExpired);
-            if (valid) setSelectedVoucher(valid);
+          const valid = data.find(v => subtotal >= v.minOrderValue && !v.isExpired);
+          if (valid) setSelectedVoucher(valid);
         }
       } catch (error) {
         console.error("Failed to fetch vouchers");
@@ -78,7 +76,7 @@ export const CheckoutPage: React.FC = () => {
 
   const deliveryFee = 15000;
   const discount = selectedVoucher ? selectedVoucher.discountValue : 0;
-  
+
   // Ensure total doesn't go below 0
   const total = Math.max(0, subtotal + deliveryFee - discount);
 
@@ -90,10 +88,10 @@ export const CheckoutPage: React.FC = () => {
       const payload = {
         userId: user?.id || 'usr-1',
         restaurantId: food.restaurantId || 'res-1',
-        items: [{ 
-          foodId: food.id, 
-          quantity: quantity, 
-          price: food.price 
+        items: [{
+          foodId: food.id,
+          quantity: quantity,
+          price: food.price
         }],
         totalAmount: total,
         deliveryAddress: userProfile.address,
@@ -102,7 +100,7 @@ export const CheckoutPage: React.FC = () => {
 
       // Call API
       await createOrderApi(payload as any);
-      
+
       // Show success
       setShowSuccessModal(true);
     } catch (error) {
@@ -118,22 +116,18 @@ export const CheckoutPage: React.FC = () => {
       submitOrder();
     } else {
       if (userProfile.balance < total) {
-          alert('Số dư không đủ');
-          return;
+        alert('Số dư không đủ');
+        return;
       }
       setShowPasswordModal(true);
     }
   };
 
-  const handlePasswordConfirm = async () => {
+  const handlePasswordConfirm = async (password: string) => {
     // Simple mock validation
-    if (password.length > 0) { 
-      setPasswordError('');
+    if (password.length > 0) {
       setShowPasswordModal(false);
-      setPassword('');
       await submitOrder();
-    } else {
-      setPasswordError('Vui lòng nhập mật khẩu.');
     }
   };
 
@@ -154,12 +148,17 @@ export const CheckoutPage: React.FC = () => {
         {/* LEFT COLUMN */}
         <div className="lg:col-span-7 space-y-6">
           {/* Address */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 border-2 border-gray-200 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-[#EE501C] font-bold">
                 <MapPin className="w-5 h-5" /> Địa chỉ nhận hàng
               </div>
-              <button className="text-xs font-bold text-[#EE501C] hover:underline">Thay đổi</button>
+              <button
+                onClick={() => navigate('/profile', { state: { view: 'EDIT_PROFILE' } })}
+                className="text-xs font-bold text-[#EE501C] hover:underline"
+              >
+                Thay đổi
+              </button>
             </div>
             <div className="space-y-1">
               <p className="font-bold text-gray-800">{userProfile.name} <span className="text-gray-400 font-medium ml-2">• {userProfile.phone}</span></p>
@@ -168,12 +167,15 @@ export const CheckoutPage: React.FC = () => {
           </div>
 
           {/* Cart Item */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 border-2 border-gray-200 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2 text-[#EE501C] font-bold">
                 <Ticket className="w-5 h-5" /> Món đã chọn
               </div>
-              <button className="text-xs font-bold flex items-center gap-1.5 text-gray-500 hover:text-[#EE501C] hover:bg-orange-50 px-3 py-1.5 rounded-full transition-all">
+              <button
+                onClick={() => navigate(`/product/${food.id}#related-foods`)}
+                className="text-xs font-bold flex items-center gap-1.5 text-gray-500 hover:text-[#EE501C] hover:bg-orange-50 px-3 py-1.5 rounded-full transition-all"
+              >
                 <Plus className="w-3.5 h-3.5" /> Thêm món
               </button>
             </div>
@@ -195,13 +197,13 @@ export const CheckoutPage: React.FC = () => {
           </div>
 
           {/* Payment Method */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+          <div className="bg-white rounded-3xl p-6 border-2 border-gray-200 shadow-sm">
             <div className="flex items-center gap-2 text-[#EE501C] font-bold mb-6">
               <CreditCard className="w-5 h-5" /> Phương thức thanh toán
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Wallet Option */}
-              <button 
+              <button
                 onClick={() => setPaymentMethod('wallet')}
                 className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${paymentMethod === 'wallet' ? 'border-[#EE501C] bg-orange-50' : 'border-gray-100 hover:border-gray-200'}`}
               >
@@ -216,7 +218,7 @@ export const CheckoutPage: React.FC = () => {
               </button>
 
               {/* Cash Option */}
-              <button 
+              <button
                 onClick={() => setPaymentMethod('cash')}
                 className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${paymentMethod === 'cash' ? 'border-[#EE501C] bg-orange-50' : 'border-gray-100 hover:border-gray-200'}`}
               >
@@ -235,13 +237,13 @@ export const CheckoutPage: React.FC = () => {
 
         {/* RIGHT COLUMN */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm sticky top-24">
+          <div className="bg-white rounded-3xl p-6 border-2 border-gray-200 shadow-sm sticky top-24">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-[#EE501C] font-bold">
                 <Ticket className="w-5 h-5" /> Ưu đãi & Voucher
               </div>
             </div>
-            
+
             <div className="relative mb-6">
               <input type="text" placeholder="Nhập mã ưu đãi..." className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-orange-100" />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -251,14 +253,22 @@ export const CheckoutPage: React.FC = () => {
             <div className="space-y-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gợi ý cho bạn</p>
               {availableVouchers.filter(v => !v.isExpired).map(v => {
-                 const isEligible = subtotal >= v.minOrderValue;
-                 return (
-                  <div 
-                    key={v.id} 
-                    onClick={() => isEligible && setSelectedVoucher(v)}
-                    className={`p-4 rounded-2xl border transition-all relative ${
-                      isEligible ? 'cursor-pointer hover:border-orange-100' : 'cursor-not-allowed opacity-60 bg-gray-50'
-                    } ${selectedVoucher?.id === v.id ? 'border-orange-200 bg-orange-50/50' : 'border-gray-100'}`}
+                const isEligible = subtotal >= v.minOrderValue;
+                return (
+                  <div
+                    key={v.id}
+                    onClick={() => {
+                      if (isEligible) {
+                        // Toggle: nếu đang chọn voucher này thì bỏ chọn, ngược lại thì chọn
+                        if (selectedVoucher?.id === v.id) {
+                          setSelectedVoucher(null);
+                        } else {
+                          setSelectedVoucher(v);
+                        }
+                      }
+                    }}
+                    className={`p-4 rounded-2xl border transition-all relative ${isEligible ? 'cursor-pointer hover:border-orange-100' : 'cursor-not-allowed opacity-60 bg-gray-50'
+                      } ${selectedVoucher?.id === v.id ? 'border-orange-200 bg-orange-50/50' : 'border-gray-100'}`}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold ${v.type === 'FreeShip' ? 'bg-[#EE501C]' : 'bg-orange-300'}`}>
@@ -278,7 +288,7 @@ export const CheckoutPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                 );
+                );
               })}
             </div>
 
@@ -301,23 +311,22 @@ export const CheckoutPage: React.FC = () => {
                 <span className="font-bold text-gray-800">Tổng thanh toán</span>
                 <span className="text-3xl font-black text-[#EE501C]">{total.toLocaleString()}đ</span>
               </div>
-              
-              <button 
+
+              <button
                 onClick={handleConfirmClick}
                 disabled={(paymentMethod === 'wallet' && userProfile.balance < total) || isProcessing}
-                className={`w-full text-white font-bold py-4 rounded-2xl shadow-xl transform active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 ${
-                  (paymentMethod === 'wallet' && userProfile.balance < total) || isProcessing 
-                    ? 'bg-gray-300 cursor-not-allowed shadow-none' 
-                    : 'bg-[#EE501C] hover:bg-[#d44719] shadow-orange-100'
-                }`}
+                className={`w-full text-white font-bold py-4 rounded-2xl shadow-xl transform active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 ${(paymentMethod === 'wallet' && userProfile.balance < total) || isProcessing
+                  ? 'bg-gray-300 cursor-not-allowed shadow-none'
+                  : 'bg-[#EE501C] hover:bg-[#d44719] shadow-orange-100'
+                  }`}
               >
                 {isProcessing ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" /> Đang xử lý...
                   </>
                 ) : (
-                  paymentMethod === 'wallet' && userProfile.balance < total 
-                    ? 'Số dư không đủ' 
+                  paymentMethod === 'wallet' && userProfile.balance < total
+                    ? 'Số dư không đủ'
                     : 'Xác nhận thanh toán'
                 )}
               </button>
@@ -329,99 +338,34 @@ export const CheckoutPage: React.FC = () => {
       {/* --- MODALS --- */}
 
       {/* PASSWORD MODAL */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#221510]/60 backdrop-blur-sm" onClick={() => !isProcessing && setShowPasswordModal(false)}></div>
-          <div className="relative w-full max-w-[400px] bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            {/* Header */}
-            <div className="bg-[#EE501C] p-6 pb-10 text-center relative overflow-hidden">
-              <div 
-                className="absolute top-0 left-0 w-full h-full opacity-10" 
-                style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/cubes.png')" }}
-              ></div>
-              <div className="inline-flex p-3 rounded-full bg-white/20 backdrop-blur-md mb-4 ring-4 ring-white/10 shadow-inner">
-                <Lock className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-white relative z-10">Nhập mật khẩu</h3>
-              <p className="text-white/80 text-sm mt-1 relative z-10 font-medium">Để bảo mật, vui lòng xác nhận danh tính</p>
-            </div>
-
-            {/* Body */}
-            <div className="px-6 py-8 -mt-6 bg-white rounded-t-3xl relative">
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-[#1b110d] ml-1 flex items-center justify-between">
-                    Mật khẩu tài khoản
-                  </label>
-                  <div className="relative group">
-                    <input 
-                      autoFocus
-                      type={showPasswordText ? "text" : "password"}
-                      value={password}
-                      disabled={isProcessing}
-                      onChange={(e) => { setPassword(e.target.value); if(passwordError) setPasswordError(''); }}
-                      className="w-full pl-4 pr-12 py-3.5 bg-[#f8f6f6] border-2 border-transparent focus:border-[#EE501C]/20 focus:bg-white focus:ring-0 rounded-xl transition-all font-bold text-[#1b110d] placeholder:text-gray-400 placeholder:font-normal text-lg"
-                      placeholder="••••••••"
-                    />
-                    <button 
-                      onClick={() => setShowPasswordText(!showPasswordText)}
-                      className="absolute right-0 top-0 h-full px-4 text-gray-400 hover:text-[#EE501C] transition-colors focus:outline-none"
-                    >
-                      {showPasswordText ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-                  
-                  {passwordError && <p className="text-xs font-bold text-red-500 ml-1">{passwordError}</p>}
-
-                  <div className="flex justify-end pt-1">
-                    <a href="#" className="text-xs font-bold text-[#EE501C] hover:text-[#d94110] hover:underline transition-colors">Quên mật khẩu?</a>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <button 
-                    disabled={isProcessing}
-                    onClick={() => { setShowPasswordModal(false); setPassword(''); setPasswordError(''); }}
-                    className="py-3.5 rounded-xl font-bold text-[#9a5f4c] bg-white border-2 border-[#f3eae7] hover:bg-[#f8f6f6] hover:text-[#1b110d] hover:border-gray-300 transition-all"
-                  >
-                    Hủy
-                  </button>
-                  <button 
-                    disabled={isProcessing}
-                    onClick={handlePasswordConfirm}
-                    className="py-3.5 rounded-xl font-bold text-white bg-[#EE501C] hover:bg-[#d94110] shadow-lg shadow-orange-200 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
-                  >
-                    {isProcessing && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Xác nhận
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <PasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onConfirm={handlePasswordConfirm}
+        isProcessing={isProcessing}
+      />
 
       {/* SUCCESS MODAL */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="bg-[#EE501C] py-12 px-6 flex items-center justify-center">
-               <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-white shadow-inner animate-pulse">
-                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-[#EE501C] shadow-lg"><Check className="w-8 h-8 stroke-[4]" /></div>
-               </div>
+              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-white shadow-inner animate-pulse">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-[#EE501C] shadow-lg"><Check className="w-8 h-8 stroke-[4]" /></div>
+              </div>
             </div>
             <div className="px-8 pb-10 pt-8 text-center">
               <h2 className="text-2xl font-black text-gray-900 mb-3">Đặt hàng thành công!</h2>
               <p className="text-sm text-gray-400 leading-relaxed font-medium mb-10 px-2">Cảm ơn bạn đã tin tưởng. Tài xế sẽ sớm liên hệ với bạn để xác nhận đơn hàng.</p>
               <div className="space-y-4">
-                <button 
-                  onClick={() => navigate('/orders')} 
+                <button
+                  onClick={() => navigate('/orders', { state: { tab: 'pending' } })}
                   className="w-full bg-[#EE501C] text-white font-black py-4 rounded-full shadow-[0_15px_30px_rgba(238,80,28,0.25)] hover:bg-[#d44719] transition-all transform active:scale-95 text-sm"
                 >
                   Xem đơn hàng
                 </button>
-                <button 
-                  onClick={() => navigate('/')} 
+                <button
+                  onClick={() => navigate('/')}
                   className="w-full bg-white border border-gray-100 text-gray-500 font-bold py-4 rounded-full hover:bg-gray-50 transition-all transform active:scale-95 text-sm shadow-sm"
                 >
                   Trở về trang chủ

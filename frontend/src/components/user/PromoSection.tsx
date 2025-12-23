@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getPromotionsApi } from '../../api/productApi';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -43,15 +42,11 @@ export const PromoSection: React.FC = () => {
         <h2 className="text-xl font-bold text-gray-800">
           FoodDelivery Promotion in <span className="text-[#EE501C]">Hanoi</span>
         </h2>
-        <div className="flex gap-2">
-          <button className="p-1 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"><ChevronLeft className="w-4 h-4 text-gray-400" /></button>
-          <button className="p-1 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"><ChevronRight className="w-4 h-4 text-gray-400" /></button>
-        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {promotions.map((promo) => (
-          <div 
-            key={promo.id} 
+          <div
+            key={promo.id}
             onClick={() => handlePromoClick(promo.foodId)}
             className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
           >
@@ -72,9 +67,9 @@ export const PromoSection: React.FC = () => {
         ))}
       </div>
 
-      <LoginRequestModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)} 
+      <LoginRequestModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
       />
     </section>
   );
