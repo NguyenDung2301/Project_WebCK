@@ -6,19 +6,37 @@
 import { jwtDecode } from 'jwt-decode';
 import { loginApi, registerApi, LoginRequest, RegisterRequest } from '../api/authApi';
 import { buildNetworkErrorMessage } from '../api/axiosClient';
-import { TokenPayload, LoginResult, RegisterResult, CurrentUser } from '@/types/auth';
+import { TokenPayload, LoginResult, RegisterResult, CurrentUser } from '../types/auth';
 import { 
   getToken, 
   setToken, 
   clearAuthData, 
   getAdminInfo as getStoredAdminInfo,
   setAdminInfo 
-} from '@/utils';
+} from '../utils';
 
 // Re-export types for backward compatibility
-export type { TokenPayload, LoginResult, RegisterResult, CurrentUser } from '@/types/auth';
+export type { TokenPayload, LoginResult, RegisterResult, CurrentUser } from '../types/auth';
 // Re-export setAdminInfo for external use
-export { setAdminInfo } from '@/utils';
+export { setAdminInfo } from '../utils';
+
+/**
+ * Helper để tạo Fake JWT cho mục đích test (Bypass Backend)
+ */
+const createMockToken = (payload: any) => {
+  // Fix: Encode Unicode strings (like Vietnamese names) before btoa
+  const encode = (str: string) => {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+      function toSolidBytes(match, p1) {
+          return String.fromCharCode(parseInt(p1, 16));
+      }));
+  };
+
+  const header = encode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const body = encode(JSON.stringify(payload));
+  const signature = "mock_signature";
+  return `${header}.${body}.${signature}`;
+};
 
 /**
  * Đăng nhập và lưu token
@@ -26,6 +44,48 @@ export { setAdminInfo } from '@/utils';
  * @returns LoginResult
  */
 export const login = async (credentials: LoginRequest): Promise<LoginResult> => {
+  // --- MOCK LOGIN FOR TESTING ---
+  // Cho phép đăng nhập nhanh không cần backend
+  if (credentials.password === '123456') {
+    let mockPayload = null;
+
+    if (credentials.email === 'admin@gmail.com') {
+      mockPayload = {
+        user_id: 'usr-admin',
+        email: 'admin@gmail.com',
+        fullname: 'Admin Test',
+        role: 'admin', // BackendRole
+        exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
+      };
+    } else if (credentials.email === 'user@gmail.com') {
+      mockPayload = {
+        user_id: 'usr-1', // Match INITIAL_DATA user
+        email: 'user@gmail.com',
+        fullname: 'Nguyễn Văn A',
+        role: 'user', // BackendRole
+        exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
+      };
+    } else if (credentials.email === 'shipper@food.com') {
+        mockPayload = {
+          user_id: 'usr-shipper',
+          email: 'shipper@food.com',
+          fullname: 'Trần Văn Shipper',
+          role: 'shipper', // BackendRole
+          exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
+        };
+    }
+
+    if (mockPayload) {
+      const fakeToken = createMockToken(mockPayload);
+      setToken(fakeToken);
+      return {
+        success: true,
+        message: 'Đăng nhập Test thành công!',
+        isAdmin: mockPayload.role === 'admin',
+      };
+    }
+  }
+  // -----------------------------
   try {
     const data = await loginApi(credentials);
     

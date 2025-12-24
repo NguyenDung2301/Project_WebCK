@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { AuthLayout } from '@/components/common/AuthLayout';
-import { register } from '@/services/authService';
-import { isValidPhone, validatePassword } from '@/utils';
+import { AuthLayout } from '../../components/common/AuthLayout';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { isValidPhone, validatePassword } from '../../utils';
 
 type RegisterForm = {
   fullname: string;
@@ -24,6 +24,7 @@ const initialState: RegisterForm = {
 };
 
 export const RegisterPage: React.FC = () => {
+  const { register } = useAuthContext(); // Sử dụng register từ Context
   const [form, setForm] = useState<RegisterForm>(initialState);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [message, setMessage] = useState<string | null>(null);
@@ -55,6 +56,7 @@ export const RegisterPage: React.FC = () => {
     setStatus('loading');
     setMessage(null);
 
+    // Gọi register từ Context
     const result = await register({
       fullname: form.fullname.trim(),
       email: form.email.trim(),
@@ -212,5 +214,3 @@ export const RegisterPage: React.FC = () => {
     </AuthLayout>
   );
 };
-
-

@@ -1,25 +1,30 @@
 import React from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const SearchSection: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleFocus = () => {
+    navigate('/search');
+  };
+
   return (
-    <section className="px-4 md:px-10 py-8 flex justify-center bg-white">
-      <div className="relative w-full max-w-[500px]">
-        {/* Filter Icon (Start) */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer hover:text-primary transition-colors border-r border-gray-300 pr-3">
-            <SlidersHorizontal size={20} />
-        </div>
-
-        {/* Input Field */}
-        <input 
-          type="text" 
-          placeholder="Tìm kiếm đồ ăn, quán ăn..." 
-          className="w-full py-3.5 pl-[60px] pr-12 rounded-full border border-gray-300 shadow-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-gray-700 placeholder-gray-400"
+    <section className="px-4 md:px-10">
+      <div className="max-w-3xl mx-auto relative group">
+        <input
+          type="text"
+          placeholder="Tìm món ăn, quán ăn..."
+          onFocus={handleFocus}
+          readOnly
+          className="w-full bg-white border-2 border-gray-300 rounded-[1.5rem] py-5 px-14 shadow-lg shadow-orange-100/30 focus:ring-4 focus:ring-orange-50 focus:border-[#EE501C] transition-all outline-none text-base placeholder:text-gray-400 cursor-pointer hover:border-[#EE501C]"
         />
-
-        {/* Search Icon (End) */}
-        <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary text-white p-2 rounded-full hover:bg-[#d43f0f] transition-colors shadow-sm">
-            <Search size={18} />
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#EE501C] w-6 h-6" />
+        <button
+          onClick={handleFocus}
+          className="absolute right-3 top-1/2 -translate-y-1/2 bg-[#EE501C] text-white px-6 py-2.5 rounded-2xl font-bold text-sm hover:bg-[#d44719] transition-colors hidden sm:block shadow-md shadow-orange-200"
+        >
+          Tìm kiếm
         </button>
       </div>
     </section>

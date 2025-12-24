@@ -21,6 +21,7 @@
     "paths": {
       "@/*": [
         "./*"
+<<<<<<< HEAD
       ],
       "@/components/*": [
         "./components/*"
@@ -45,6 +46,8 @@
       ],
       "@/assets/*": [
         "./assets/*"
+=======
+>>>>>>> frontend_test
       ]
     },
     "allowImportingTsExtensions": true,

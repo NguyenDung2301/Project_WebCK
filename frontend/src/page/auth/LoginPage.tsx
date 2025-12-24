@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { AuthLayout } from '@/components/common/AuthLayout';
-import { login } from '@/services/authService';
+import { AuthLayout } from '../../components/common/AuthLayout';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { getTokenPayload } from '../../services/authService';
 
 type LoginForm = {
   email: string;
@@ -16,6 +17,7 @@ const initialState: LoginForm = {
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuthContext(); // Sử dụng login từ Context
   const [form, setForm] = useState<LoginForm>(initialState);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [message, setMessage] = useState<string | null>(null);
@@ -31,18 +33,28 @@ export const LoginPage: React.FC = () => {
     setStatus('loading');
     setMessage(null);
 
+    // Gọi login từ Context để Header tự động cập nhật
     const result = await login({
       email: form.email.trim(),
       password: form.password,
     });
 
     if (result.success) {
-      if (result.isAdmin) {
-        navigate('/admin');
-        return;
-      }
       setStatus('success');
       setMessage(result.message);
+      
+      // Logic phân quyền
+      // Lấy payload để check role chính xác hơn (isAdmin trong result đôi khi chỉ check admin)
+      const payload = getTokenPayload();
+      const role = payload?.role;
+
+      if (role === 'admin') {
+        navigate('/admin');
+      } else if (role === 'shipper') {
+        navigate('/shipper');
+      } else {
+        navigate('/');
+      }
     } else {
       setStatus('error');
       setMessage(result.message);
@@ -125,9 +137,15 @@ export const LoginPage: React.FC = () => {
         >
           {status === 'loading' ? 'Đang xử lý...' : 'Đăng nhập'}
         </button>
+        
+        {/* Helper text for testing */}
+        <div className="mt-4 p-3 bg-blue-50 rounded-xl text-xs text-blue-700 space-y-1">
+          <p className="font-bold">Tài khoản Test (Mock):</p>
+          <p>User: user@gmail.com / 123456</p>
+          <p>Admin: admin@gmail.com / 123456</p>
+          <p>Shipper: shipper@food.com / 123456 (Cần tạo nếu chưa có)</p>
+        </div>
       </form>
     </AuthLayout>
   );
 };
-
-

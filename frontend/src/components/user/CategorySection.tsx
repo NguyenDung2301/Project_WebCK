@@ -1,76 +1,103 @@
-import React, { useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const categories = [
-  { id: 1, name: 'Rice', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764460831/Screenshot_2025-11-30_070009_s8hzez.png' },
-  { id: 2, name: 'Broken rice', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462147/Screenshot_2025-11-30_072211_d5q9hq.png' },
-  { id: 3, name: 'Salad', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070736_u2xuvc.png' },
-  { id: 4, name: 'Chicken', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070813_ldmmy9.png' },
-  { id: 5, name: 'Noodles', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070845_fcckkb.png' },
-  { id: 6, name: 'Drinks', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070905_sde2iv.png' },
-  { id: 7, name: 'Burger', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461748/Screenshot_2025-11-30_070923_miqawt.png' },
-  { id: 8, name: 'Pizza', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461747/Screenshot_2025-11-30_070938_y9i2od.png' },
-  { id: 9, name: 'Sushi', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070951_rsrpt1.png' },
-  { id: 10, name: 'Dessert', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461748/Screenshot_2025-11-30_071007_euepva.png' },
-];
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { getCategoriesApi } from '../../api/productApi';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { LoginRequestModal } from '../common/LoginRequestModal';
 
 export const CategorySection: React.FC = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthContext();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const { current } = scrollRef;
-      const scrollAmount = 300; // Adjust scroll distance
-      if (direction === 'left') {
-        current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-      } else {
-        current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await getCategoriesApi();
+        setCategories(data);
+      } catch (error) {
+        console.error('Failed to fetch categories', error);
+      } finally {
+        setLoading(false);
       }
+    };
+    fetchCategories();
+  }, []);
+
+  const handleCategoryClick = (categoryName: string) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+    navigate('/search', { state: { query: categoryName } });
+  };
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
     }
   };
 
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+    }
+  };
+
+  if (loading) return <div className="h-40 flex items-center justify-center text-gray-400">Đang tải danh mục...</div>;
+
   return (
-    <section className="px-4 md:px-10 py-6 max-w-[1280px] mx-auto relative group">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">There's something for everyone!</h2>
-        
-        {/* Navigation Buttons */}
+    <section className="px-4 md:px-10">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-xl font-bold text-gray-800">There's something for everyone!</h2>
         <div className="flex gap-2">
-           <button 
-             onClick={() => scroll('left')}
-             className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
-           >
-             <ChevronLeft size={20} />
-           </button>
-           <button 
-             onClick={() => scroll('right')}
-             className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
-           >
-             <ChevronRight size={20} />
-           </button>
+          <button 
+            onClick={scrollLeft}
+            className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-[#EE501C] transition-colors hidden md:flex"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-400 hover:text-[#EE501C]" />
+          </button>
+          <button 
+            onClick={scrollRight}
+            className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-[#EE501C] transition-colors hidden md:flex"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-400 hover:text-[#EE501C]" />
+          </button>
         </div>
       </div>
       
       <div 
-        ref={scrollRef}
-        className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide scroll-smooth"
+        ref={scrollContainerRef}
+        className="flex overflow-x-auto gap-4 md:gap-6 pb-4 -mx-2 px-2"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
+        <style>{`
+          div::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
         {categories.map((cat) => (
-          <div key={cat.id} className="flex-shrink-0 flex flex-col items-center group/item cursor-pointer w-[120px] md:w-[150px]">
-            <div className="overflow-hidden rounded-xl shadow-md mb-3 w-full aspect-square border border-gray-100">
-              <img 
-                src={cat.img} 
-                alt={cat.name} 
-                className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-300" 
-              />
+          <div 
+            key={cat.id} 
+            onClick={() => handleCategoryClick(cat.name)}
+            className="flex flex-col items-center gap-2 cursor-pointer group min-w-[90px] md:min-w-[110px] lg:min-w-[140px] flex-shrink-0"
+          >
+            <div className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 rounded-[2rem] lg:rounded-[2.5rem] bg-gray-50 overflow-hidden shadow-sm border border-gray-100 group-hover:shadow-2xl group-hover:scale-105 group-hover:border-[#EE501C] transition-all duration-300">
+              <img src={cat.image} alt={cat.name} className="w-full h-full object-cover grayscale-[15%] group-hover:grayscale-0 transition-all duration-500" />
             </div>
-            <p className="font-medium text-gray-700 group-hover/item:text-primary transition-colors text-center">
-              {cat.name}
-            </p>
+            <span className="text-[10px] md:text-xs font-black text-gray-700 group-hover:text-[#EE501C] transition-colors text-center uppercase tracking-widest">{cat.name}</span>
           </div>
         ))}
       </div>
+
+      <LoginRequestModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)} 
+      />
     </section>
   );
 };

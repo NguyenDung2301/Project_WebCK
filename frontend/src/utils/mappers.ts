@@ -3,7 +3,7 @@
  * Các hàm và constants chuyển đổi giữa Backend và Frontend formats
  */
 
-import { Role, BackendRole, Gender, GenderVN, Status } from '@/types/common';
+import { Role, BackendRole, Gender, GenderVN, Status } from '../types/common';
 
 // ============ Role Constants ============
 

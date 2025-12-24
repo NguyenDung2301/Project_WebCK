@@ -1,95 +1,76 @@
-import React, { useRef } from 'react';
-import { Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const promotions = [
-  { id: 1, name: 'Popeyes - Nhà Chung', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462283/Screenshot_2025-11-30_072347_zzyj7x.png', deal: 'Mua 1 tặng 1' },
-  { id: 2, name: "McDonald's - Hồ Gươm", img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462710/Screenshot_2025-11-30_072620_ak9ylz.png', deal: 'Giảm 50% đơn đầu' },
-  { id: 3, name: 'Cheese Coffee - Lê Đại Hành', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462711/Screenshot_2025-11-30_072802_awjybq.png', deal: 'Đồng giá 29k' },
-  { id: 4, name: 'KFC - Vạn Phúc', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462793/Screenshot_2025-11-29_092812_fgyur2.png', deal: 'Tặng Pepsi tươi' },
-  { id: 5, name: 'Bakery - Lý Thái Tổ', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462711/Screenshot_2025-11-30_072835_srq2ga.png', deal: 'Hoàn tiền 15%' },
-  { id: 6, name: 'Burger King - Cầu Giấy', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462711/Screenshot_2025-11-30_072850_owrzpt.png', deal: 'Combo trưa 39k' },
-  { id: 7, name: 'Highlands Coffee - Tây Hồ', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072914_omsuvg.png', deal: 'Freeship đơn 0đ' },
-  { id: 8, name: 'Pizza Hut - Kim Mã', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462713/Screenshot_2025-11-30_072927_meztye.png', deal: 'Giảm 35k đơn 150k' },
-  { id: 9, name: 'The Coffee House - Hai Bà Trưng', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072942_aah5pc.png', deal: 'Tặng bánh ngọt' },
-  { id: 10, name: 'Jollibee - Phạm Ngọc Thạch', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_073059_amopcl.png', deal: 'Mỳ Ý sốt bò 25k' },
-  { id: 11, name: 'Starbucks - Bà Triệu', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462794/Screenshot_2025-11-29_093114_pqnet4.png', deal: 'Upsize miễn phí' },
-  { id: 12, name: 'Domino\'s Pizza - Giảng Võ', img: 'https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462716/Screenshot_2025-11-30_073114_iewzdj.png', deal: 'Giảm 70% pizza thứ 2' },
-];
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getPromotionsApi } from '../../api/productApi';
+import { useAuthContext } from '../../contexts/AuthContext';
+import { LoginRequestModal } from '../common/LoginRequestModal';
 
 export const PromoSection: React.FC = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthContext();
+  const [promotions, setPromotions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const { current } = scrollRef;
-      const scrollAmount = 300;
-      if (direction === 'left') {
-        current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-      } else {
-        current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  useEffect(() => {
+    const fetchPromos = async () => {
+      try {
+        const data = await getPromotionsApi();
+        setPromotions(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
       }
+    };
+    fetchPromos();
+  }, []);
+
+  const handlePromoClick = (foodId: string) => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
     }
+    navigate(`/product/${foodId}`);
   };
 
+  if (loading) return <div className="h-60 flex items-center justify-center text-gray-400">Đang tải khuyến mãi...</div>;
+
   return (
-    <section className="px-4 md:px-10 py-10 max-w-[1280px] mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-800">
-            FoodDelivery Promotion in <span className="text-primary">Hanoi</span>
+    <section className="px-4 md:px-10 pb-12">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-gray-800">
+          FoodDelivery Promotion in <span className="text-[#EE501C]">Hanoi</span>
         </h2>
-        
-        {/* Navigation Buttons */}
-        <div className="flex gap-2">
-           <button 
-             onClick={() => scroll('left')}
-             className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
-           >
-             <ChevronLeft size={20} />
-           </button>
-           <button 
-             onClick={() => scroll('right')}
-             className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
-           >
-             <ChevronRight size={20} />
-           </button>
-        </div>
       </div>
-
-      <div 
-        ref={scrollRef}
-        className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide scroll-smooth"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {promotions.map((promo) => (
-          <div 
-            key={promo.id} 
-            className="flex-shrink-0 w-[240px] md:w-[280px] bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden group cursor-pointer border border-gray-100"
+          <div
+            key={promo.id}
+            onClick={() => handlePromoClick(promo.foodId)}
+            className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
           >
-            {/* Promo Image */}
-            <div className="relative h-40 w-full overflow-hidden">
-                <img 
-                    src={promo.img} 
-                    alt={promo.name} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-2 left-2 bg-accent text-gray-900 text-[10px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-1">
-                    <Tag size={10} /> PROMO
-                </div>
+            <div className="relative h-44 overflow-hidden">
+              <img src={promo.image} alt={promo.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <span className="absolute top-3 left-3 bg-yellow-400 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 shadow-sm">
+                <span className="text-xs">🏷️</span> PROMO
+              </span>
             </div>
-
-            {/* Content */}
             <div className="p-4">
-              <h3 className="text-sm font-semibold text-gray-800 line-clamp-1">
-                {promo.name}
-              </h3>
-              <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-                 <span>FoodDelivery</span>
-                 <span className="text-primary font-bold">{promo.deal}</span>
+              <h3 className="font-bold text-gray-800 truncate mb-1">{promo.name}</h3>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-400 uppercase tracking-tight font-bold">{promo.vendor}</span>
+                <span className="text-xs font-bold text-[#EE501C] group-hover:underline">{promo.action}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      <LoginRequestModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </section>
   );
 };

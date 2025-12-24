@@ -3,7 +3,7 @@
  * Các hàm tiện ích để validate dữ liệu và type guards
  */
 
-import { Role, BackendRole, Gender } from '@/types/common';
+import { Role, BackendRole, Gender } from '../types/common';
 
 // ============ Type Guards ============
 

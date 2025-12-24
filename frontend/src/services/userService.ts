@@ -12,8 +12,8 @@ import {
   CreateUserRequest 
 } from '../api/userApi';
 import { buildNetworkErrorMessage } from '../api/axiosClient';
-import { User } from '@/types/user';
-import { mapRole, mapGender, mapRoleToBackend, mapGenderToBackend, formatDateISO } from '@/utils';
+import { User } from '../types/user';
+import { mapRole, mapGender, mapRoleToBackend, mapGenderToBackend, formatDateISO } from '../utils';
 
 /**
  * Map backend user format to frontend User type

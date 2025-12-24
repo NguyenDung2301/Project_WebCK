@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { User } from '@/types/user';
-import { Status } from '@/types/common';
-import { UserTableProps } from '@/types/admin';
-import { paginate, formatDateVN } from '@/utils';
-import { Search, Edit2, Trash2, Lock, Unlock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User } from '../../types/user';
+import { Status } from '../../types/common';
+import { UserTableProps } from '../../types/admin';
+import { paginate, formatDateVN } from '../../utils';
+import { Search, Edit2, Trash2, Lock, Unlock } from 'lucide-react';
+import { Pagination } from '../common/Pagination';
 
 const ITEMS_PER_PAGE = 7;
 
@@ -23,15 +24,7 @@ export const UserTable: React.FC<UserTableProps> = ({
     [users, currentPage]
   );
   
-  const { totalPages, startIndex, endIndex, hasPrevPage, hasNextPage } = pagination;
-  
-  const handlePreviousPage = () => {
-    if (hasPrevPage) setCurrentPage(prev => prev - 1);
-  };
-  
-  const handleNextPage = () => {
-    if (hasNextPage) setCurrentPage(prev => prev + 1);
-  };
+  const { totalPages, startIndex, endIndex, totalItems } = pagination;
   
   const renderStatusBadge = (status: Status) => {
     const styles = {
@@ -52,7 +45,7 @@ export const UserTable: React.FC<UserTableProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -140,44 +133,15 @@ export const UserTable: React.FC<UserTableProps> = ({
       </div>
       
       {/* Pagination */}
-      <div className="bg-white px-4 py-4 flex items-center justify-between border-t border-gray-200 sm:px-6">
-        <div className="flex-1 flex sm:hidden">
-          <p className="text-sm text-gray-700">
-            Trang <span className="font-medium">{currentPage}</span> / <span className="font-medium">{totalPages || 1}</span>
-          </p>
-        </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-gray-700">
-              Hiển thị <span className="font-medium">{startIndex}</span> đến <span className="font-medium">{endIndex}</span> của <span className="font-medium">{totalUsers}</span> người dùng
-            </p>
-          </div>
-          <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <button 
-                onClick={handlePreviousPage}
-                disabled={!hasPrevPage}
-                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
-              >
-                <span className="sr-only">Previous</span>
-                <ChevronLeft size={18} />
-              </button>
-              <div className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                Trang {currentPage} / {totalPages || 1}
-              </div>
-              <button 
-                onClick={handleNextPage}
-                disabled={!hasNextPage}
-                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-colors"
-              >
-                <span className="sr-only">Next</span>
-                <ChevronRight size={18} />
-              </button>
-            </nav>
-          </div>
-        </div>
-      </div>
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        startIndex={startIndex}
+        endIndex={endIndex}
+        totalItems={totalItems} 
+        onPageChange={setCurrentPage}
+        label="người dùng"
+      />
     </div>
   );
 };
-
