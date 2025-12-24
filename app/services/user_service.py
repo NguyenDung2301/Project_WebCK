@@ -4,7 +4,8 @@ from typing import Optional, List, Dict
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
 from core.security import security
-from db.connection import users_collection
+from db.connection import users_collection, orders_collection
+from db.models.order import OrderStatus
 from db.models.user import User
 from schemas.user_schema import (
     UserLoginRequest,
@@ -13,6 +14,8 @@ from schemas.user_schema import (
     UserResponse,
     UserLoginResponse,
     UserRoleUpdateRequest,
+    UserTopUpRequest,
+    WithdrawRequest
 )
 from utils.roles import Role
 
@@ -45,8 +48,11 @@ class UserService:
                 email=user_data.email,
                 password=security.hash_password(user_data.password),
                 phone_number=user_data.phone_number,
+                address=user_data.address,
+                balance=0.0,
                 birthday=user_data.birthday,
                 gender=user_data.gender,
+                is_active=True,
                 created_at=datetime.now(),
                 role=Role.USER,
             )
@@ -117,6 +123,10 @@ class UserService:
         if not user:
             raise ValueError('Email hoặc mật khẩu không đúng')
         
+        # Kiểm tra tài khoản có bị khóa không
+        if not user.is_active:
+            raise ValueError('Tài khoản của bạn đã bị khóa')
+        
         # Kiểm tra password
         if not security.verify_password(login_data.password, user.password):
             raise ValueError('Email hoặc mật khẩu không đúng')
@@ -182,6 +192,61 @@ class UserService:
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy danh sách users: {str(e)}')
 
+    def deduct_balance(self, user_id: str, amount: float) -> User:
+        """Trừ số dư tài khoản của user một cách an toàn."""
+        if amount <= 0:
+            raise ValueError('Số tiền trừ phải lớn hơn 0')
+
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+
+        if user.balance < amount:
+            raise ValueError('Số dư tài khoản không đủ để thanh toán đơn hàng')
+
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$inc': {'balance': -float(amount)}, '$set': {'updated_at': datetime.now()}}
+        )
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật số dư user')
+
+        return self.find_by_id(user_id)
+
+    def top_up_balance(self, user_id: str, topup: UserTopUpRequest) -> Dict:
+        """Nạp tiền vào tài khoản user."""
+        if topup.amount <= 0:
+            raise ValueError('Số tiền nạp phải lớn hơn 0')
+
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$inc': {'balance': float(topup.amount)}, '$set': {'updated_at': datetime.now()}}
+        )
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật số dư user')
+
+        updated = self.find_by_id(user_id)
+        return UserResponse(**updated.to_dict()).model_dump()
+
+    def credit_balance(self, user_id: str, amount: float) -> User:
+        """Cộng tiền vào tài khoản user (dùng nội bộ cho refund)."""
+        if amount <= 0:
+            raise ValueError('Số tiền cộng phải lớn hơn 0')
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$inc': {'balance': float(amount)}, '$set': {'updated_at': datetime.now()}}
+        )
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật số dư user')
+        return self.find_by_id(user_id)
+
     def update_user_role(self, user_id: str, role_data: UserRoleUpdateRequest) -> Dict:
         """Cập nhật vai trò user (chỉ admin được phép gọi API)"""
         # Kiểm tra user tồn tại
@@ -190,6 +255,19 @@ class UserService:
             raise ValueError('Không tìm thấy user')
 
         new_role = role_data.role
+
+        # Nếu nâng lên SHIPPER, yêu cầu user không có đơn hàng đang xử lý
+        if new_role == Role.SHIPPER:
+            active_statuses = [
+                OrderStatus.PENDING.value,
+                OrderStatus.SHIPPING.value,
+            ]
+            active_count = orders_collection.count_documents({
+                'userId': ObjectId(user_id),
+                'status': {'$in': active_statuses}
+            })
+            if active_count > 0:
+                raise ValueError('User còn đơn hàng chưa hoàn tất, không thể chuyển sang shipper')
 
         result = self.collection.update_one(
             {'_id': ObjectId(user_id)},
@@ -201,5 +279,84 @@ class UserService:
 
         updated_user = self.find_by_id(user_id)
         return UserResponse(**updated_user.to_dict()).model_dump()
+
+    def withdraw_balance(self, user_id: str, withdraw_data: 'WithdrawRequest') -> Dict:
+        """Shipper rút tiền từ balance (rút toàn bộ hoặc một phần)"""
+        
+        # Kiểm tra user tồn tại và là shipper
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+        
+        if user.role != Role.SHIPPER:
+            raise ValueError('Chỉ shipper mới được phép rút tiền')
+        
+        # Xác định số tiền rút
+        if withdraw_data.amount is None:
+            # Rút toàn bộ
+            amount_to_withdraw = user.balance
+        else:
+            amount_to_withdraw = withdraw_data.amount
+        
+        # Kiểm tra số dư
+        if amount_to_withdraw <= 0:
+            raise ValueError('Số tiền rút phải lớn hơn 0')
+        
+        if amount_to_withdraw > user.balance:
+            raise ValueError(f'Số dư không đủ. Số dư hiện tại: {user.balance}')
+        
+        # Trừ tiền
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {
+                '$inc': {'balance': -float(amount_to_withdraw)},
+                '$set': {'updated_at': datetime.now()}
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise ValueError('Không thể thực hiện rút tiền')
+        
+        updated_user = self.find_by_id(user_id)
+        
+        return {
+            'message': f'Rút tiền thành công {amount_to_withdraw:,.0f} VNĐ',
+            'withdrawn_amount': float(amount_to_withdraw),
+            'remaining_balance': float(updated_user.balance),
+            'user': UserResponse(**updated_user.to_dict()).model_dump()
+        }
+
+    def toggle_user_status(self, user_id: str, is_active: bool) -> Dict:
+        """Admin khóa/mở khóa tài khoản user"""
+        # Kiểm tra user tồn tại
+        user = self.find_by_id(user_id)
+        if not user:
+            raise ValueError('Không tìm thấy user')
+        
+        # Không cho khóa tài khoản admin
+        if user.role == Role.ADMIN:
+            raise ValueError('Không thể khóa tài khoản admin')
+        
+        # Cập nhật trạng thái
+        result = self.collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {
+                '$set': {
+                    'is_active': is_active,
+                    'updated_at': datetime.now()
+                }
+            }
+        )
+        
+        if result.matched_count == 0:
+            raise ValueError('Không thể cập nhật trạng thái tài khoản')
+        
+        updated_user = self.find_by_id(user_id)
+        action = "mở khóa" if is_active else "khóa"
+        
+        return {
+            'message': f'Đã {action} tài khoản thành công',
+            'user': UserResponse(**updated_user.to_dict()).model_dump()
+        }
 
 user_service = UserService()
