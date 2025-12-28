@@ -1,15 +1,12 @@
 /**
  * Storage Utilities
- * Quản lý lưu trữ IN-MEMORY (RAM)
- * Thay thế hoàn toàn localStorage theo yêu cầu: "không sử dụng localstronge nữa"
+ * Quản lý lưu trữ sử dụng localStorage để token được lưu giữ qua các lần reload trang
  */
-
-// In-memory storage (mất khi F5)
-const memoryStorage = new Map<string, string>();
 
 // Storage Keys
 export const STORAGE_KEYS = {
   TOKEN: 'token',
+  REFRESH_TOKEN: 'refresh_token',
   ADMIN_NAME: 'adminName',
   ADMIN_EMAIL: 'adminEmail',
 } as const;
@@ -17,24 +14,37 @@ export const STORAGE_KEYS = {
 type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
 
 /**
- * Lấy giá trị (In-Memory)
+ * Lấy giá trị từ localStorage
  */
 export const getItem = (key: StorageKey): string | null => {
-  return memoryStorage.get(key) || null;
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    console.error(`Error getting item from localStorage: ${error}`);
+    return null;
+  }
 };
 
 /**
- * Lưu giá trị (In-Memory)
+ * Lưu giá trị vào localStorage
  */
 export const setItem = (key: StorageKey, value: string): void => {
-  memoryStorage.set(key, value);
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    console.error(`Error setting item to localStorage: ${error}`);
+  }
 };
 
 /**
- * Xóa giá trị (In-Memory)
+ * Xóa giá trị khỏi localStorage
  */
 export const removeItem = (key: StorageKey): void => {
-  memoryStorage.delete(key);
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.error(`Error removing item from localStorage: ${error}`);
+  }
 };
 
 /**
@@ -48,13 +58,16 @@ export const removeItems = (keys: StorageKey[]): void => {
  * Xóa toàn bộ auth data
  */
 export const clearAuthData = (): void => {
-  memoryStorage.clear();
+  removeItems([STORAGE_KEYS.TOKEN, STORAGE_KEYS.REFRESH_TOKEN, STORAGE_KEYS.ADMIN_NAME, STORAGE_KEYS.ADMIN_EMAIL]);
 };
 
 // ============ Specific Getters/Setters ============
 
 export const getToken = (): string | null => getItem(STORAGE_KEYS.TOKEN);
 export const setToken = (token: string): void => setItem(STORAGE_KEYS.TOKEN, token);
+
+export const getRefreshToken = (): string | null => getItem(STORAGE_KEYS.REFRESH_TOKEN);
+export const setRefreshToken = (refreshToken: string): void => setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
 
 export const getAdminInfo = (): { name: string | null; email: string | null } => {
   return {

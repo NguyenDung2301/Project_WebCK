@@ -7,8 +7,6 @@
 export {
   filterBySearch,
   filterByField,
-  filterByPriceRange,
-  filterByDateRange,
   applyFilters,
 } from './filters';
 
@@ -19,9 +17,8 @@ export {
   formatCurrency,
   formatNumber,
   formatPhone,
-  truncateText,
   getInitials,
-  formatRelativeTime,
+  normalizeString,
 } from './formatters';
 
 // Mappers
@@ -40,9 +37,7 @@ export {
 // Pagination
 export {
   calculateTotalPages,
-  getPageSlice,
   paginate,
-  getPageNumbers,
   type PaginationInfo,
   type PaginatedResult,
 } from './pagination';
@@ -57,23 +52,36 @@ export {
   clearAuthData,
   getToken,
   setToken,
+  getRefreshToken,
+  setRefreshToken,
   getAdminInfo,
   setAdminInfo,
 } from './storage';
 
-// Validation (includes Type Guards)
+// Validation
 export {
-  // Type Guards
-  isValidRole,
-  isValidBackendRole,
-  isValidGender,
-  // Field Validators
   isValidEmail,
   isValidPhone,
   validatePassword,
   validateName,
   validateDob,
-  validateRegistrationForm,
-  type RegistrationFormData,
-  type FormErrors,
 } from './validation';
+
+// Date Helpers
+export {
+  parseOrderDate,
+  isSameDate,
+  formatDateLabelVN,
+  groupByDate,
+  getRelativeDateLabel,
+  type DateGroup,
+} from './dateHelpers';
+
+// Error Helpers
+export {
+  extractErrorMessage,
+  isVoucherError,
+  isNetworkError,
+  getErrorType,
+  type ErrorType,
+} from './errorHelpers';

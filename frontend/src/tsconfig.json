@@ -21,33 +21,6 @@
     "paths": {
       "@/*": [
         "./*"
-<<<<<<< HEAD
-      ],
-      "@/components/*": [
-        "./components/*"
-      ],
-      "@/page/*": [
-        "./page/*"
-      ],
-      "@/hooks/*": [
-        "./hooks/*"
-      ],
-      "@/contexts/*": [
-        "./contexts/*"
-      ],
-      "@/services/*": [
-        "./services/*"
-      ],
-      "@/types/*": [
-        "./types/*"
-      ],
-      "@/utils/*": [
-        "./utils/*"
-      ],
-      "@/assets/*": [
-        "./assets/*"
-=======
->>>>>>> frontend_test
       ]
     },
     "allowImportingTsExtensions": true,

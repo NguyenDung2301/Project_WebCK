@@ -1,21 +1,74 @@
 
 import React, { useState, useEffect } from 'react';
 import { ShipperProfile } from '../../types/shipper';
-import { getShipperProfileApi } from '../../api/shipperApi';
-import { Camera, Calendar, Award, Edit2, User } from 'lucide-react';
+import { updateShipperProfileApi } from '../../api/shipperApi';
+import { apiClient, getBackendBaseUrl } from '../../api/axiosClient';
+import { Camera, Calendar, Edit2, User } from 'lucide-react';
 
 export const ShipperProfilePage: React.FC = () => {
   const [formData, setFormData] = useState<ShipperProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [gender, setGender] = useState<string>('Nam');
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const data = await getShipperProfileApi();
-        setFormData(data);
+        // Fetch profile data - getShipperProfileApi already calls profile_me, 
+        // so we'll fetch directly to also get gender
+        const response = await apiClient.get(`${getBackendBaseUrl()}/api/users/profile_me`);
+        if (response.data.success && response.data.data) {
+          const user = response.data.data;
+          
+          // Map backend gender (Male/Female) to Vietnamese (Nam/Nữ)
+          if (user.gender === 'Male') setGender('Nam');
+          else if (user.gender === 'Female') setGender('Nữ');
+          
+          // Format profile data using same logic as getShipperProfileApi
+          let joinDate = '';
+          const createdAt = user.created_at || user.createdAt;
+          if (createdAt) {
+            try {
+              const date = new Date(createdAt);
+              const day = String(date.getDate()).padStart(2, '0');
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const year = date.getFullYear();
+              joinDate = `${day}/${month}/${year}`;
+            } catch {
+              joinDate = createdAt;
+            }
+          }
+          
+          let dob = '';
+          const birthday = user.birthday || user.dob;
+          if (birthday) {
+            try {
+              const date = new Date(birthday);
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              dob = `${year}-${month}-${day}`;
+            } catch {
+              dob = birthday;
+            }
+          }
+          
+          setFormData({
+            name: user.fullname || 'Shipper',
+            email: user.email || '',
+            avatar: user.avatar || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&q=60',
+            rank: 'Tài xế 5 sao',
+            joinDate: joinDate,
+            phone: user.phone_number || '',
+            address: user.address || 'Hà Nội',
+            dob: dob,
+          });
+        }
       } catch (error) {
         console.error("Failed to fetch profile", error);
+        setError('Không thể tải thông tin profile');
       } finally {
         setLoading(false);
       }
@@ -23,9 +76,29 @@ export const ShipperProfilePage: React.FC = () => {
     fetchProfile();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Thông tin cá nhân đã được lưu thành công!');
+    if (!formData) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      const updatedProfile = await updateShipperProfileApi({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        dob: formData.dob,
+        gender: gender,
+      });
+      setFormData(updatedProfile);
+      alert('Thông tin cá nhân đã được lưu thành công!');
+    } catch (err: any) {
+      console.error('Error updating profile:', err);
+      setError(err.message || 'Không thể cập nhật thông tin. Vui lòng thử lại.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading || !formData) {
@@ -48,9 +121,10 @@ export const ShipperProfilePage: React.FC = () => {
         <div className="lg:col-span-4 flex flex-col items-center p-8 bg-white rounded-[3rem] border border-gray-100 shadow-sm">
           <div className="relative group cursor-pointer mb-6">
             <div 
-              className="w-48 h-48 rounded-full bg-cover bg-center border-4 border-white shadow-xl group-hover:opacity-90 transition-opacity" 
-              style={{ backgroundImage: `url("${formData.avatar}")` }}
-            />
+              className="w-48 h-48 rounded-full bg-gradient-to-br from-[#EE501C] to-[#FF7043] border-4 border-white shadow-xl flex items-center justify-center text-white text-6xl font-black group-hover:opacity-90 transition-opacity" 
+            >
+              {formData.name ? formData.name.charAt(0).toUpperCase() : 'S'}
+            </div>
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-full bg-black/20">
                <Camera className="text-white drop-shadow-md" size={32} />
             </div>
@@ -71,14 +145,6 @@ export const ShipperProfilePage: React.FC = () => {
                   <span className="text-sm font-medium text-gray-500">Thành viên từ</span>
                </div>
                <span className="text-sm font-bold text-gray-900">{formData.joinDate}</span>
-             </div>
-             
-             <div className="flex items-center justify-between p-5 rounded-[1.5rem] bg-gray-50 border border-gray-100">
-               <div className="flex items-center gap-3">
-                  <Award size={20} className="text-[#EE501C]" />
-                  <span className="text-sm font-medium text-gray-500">Xếp hạng</span>
-               </div>
-               <span className="text-sm font-bold text-gray-900">4.9/5.0</span>
              </div>
           </div>
         </div>
@@ -153,7 +219,8 @@ export const ShipperProfilePage: React.FC = () => {
                 <div className="relative group w-full md:w-1/2">
                     <select
                         className="w-full px-6 py-4 rounded-[1.5rem] border border-gray-100 bg-gray-50 text-gray-900 focus:ring-2 focus:ring-orange-100 focus:border-orange-200 outline-none transition-all font-medium appearance-none"
-                        defaultValue="Nam"
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
                     >
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
@@ -163,19 +230,37 @@ export const ShipperProfilePage: React.FC = () => {
               </div>
             </div>
             
+            {error && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-[1.5rem] text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+            
             <div className="border-t border-gray-100 pt-8 flex items-center justify-end gap-4 mt-8">
               <button 
-                className="px-10 py-4 rounded-[1.2rem] border border-gray-200 font-bold text-sm text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95" 
+                className="px-10 py-4 rounded-[1.2rem] border border-gray-200 font-bold text-sm text-gray-600 hover:bg-gray-50 transition-all shadow-sm active:scale-95 disabled:opacity-50" 
                 type="button"
-                onClick={() => alert('Đã hủy thay đổi')}
+                onClick={() => {
+                  // Reload profile to reset changes
+                  window.location.reload();
+                }}
+                disabled={saving}
               >
                 Hủy
               </button>
               <button 
-                className="px-12 py-4 rounded-[1.2rem] bg-[#EE501C] text-white font-bold text-sm shadow-xl shadow-orange-200 hover:bg-[#d64517] transition-all active:scale-[0.98]" 
+                className="px-12 py-4 rounded-[1.2rem] bg-[#EE501C] text-white font-bold text-sm shadow-xl shadow-orange-200 hover:bg-[#d64517] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2" 
                 type="submit"
+                disabled={saving}
               >
-                Lưu thay đổi
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Đang lưu...
+                  </>
+                ) : (
+                  'Lưu thay đổi'
+                )}
               </button>
             </div>
           </form>

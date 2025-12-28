@@ -8,9 +8,10 @@ class Security:
     """Security liên quan đến JWT, Token, Password"""
     
     def __init__(self):
-        self.secret_key = config.JWT_SECRET
+        self.secret_key = config.JWT_SECRET.strip() if config.JWT_SECRET else None
         self.algorithm = config.JWT_ALGORITHM
         self.access_token_expire_minutes = config.ACCESS_TOKEN_EXPIRE_MINUTES
+        self.refresh_token_expire_days = config.REFRESH_TOKEN_EXPIRE_DAYS
 
     @staticmethod
     def hash_password(password: str) -> str:
@@ -41,12 +42,16 @@ class Security:
         })
         
         # Encode JWT
+        if not self.secret_key:
+            raise ValueError('JWT_SECRET không được cấu hình. Không thể tạo token.')
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        print(f"[DEBUG] create_access_token: Token created with secret key length: {len(self.secret_key) if self.secret_key else 0}")
         return encoded_jwt
     
     def decode_token(self, token: str) -> Dict:
         try:
             print(f"[DEBUG] decode_token: Secret key exists: {self.secret_key is not None}")
+            print(f"[DEBUG] decode_token: Secret key length: {len(self.secret_key) if self.secret_key else 0}")
             print(f"[DEBUG] decode_token: Algorithm: {self.algorithm}")
             print(f"[DEBUG] decode_token: Token (first 20 chars): {token[:20]}...")
             
@@ -66,6 +71,11 @@ class Security:
         except jwt.ExpiredSignatureError:
             print("[DEBUG] decode_token: Token expired")
             raise ValueError('Token đã hết hạn')
+        except jwt.InvalidSignatureError as e:
+            print(f"[DEBUG] decode_token: Invalid signature error: {str(e)}")
+            print(f"[DEBUG] decode_token: This usually means the token was created with a different JWT_SECRET")
+            print(f"[DEBUG] decode_token: Current secret key length: {len(self.secret_key) if self.secret_key else 0}")
+            raise ValueError('Token không hợp lệ: Chữ ký không khớp. Token này có thể được tạo với JWT_SECRET khác. Vui lòng đăng nhập lại để lấy token mới.')
         except jwt.InvalidTokenError as e:
             print(f"[DEBUG] decode_token: Invalid token error: {str(e)}")
             # Check if it's an iat issue
@@ -98,6 +108,25 @@ class Security:
             **kwargs
         }
         return self.create_access_token(payload)
+    
+    def create_refresh_token(self, user_id: str, email: str, **kwargs) -> str:
+        """Tạo refresh token với thời gian hết hạn dài hơn"""
+        payload = {
+            'user_id': user_id,
+            'email': email,
+            'type': 'refresh',  # Đánh dấu đây là refresh token
+            **kwargs
+        }
+        # Refresh token có thời gian hết hạn dài hơn (mặc định 7 ngày)
+        expires_delta = timedelta(days=self.refresh_token_expire_days)
+        return self.create_access_token(payload, expires_delta=expires_delta)
+    
+    def verify_refresh_token(self, token: str) -> Dict:
+        """Xác thực refresh token và kiểm tra type"""
+        payload = self.decode_token(token)
+        if payload.get('type') != 'refresh':
+            raise ValueError('Token không phải là refresh token')
+        return payload
 
     def extract_token_from_header(self, auth_header: str) -> Optional[str]:
         if not auth_header:

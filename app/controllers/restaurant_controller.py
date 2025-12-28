@@ -121,4 +121,40 @@ class RestaurantController:
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
+    def get_promotions(self):
+        """Lấy danh sách promotions từ restaurants có reviews tốt nhất"""
+        try:
+            limit = request.args.get('limit', 8, type=int)
+            data = restaurant_service.get_promotions(limit=limit)
+            return jsonify({'success': True, 'data': data}), 200
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def get_categories(self):
+        """Lấy danh sách categories từ restaurants với hình ảnh random"""
+        try:
+            data = restaurant_service.get_categories()
+            return jsonify({'success': True, 'data': data}), 200
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def get_all_foods(self):
+        """Lấy tất cả foods từ restaurants đang hoạt động"""
+        try:
+            data = restaurant_service.get_all_foods()
+            return jsonify({'success': True, 'data': data}), 200
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def get_food_by_id(self, food_id: str):
+        """Lấy food item theo ID"""
+        try:
+            data = restaurant_service.get_food_by_id(food_id)
+            if data:
+                return jsonify({'success': True, 'data': data}), 200
+            else:
+                return jsonify({'success': False, 'message': 'Không tìm thấy món ăn'}), 404
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
 restaurant_controller = RestaurantController()

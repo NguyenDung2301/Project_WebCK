@@ -1,0 +1,1026 @@
+[
+  {
+    "_id": {"$oid": "69496ebac4034997f273e86b"},
+    "name": "Phở Thìn Bờ Hồ",
+    "email": "phothin@gmail.com",
+    "address": "13 Lò Đúc, Hai Bà Trưng, Hà Nội",
+    "hotline": "0243942818",
+    "openTime": "06:00",
+    "closeTime": "22:00",
+    "mapLink": "https://maps.app.goo.gl/jTbgHMntryZdbTrZA",
+    "status": true,
+    "average_rating": 0,
+    "total_reviews": 0,
+    "menu": [
+      {
+        "category": "Phở",
+        "items": [
+          {
+            "name": "Phở Bò Tái",
+            "price": 70000,
+            "description": "Phở bò tái truyền thống với nước dùng ngọt thanh từ xương",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399416/Ph%E1%BB%9F_b%C3%B2_t%C3%A1i_gvzmaq.jpg",
+            "status": true
+          },
+          {
+            "name": "Phở Gà",
+            "price": 70000,
+            "description": "Phở gà thơm lừng với thịt gà mềm, nước dùng ngọt tự nhiên",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399417/Ph%E1%BB%9F_g%C3%A0_hcbgdo.jpg",
+            "status": true
+          },
+          {
+            "name": "Phở Gà Trộn",
+            "price": 75000,
+            "description": "Phở gà trộn khô thơm lừa với thịt gà xé, rau thơm, nước sốt đặc biệt",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399417/Ph%E1%BB%9F_g%C3%A0_tr%E1%BB%99n_kx2us2.jpg",
+            "status": true
+          },
+          {
+            "name": "Phở Đặc Biệt",
+            "price": 85000,
+            "description": "Phở đầy đủ topping: tái, chín, gân, nạm",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399417/Ph%E1%BB%9F_%C4%91%E1%BA%B7c_bi%E1%BB%87t_wweqrp.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Món Thêm",
+        "items": [
+          {
+            "name": "Bò Viên",
+            "price": 30000,
+            "description": "Bò viên tươi ngon",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399579/B%C3%B2_vi%C3%AAn_irnmcq.jpg",
+            "status": true
+          },
+          {
+            "name": "Chả Mỡ",
+            "price": 35000,
+            "description": "Chả mỡ nướng thơm béo",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399579/Ch%E1%BA%A3_m%E1%BB%A1_fhxyut.jpg",
+            "status": true
+          },
+          {
+            "name": "Quẩy",
+            "price": 15000,
+            "description": "Quẩy giòn ăn kèm phở",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399580/Qu%E1%BA%A9y_ir3la8.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Đồ Uống",
+        "items": [
+          {
+            "name": "Trà Tắc",
+            "price": 15000,
+            "description": "Trà tắc mát lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399694/Tr%C3%A0_t%E1%BA%AFc_nxbvlh.jpg",
+            "status": true
+          },
+          {
+            "name": "Coca Cola",
+            "price": 15000,
+            "description": "Coca Cola lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399694/Coca_dn85be.jpg",
+            "status": true
+          },
+          {
+            "name": "Bia",
+            "price": 20000,
+            "description": "Bia chai đa dạng thương hiệu",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399694/Bia_ckte10.jpg",
+            "status": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": {"$oid": "69496ebac4034997f273e86c"},
+    "name": "Bún Chả Hàng Mành",
+    "email": "bunchahangmanh@gmail.com",
+    "address": "1 Hàng Mành, Hoàn Kiếm, Hà Nội",
+    "hotline": "0243828778",
+    "openTime": "08:00",
+    "closeTime": "20:30",
+    "mapLink": "https://maps.app.goo.gl/iWcjBUZ4qifsQWe57",
+    "status": true,
+    "average_rating": 0,
+    "total_reviews": 0,
+    "menu": [
+      {
+        "category": "Bún Chả",
+        "items": [
+          {
+            "name": "Bún Chả Hà Nội",
+            "price": 60000,
+            "description": "Bún chả nướng than hoa, nước mắm chua ngọt",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399931/B%C3%BAn_ch%E1%BA%A3_h%C3%A0_n%E1%BB%99i_ab4vd9.jpg",
+            "status": true
+          },
+          {
+            "name": "Bún Chả Cá",
+            "price": 75000,
+            "description": "Bún chả kèm chả cá nướng thơm ngon",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399934/B%C3%BAn_ch%E1%BA%A3_c%C3%A1_k0tjs3.jpg",
+            "status": true
+          },
+          {
+            "name": "Bún Thịt Nướng",
+            "price": 80000,
+            "description": "Bún thịt nướng than hoa, nem rán và chả mỡ",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399933/B%C3%BAn_th%E1%BB%8Bt_n%C6%B0%E1%BB%9Bng_plm9o1.jpg",
+            "status": true
+          },
+          {
+            "name": "Bún Chả Lá Lốt",
+            "price": 70000,
+            "description": "Bún chả cuốn lá lốt nướng than hoa thơm nức",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766399932/B%C3%BAn_ch%E1%BA%A3_l%C3%A1_l%E1%BB%91t_m1iltg.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Món Thêm",
+        "items": [
+          {
+            "name": "Thịt Nướng",
+            "price": 45000,
+            "description": "Thịt nướng than hoa thơm lừng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400306/Th%E1%BB%8Bt_n%C6%B0%E1%BB%9Bng_szbe8h.jpg",
+            "status": true
+          },
+          {
+            "name": "Bánh Tôm",
+            "price": 50000,
+            "description": "Bánh tôm giòn rụm, thơm ngon",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400305/B%C3%A1nh_t%C3%B4m_if6p9p.jpg",
+            "status": true
+          },
+          {
+            "name": "Nem Rán",
+            "price": 40000,
+            "description": "Nem rán giòn rụm 5 cái",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400305/Nem_r%C3%A1n_fjh7uq.jpg",
+            "status": true
+          },
+          {
+            "name": "Chả Cốm",
+            "price": 40000,
+            "description": "Chả cốm Làng Vòng đặc sản",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400305/Ch%E1%BA%A3_c%E1%BB%91m_oed7xw.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Đồ Uống",
+        "items": [
+          {
+            "name": "Nước Mơ",
+            "price": 20000,
+            "description": "Nước mơ chua ngọt giải nhiệt",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400532/N%C6%B0%E1%BB%9Bc_m%C6%A1_ndptb6.jpg",
+            "status": true
+          },
+          {
+            "name": "Bia Hơi Hà Nội",
+            "price": 15000,
+            "description": "Bia hơi Hà Nội tươi",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400528/Bia_h%C6%A1i_h%C3%A0_n%E1%BB%99i_td4oyx.jpg",
+            "status": true
+          },
+          {
+            "name": "Nước Cam",
+            "price": 25000,
+            "description": "Nước cam vắt tươi",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400529/N%C6%B0%E1%BB%9Bc_cam_no3zpg.jpg",
+            "status": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": {"$oid": "69496ebac4034997f273e86d"},
+    "name": "Bánh Cuốn Gia An",
+    "email": "banhcuongiaan@gmail.com",
+    "address": "14 Hàng Gà, Hoàn Kiếm, Hà Nội",
+    "hotline": "0243826266",
+    "openTime": "06:00",
+    "closeTime": "11:00",
+    "mapLink": "https://maps.app.goo.gl/B7QYvDN2s98qA61T9",
+    "status": true,
+    "average_rating": 0,
+    "total_reviews": 0,
+    "menu": [
+      {
+        "category": "Bánh Cuốn",
+        "items": [
+          {
+            "name": "Bánh Cuốn Thịt",
+            "price": 35000,
+            "description": "Bánh cuốn mỏng nhân thịt băm, nấm mèo",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400696/B%C3%A1nh_cu%E1%BB%91n_th%E1%BB%8Bt_djfg6d.jpg",
+            "status": true
+          },
+          {
+            "name": "Bánh Cuốn Trứng",
+            "price": 40000,
+            "description": "Bánh cuốn giòn với trứng gà",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400698/B%C3%A1nh_cu%E1%BB%91n_tr%E1%BB%A9ng_jaroh6.jpg",
+            "status": true
+          },
+          {
+            "name": "Bánh Cuốn Tôm",
+            "price": 45000,
+            "description": "Bánh cuốn nhân tôm tươi",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400697/B%C3%A1nh_cu%E1%BB%91n_t%C3%B4m_rda3md.jpg",
+            "status": true
+          },
+          {
+            "name": "Bánh Cuốn Chay",
+            "price": 30000,
+            "description": "Bánh cuốn chay thơm ngon",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400695/B%C3%A1nh_cu%E1%BB%91n_chay_jnpzoz.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Món Thêm",
+        "items": [
+          {
+            "name": "Giò Lụa",
+            "price": 20000,
+            "description": "Giò lụa thái lát",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400853/Gi%C3%B2_l%E1%BB%A5a_stoy0a.jpg",
+            "status": true
+          },
+          {
+            "name": "Chả Quế",
+            "price": 25000,
+            "description": "Chả quế đặc sản Hưng Yên",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400852/Ch%E1%BA%A3_qu%E1%BA%BF_wkhvlh.jpg",
+            "status": true
+          },
+          {
+            "name": "Nem Chua Rán",
+            "price": 30000,
+            "description": "Nem chua rán giòn",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400856/Nem_chua_r%C3%A1n_fklimw.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Đồ Uống",
+        "items": [
+          {
+            "name": "Sữa Đậu Nành",
+            "price": 15000,
+            "description": "Sữa đậu nành tự làm",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400967/S%E1%BB%AFa_%C4%91%E1%BA%ADu_n%C3%A0nh_o5rx3q.jpg",
+            "status": true
+          },
+          {
+            "name": "Sữa Ngô",
+            "price": 10000,
+            "description": "Sữa ngô ngọt bùi, thơm",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766400969/S%E1%BB%AFa_ng%C3%B4_hjm3fl.jpg",
+            "status": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": {"$oid": "69496ebac4034997f273e86e"},
+    "name": "Cơm Niêu Ngon",
+    "email": "comnieungon@gmail.com",
+    "address": "54 Nguyễn Chí Thanh, Đống Đa, Hà Nội",
+    "hotline": "0243537733",
+    "openTime": "10:00",
+    "closeTime": "22:00",
+    "mapLink": "https://maps.app.goo.gl/rmbFQ3cNRQhLruJx8",
+    "status": true,
+    "average_rating": 0,
+    "total_reviews": 0,
+    "menu": [
+      {
+        "category": "Cơm Niêu",
+        "items": [
+          {
+            "name": "Cơm Niêu Singapore",
+            "price": 95000,
+            "description": "Cơm niêu kèm gà chiên nước mắm, tôm chiên, trứng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401088/C%C6%A1m_ni%C3%AAu_Sigapore_kq4g5m.jpg",
+            "status": true
+          },
+          {
+            "name": "Cơm Niêu Sườn Nướng",
+            "price": 90000,
+            "description": "Cơm niêu với sườn nướng mật ong",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401090/C%C6%A1m_ni%C3%AAu_s%C6%B0%E1%BB%9Dn_n%C6%B0%E1%BB%9Bng_abjinl.jpg",
+            "status": true
+          },
+          {
+            "name": "Cơm Niêu Hải Sản",
+            "price": 95000,
+            "description": "Cơm niêu với tôm, cua, cá tươi",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401086/C%C6%A1m_ni%C3%AAu_h%E1%BA%A3i_s%E1%BA%A3n_jvjtd3.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Món Nướng",
+        "items": [
+          {
+            "name": "Gà Nướng Muối Ớt",
+            "price": 180000,
+            "description": "Gà nướng nguyên con muối ớt",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401231/G%C3%A0_n%C6%B0%E1%BB%9Bng_mu%E1%BB%91i_%E1%BB%9Bt_qaeu18.jpg",
+            "status": true
+          },
+          {
+            "name": "Sườn Nướng Mật Ong",
+            "price": 120000,
+            "description": "Sườn nướng mật ong thơm ngọt",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401233/S%C6%B0%E1%BB%9Dn_n%C6%B0%E1%BB%9Bng_m%E1%BA%ADt_ong_op2xtz.jpg",
+            "status": true
+          },
+          {
+            "name": "Tôm Nướng Phô Mai",
+            "price": 150000,
+            "description": "Tôm nướng phô mai béo ngậy",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401235/T%C3%B4m_n%C6%B0%E1%BB%9Bng_ph%C3%B4_mai_wq3gsw.jpg",
+            "status": true
+          },
+          {
+            "name": "Bạch Tuộc Nướng Sa Tế",
+            "price": 140000,
+            "description": "Bạch tuộc nướng sa tế cay nồng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401229/B%E1%BA%A1ch_tu%E1%BB%99c_n%C6%B0%E1%BB%9Bng_sa_t%E1%BA%BF_fecdod.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Món Xào",
+        "items": [
+          {
+            "name": "Rau Muống Xào Tỏi",
+            "price": 45000,
+            "description": "Rau muống xào tỏi giòn ngon",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401453/Rau_mu%E1%BB%91ng_x%C3%A0o_t%E1%BB%8Fi_l3xz06.jpg",
+            "status": true
+          },
+          {
+            "name": "Nghêu Xào Sả Ớt",
+            "price": 85000,
+            "description": "Nghêu tươi xào sả ớt",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401451/Ngh%C3%AAu_x%C3%A0o_x%E1%BA%A3_%E1%BB%9Bt_djj12s.jpg",
+            "status": true
+          },
+          {
+            "name": "Mực Xào Thập Cẩm",
+            "price": 95000,
+            "description": "Mực xào rau củ đầy màu sắc",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401448/M%E1%BB%B1c_x%C3%A0o_th%E1%BA%ADp_c%E1%BA%A9m_zkbkva.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Đồ Uống",
+        "items": [
+          {
+            "name": "Nước Dừa Tươi",
+            "price": 30000,
+            "description": "Nước dừa tươi mát lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401540/N%C6%B0%E1%BB%9Bc_d%E1%BB%ABa_t%C6%B0%C6%A1i_i6omcp.jpg",
+            "status": true
+          },
+          {
+            "name": "Nước Atiso",
+            "price": 25000,
+            "description": "Nước atiso tươi ngon",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401535/N%C6%B0%E1%BB%9Bc_atiso_dool4n.jpg",
+            "status": true
+          },
+          {
+            "name": "Nước Bí Đao",
+            "price": 20000,
+            "description": "Nước bí đao bổ dưỡng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766401537/N%C6%B0%E1%BB%9Bc_b%C3%AD_%C4%91ao_huk7yw.jpg",
+            "status": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": {"$oid": "69496ebac4034997f273e86f"},
+    "name": "Bún Đậu Mắm Tôm Hàng Khay",
+    "email": "bundau@gmail.com",
+    "address": "32 Hàng Khay, Hoàn Kiếm, Hà Nội",
+    "hotline": "0243936086",
+    "openTime": "09:00",
+    "closeTime": "21:00",
+    "mapLink": "https://maps.app.goo.gl/uZMZFewh2EKVC1i89",
+    "status": true,
+    "average_rating": 0,
+    "total_reviews": 0,
+    "menu": [
+      {
+        "category": "Bún Đậu",
+        "items": [
+          {
+            "name": "Bún Đậu Mắm Tôm",
+            "price": 50000,
+            "description": "Bún đậu với đậu hũ chiên, chả cốm, thịt luộc",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766408878/B%C3%BAn_%C4%91%E1%BA%ADu_m%E1%BA%AFm_t%C3%B4m_idff3v.jpg",
+            "status": true
+          },
+          {
+            "name": "Bún Đậu Đặc Biệt",
+            "price": 80000,
+            "description": "Bún đậu đầy đủ: chả cốm, dồi sụn, thịt, nem, đậu",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766408877/B%C3%BAn_%C4%91%E1%BA%ADu_%C4%91%E1%BA%B7c_bi%E1%BB%87t_h1gvsl.jpg",
+            "status": true
+          },
+          {
+            "name": "Bún Đậu Chay",
+            "price": 45000,
+            "description": "Bún đậu dành cho người ăn chay",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766408876/B%C3%BAn_%C4%91%E1%BA%ADu_chay_haquhb.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Món thêm",
+        "items": [
+          {
+            "name": "Chả Cốm",
+            "price": 40000,
+            "description": "Chả cốm Làng Vòng đặc sản",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409005/Ch%E1%BA%A3_c%E1%BB%91m_ihyesf.jpg",
+            "status": true
+          },
+          {
+            "name": "Thịt Luộc",
+            "price": 35000,
+            "description": "Thịt luộc thái lát mềm",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409003/Th%E1%BB%8Bt_lu%E1%BB%99c_tkk2fo.jpg",
+            "status": true
+          },
+          {
+            "name": "Đậu",
+            "price": 25000,
+            "description": "Đậu hũ chiên giòn vàng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409008/%C4%90%E1%BA%ADu_o6ev8z.jpg",
+            "status": true
+          },
+          {
+            "name": "Dồi Sụn",
+            "price": 45000,
+            "description": "Dồi sụn chiên giòn",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409010/D%E1%BB%93i_s%E1%BB%A5n_bvkkgf.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Đồ Uống",
+        "items": [
+          {
+            "name": "Nước Me",
+            "price": 20000,
+            "description": "Nước me chua ngọt giải khát",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409145/N%C6%B0%E1%BB%9Bc_me_roa5sp.jpg",
+            "status": true
+          },
+          {
+            "name": "Nước Dứa",
+            "price": 25000,
+            "description": "Nước dứa tươi mát lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409139/N%C6%B0%E1%BB%9Bc_d%E1%BB%A9a_ckk8mz.jpg",
+            "status": true
+          },
+          {
+            "name": "Nước Hạt Chia",
+            "price": 25000,
+            "description": "Nước hạt chia bổ dưỡng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409141/N%C6%B0%E1%BB%9Bc_h%E1%BA%A1t_chia_gsjxnu.jpg",
+            "status": true
+          },
+          {
+            "name": "Nước Chanh Dây",
+            "price": 20000,
+            "description": "Nước chanh dây tươi mát",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409137/N%C6%B0%E1%BB%9Bc_chanh_d%C3%A2y_u6qavv.jpg",
+            "status": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": {"$oid": "69496ebac4034997f273e870"},
+    "name": "Bánh Mì Hà Nội",
+    "email": "banhmihanoi@gmail.com",
+    "address": "237 Giải Phóng, Thanh Xuân, Hà Nội",
+    "hotline": "0243556899",
+    "openTime": "06:00",
+    "closeTime": "11:00",
+    "mapLink": "https://maps.app.goo.gl/zLXQoT3iXuNvThGh6",
+    "status": true,
+    "average_rating": 0,
+    "total_reviews": 0,
+    "menu": [
+      {
+        "category": "Bánh Mì",
+        "items": [
+          {
+            "name": "Bánh Mì Xá Xíu",
+            "price": 35000,
+            "description": "Bánh mì xá xíu nướng thơm ngon",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409303/B%C3%A1nh_m%C3%AC_x%C3%A1_x%C3%ADu_iwmj1d.jpg",
+            "status": true
+          },
+          {
+            "name": "Bánh Mì Chảo",
+            "price": 40000,
+            "description": "Bánh mì chảo trứng béo ngậy",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409296/B%C3%A1nh_m%C3%AC_ch%E1%BA%A3o_eyct7q.jpg",
+            "status": true
+          },
+          {
+            "name": "Bánh Mì Thịt Nướng",
+            "price": 32000,
+            "description": "Bánh mì thịt nướng than hoa",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409300/B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_n%C6%B0%E1%BB%9Bng_anwym2.jpg",
+            "status": true
+          },
+          {
+            "name": "Bánh Mì Nướng Muối Ớt",
+            "price": 30000,
+            "description": "Bánh mì nướng giòn với muối ớt",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409299/B%C3%A1nh_m%C3%AC_n%C6%B0%E1%BB%9Bng_mu%E1%BB%91i_%E1%BB%9Bt_l6myl4.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Đồ Ăn Vặt",
+        "items": [
+          {
+            "name": "Xúc Xích Nướng",
+            "price": 25000,
+            "description": "Xúc xích nướng giòn thơm",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409444/X%C3%BAc_x%C3%ADch_n%C6%B0%E1%BB%9Bng_dez3bb.jpg",
+            "status": true
+          },
+          {
+            "name": "Viên Chiên",
+            "price": 20000,
+            "description": "Viên chiên giòn rụm",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409441/Vi%C3%AAn_chi%C3%AAn_p0wqkl.jpg",
+            "status": true
+          },
+          {
+            "name": "Khoai Tây Chiên",
+            "price": 30000,
+            "description": "Khoai tây chiên lắc phô mai",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409439/Khoai_t%C3%A2y_chi%C3%AAn_xuusd0.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Đồ Uống",
+        "items": [
+          {
+            "name": "Trà Ổi Hồng",
+            "price": 20000,
+            "description": "Trà ổi hồng thơm mát",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409527/Tr%C3%A0_%E1%BB%95i_h%E1%BB%93ng_ciupmw.jpg",
+            "status": true
+          },
+          {
+            "name": "Nước Cam",
+            "price": 25000,
+            "description": "Nước cam vắt tươi",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409518/N%C6%B0%E1%BB%9Bc_cam_oqek44.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Chanh Sả",
+            "price": 20000,
+            "description": "Trà chanh sả chua dịu mát",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409524/Tr%C3%A0_chanh_s%E1%BA%A3_fqvace.jpg",
+            "status": true
+          },
+          {
+            "name": "Sữa Đậu Nành",
+            "price": 15000,
+            "description": "Sữa đậu nành tự làm",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766409520/S%E1%BB%AFa_%C4%91%E1%BA%ADu_n%C3%A0nh_g6fmok.jpg",
+            "status": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": {"$oid": "69496ebac4034997f273e871"},
+    "name": "Xôi Vàng",
+    "email": "xoivang@gmail.com",
+    "address": "87 Hàng Điếu, Hoàn Kiếm, Hà Nội",
+    "hotline": "0243926768",
+    "openTime": "06:00",
+    "closeTime": "11:00",
+    "mapLink": "https://maps.app.goo.gl/9YPQaaerGZWQadpo9",
+    "status": true,
+    "average_rating": 0,
+    "total_reviews": 0,
+    "menu": [
+      {
+        "category": "Xôi Mặn",
+        "items": [
+          {
+            "name": "Xôi Xéo",
+            "price": 25000,
+            "description": "Xôi xéo truyền thống, hành phi thơm",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410248/X%C3%B4i_x%C3%A9o_cfpw2p.jpg",
+            "status": true
+          },
+          {
+            "name": "Xôi Thịt Kho Trứng",
+            "price": 30000,
+            "description": "Xôi ăn kèm thịt kho mềm và trứng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410246/X%C3%B4i_th%E1%BB%8Bt_kho_tr%E1%BB%A9ng_ramjur.jpg",
+            "status": true
+          },
+          {
+            "name": "Xôi Gà Xé",
+            "price": 35000,
+            "description": "Xôi gà xé đậm đà, hành mỡ",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410242/X%C3%B4i_g%C3%A0_x%C3%A9_h8gffg.jpg",
+            "status": true
+          },
+          {
+            "name": "Xôi Thập Cẩm",
+            "price": 40000,
+            "description": "Xôi thập cẩm đầy đủ topping",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410243/X%C3%B4i_th%E1%BA%ADp_c%E1%BA%A9m_tctvfa.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Xôi Ngọt",
+        "items": [
+          {
+            "name": "Xôi Xoài",
+            "price": 35000,
+            "description": "Xôi xoài thơm ngọt, rưới nước cốt dừa",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410361/X%C3%B4i_xo%C3%A0i_f2wtrw.jpg",
+            "status": true
+          },
+          {
+            "name": "Xôi Lá Dứa Hạt Sen",
+            "price": 30000,
+            "description": "Xôi lá dứa dẻo thơm, hạt sen bùi",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410355/X%C3%B4i_l%C3%A1_d%E1%BB%A9a_h%E1%BA%A1t_sen_fy5ajv.jpg",
+            "status": true
+          },
+          {
+            "name": "Xôi Dừa Hạt Sen",
+            "price": 32000,
+            "description": "Xôi dừa béo nhẹ, hạt sen thanh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410352/X%C3%B4i_d%E1%BB%ABa_h%E1%BA%A1t_sen_h8eivx.jpg",
+            "status": true
+          },
+          {
+            "name": "Xôi Ngũ Sắc",
+            "price": 35000,
+            "description": "Xôi ngũ sắc đẹp mắt, vị hài hòa",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410358/X%C3%B4i_ng%C5%A9_s%E1%BA%AFc_a1xspa.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Đồ Uống",
+        "items": [
+          {
+            "name": "Trà Trái Cây",
+            "price": 25000,
+            "description": "Trà trái cây thơm mát, vị chua ngọt",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410505/Tr%C3%A0_tr%C3%A1i_c%C3%A2y_kgvhfm.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Dưa Lưới",
+            "price": 28000,
+            "description": "Trà dưa lưới thơm ngon, mát lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410501/Tr%C3%A0_d%C6%B0a_l%C6%B0%E1%BB%9Bi_vhfnii.jpg",
+            "status": true
+          },
+          {
+            "name": "Chè Mãng Cầu",
+            "price": 25000,
+            "description": "Chè mãng cầu thanh mát, béo nhẹ",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410499/Ch%C3%A8_m%C3%A3ng_c%E1%BA%A7u_dqerih.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Việt Quất",
+            "price": 30000,
+            "description": "Trà việt quất tươi mát, giàu dinh dưỡng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410509/Tr%C3%A0_vi%E1%BB%87t_qu%E1%BA%A5t_l4c5me.jpg",
+            "status": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": {"$oid": "69496ebac4034997f273e872"},
+    "name": "Trà Sữa Hà Nội",
+    "email": "trasua@gmail.com",
+    "address": "14 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội",
+    "hotline": "0243853929",
+    "openTime": "09:00",
+    "closeTime": "23:00",
+    "mapLink": "https://maps.app.goo.gl/L8tHDeJQtz4TTuWF7",
+    "status": true,
+    "average_rating": 0,
+    "total_reviews": 0,
+    "menu": [
+      {
+        "category": "Trà Sữa Truyền Thống",
+        "items": [
+          {
+            "name": "Trà Sữa Kem Trứng Nướng",
+            "price": 42000,
+            "description": "Trà sữa kem trứng nướng, béo ngậy, ấm áp",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410653/Tr%C3%A0_s%E1%BB%AFa_kem_tr%E1%BB%A9ng_n%C6%B0%E1%BB%9Bng_gfklga.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Sữa Matcha",
+            "price": 40000,
+            "description": "Matcha xanh thanh, sữa mềm, hương thơm đặc biệt",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410657/Tr%C3%A0_s%E1%BB%AFa_matcha_yeaowk.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Sữa Hoa Nhài",
+            "price": 38000,
+            "description": "Hoa nhài thơm, trà nhẹ, sữa béo, mát lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410650/Tr%C3%A0_s%E1%BB%AFa_hoa_nh%C3%A0i_yqf5mr.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Sữa Chân Châu",
+            "price": 35000,
+            "description": "Trà sữa đen, chân châu dẻo, vị cổ điển",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410648/Tr%C3%A0_s%E1%BB%AFa_ch%C3%A2n_ch%C3%A2u_bfnzdm.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Trà Trái Cây",
+        "items": [
+          {
+            "name": "Sữa Chua Trái Cây",
+            "price": 35000,
+            "description": "Sữa chua mịn, trái cây tươi, vị mát lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410780/S%E1%BB%AFa_chua_tr%C3%A1i_c%C3%A2y_z75kce.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Dâu Tằm",
+            "price": 32000,
+            "description": "Dâu tằm chua ngọt, trà nhẹ, hương thơm tự nhiên",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410787/Tr%C3%A0_d%C3%A2u_t%E1%BA%B1m_dj7v9l.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Đào Cam Sả",
+            "price": 33000,
+            "description": "Đào cam sả thơm mát, trà thanh, cực sảng khoái",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410784/Tr%C3%A0_%C4%91%C3%A0o_cam_s%E1%BA%A3_emeahs.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Xoài Dừa",
+            "price": 34000,
+            "description": "Xoài ngọt, dừa béo, trà nhẹ, vị tropics",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410790/Tr%C3%A0_xo%C3%A0i_d%E1%BB%ABa_y8n4qd.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Kem",
+        "items": [
+          {
+            "name": "Kem Trái Cây",
+            "price": 35000,
+            "description": "Kem trái cây tươi, ngọt ngào, mát lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410954/Kem_tr%C3%A1i_c%C3%A2y_xqqet8.jpg",
+            "status": true
+          },
+          {
+            "name": "Kem Socola Bạc Hà",
+            "price": 38000,
+            "description": "Kem socola đậm, bạc hà mát, vị cân bằng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410948/Kem_socola_b%E1%BA%A1c_h%C3%A0_enz571.jpg",
+            "status": true
+          },
+          {
+            "name": "Kem Ly Socola",
+            "price": 32000,
+            "description": "Kem socola ly, ăn liền, tiện lợi",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410910/Kem_ly_socola_flxc72.jpg",
+            "status": true
+          },
+          {
+            "name": "Kem Ốc Quế",
+            "price": 25000,
+            "description": "Kem ốc quế kinh điển, mịn mùi ốc quế",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766410945/Kem_%E1%BB%91c_qu%E1%BA%BF_hu8dee.jpg",
+            "status": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": {"$oid": "69496ebac4034997f273e873"},
+    "name": "Lẩu Hà Nội",
+    "email": "lauhanoi@gmail.com",
+    "address": "138 Hàng Bông, Hoàn Kiếm, Hà Nội",
+    "hotline": "0243933613",
+    "openTime": "10:00",
+    "closeTime": "23:00",
+    "mapLink": "https://maps.app.goo.gl/UB9mnVhvzNL48o4V9",
+    "status": true,
+    "average_rating": 0,
+    "total_reviews": 0,
+    "menu": [
+      {
+        "category": "Món chính",
+        "items": [
+          {
+            "name": "Lẩu Cay",
+            "price": 200000,
+            "description": "Lẩu cay đậm vị, ớt tươi, thơm nồng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411136/L%E1%BA%A9u_cay_jtgsaw.jpg",
+            "status": true
+          },
+          {
+            "name": "Lẩu Thái",
+            "price": 220000,
+            "description": "Lẩu Thái chua cay, sả chanh, đậm đà",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411146/L%E1%BA%A9u_th%C3%A1i_jeqlq0.jpg",
+            "status": true
+          },
+          {
+            "name": "Lẩu Gà",
+            "price": 210000,
+            "description": "Nước lẩu gà thanh ngọt, thịt gà chắc",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411139/L%E1%BA%A9u_g%C3%A0_d4lkor.jpg",
+            "status": true
+          },
+          {
+            "name": "Lẩu Hải Sản",
+            "price": 240000,
+            "description": "Lẩu hải sản tôm mực cá tươi, vị ngọt biển",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411143/L%E1%BA%A9u_h%E1%BA%A3i_s%E1%BA%A3n_upt8tk.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Món nhúng và ăn kèm",
+        "items": [
+          {
+            "name": "Cua Hấp",
+            "price": 260000,
+            "description": "Cua hấp giữ vị ngọt tự nhiên, chấm lẩu tuyệt hảo",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411289/Cua_h%E1%BA%A5p_yv2fsp.jpg",
+            "status": true
+          },
+          {
+            "name": "Xà Lách",
+            "price": 30000,
+            "description": "Xà lách tươi giòn, ăn kèm lẩu cho thanh vị",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411349/X%C3%A0_l%C3%A1ch_nyst4q.jpg",
+            "status": true
+          },
+          {
+            "name": "Rau Cải Thảo",
+            "price": 35000,
+            "description": "Cải thảo non ngọt, nhúng lẩu mềm và dịu",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411340/Rau_c%E1%BA%A3i_th%E1%BA%A3o_ypyem6.jpg",
+            "status": true
+          },
+          {
+            "name": "Rau Cải Cúc",
+            "price": 35000,
+            "description": "Cải cúc thơm nhẹ, nhúng nhanh giữ độ giòn",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411337/Rau_c%E1%BA%A3i_c%C3%BAc_gowjhf.jpg",
+            "status": true
+          },
+          {
+            "name": "Mực Hấp",
+            "price": 140000,
+            "description": "Mực hấp tươi giòn, ngọt thịt, nhúng lẩu đậm đà",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411333/M%E1%BB%B1c_h%E1%BA%A5p_shdxln.jpg",
+            "status": true
+          },
+          {
+            "name": "Cá Tầm",
+            "price": 180000,
+            "description": "Cá tầm cắt lát, thịt chắc, thơm béo khi nhúng",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411285/C%C3%A1_t%E1%BA%A7m_jwa4av.jpg",
+            "status": true
+          },
+          {
+            "name": "Tôm Sú",
+            "price": 170000,
+            "description": "Tôm sú tươi, thịt ngọt, nhúng lẩu dậy vị biển",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411345/T%C3%B4m_s%C3%BA_c9uwkl.jpg",
+            "status": true
+          },
+          {
+            "name": "Bò Cuộn Nấm",
+            "price": 160000,
+            "description": "Bò cuộn nấm kim châm, mềm ngọt và giòn nhẹ",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411281/B%C3%B2_cu%E1%BB%99n_n%E1%BA%A5m_nmtrd4.jpg",
+            "status": true
+          },
+          {
+            "name": "Hàu Nướng Phô Mai",
+            "price": 150000,
+            "description": "Hàu nướng phô mai béo ngậy, ăn kèm lẩu thêm phong phú",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411292/H%C3%A0u_n%C6%B0%E1%BB%9Bng_ph%C3%B4_mai_bezuas.jpg",
+            "status": true
+          }
+        ]
+      },
+      {
+        "category": "Đồ uống",
+        "items": [
+          {
+            "name": "Bia",
+            "price": 25000,
+            "description": "Bia lạnh uống kèm lẩu",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411587/Bia_n6nsjb.jpg",
+            "status": true
+          },
+          {
+            "name": "Pepsi",
+            "price": 15000,
+            "description": "Pepsi mát lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411596/Pepsi_ylfouk.jpg",
+            "status": true
+          },
+          {
+            "name": "Trà Bí Đao",
+            "price": 15000,
+            "description": "Trà bí đao thanh mát",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411601/Tr%C3%A0_b%C3%AD_%C4%91ao_fbqsoa.jpg",
+            "status": true
+          },
+          {
+            "name": "7 Up",
+            "price": 15000,
+            "description": "7 Up chanh tươi mát",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411583/7_up_dlbdq2.jpg",
+            "status": true
+          },
+          {
+            "name": "Coca Cola",
+            "price": 15000,
+            "description": "Coca Cola lạnh",
+            "image": "https://res.cloudinary.com/duihxp9f2/image/upload/v1766411592/Coca_cola_jafbrj.jpg",
+            "status": true
+          }
+        ]
+      }
+    ]
+  }
+]

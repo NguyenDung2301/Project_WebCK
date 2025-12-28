@@ -101,13 +101,22 @@ class VoucherController:
         Query params: ?restaurantId=... (optional)
         """
         try:
-            user_id = request.user_id
+            user_id = getattr(request, 'user_id', None)
+            if not user_id:
+                return jsonify({'success': False, 'message': 'Không tìm thấy thông tin user'}), 401
+            
             restaurant_id = request.args.get('restaurantId')
+            print(f"voucher_controller.available: user_id={user_id}, restaurant_id={restaurant_id}")
             result = voucher_service.get_available_for_user(user_id, restaurant_id)
+            print(f"voucher_controller.available: Returning {len(result)} vouchers")
             return jsonify({'success': True, 'data': result}), 200
         except ValueError as e:
+            print(f"voucher_controller.available: ValueError: {e}")
             return jsonify({'success': False, 'message': str(e)}), 400
         except Exception as e:
+            print(f"voucher_controller.available: Exception: {e}")
+            import traceback
+            traceback.print_exc()
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
     def expired(self):
@@ -116,13 +125,22 @@ class VoucherController:
         Query params: ?restaurantId=... (optional)
         """
         try:
-            user_id = request.user_id
+            user_id = getattr(request, 'user_id', None)
+            if not user_id:
+                return jsonify({'success': False, 'message': 'Không tìm thấy thông tin user'}), 401
+            
             restaurant_id = request.args.get('restaurantId')
+            print(f"voucher_controller.expired: user_id={user_id}, restaurant_id={restaurant_id}")
             result = voucher_service.get_expired_for_user(user_id, restaurant_id)
+            print(f"voucher_controller.expired: Returning {len(result)} vouchers")
             return jsonify({'success': True, 'data': result}), 200
         except ValueError as e:
+            print(f"voucher_controller.expired: ValueError: {e}")
             return jsonify({'success': False, 'message': str(e)}), 400
         except Exception as e:
+            print(f"voucher_controller.expired: Exception: {e}")
+            import traceback
+            traceback.print_exc()
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
     def preview(self):

@@ -31,27 +31,79 @@ class DashboardService:
 
     # ==================== LAYER 1: MongoDB Aggregation Operations ====================
 
+    def _parse_datetime(self, dt) -> Optional[datetime]:
+        """Helper để parse datetime từ nhiều format"""
+        if dt is None:
+            return None
+        if isinstance(dt, datetime):
+            return dt
+        if isinstance(dt, str):
+            try:
+                # Thử parse ISO format (2025-12-20T10:30:00.000+00:00)
+                # datetime.fromisoformat() hỗ trợ format này từ Python 3.7+
+                dt_clean = dt.replace('Z', '+00:00')
+                # Parse và loại bỏ timezone info (chuyển về naive datetime)
+                parsed = datetime.fromisoformat(dt_clean)
+                if parsed.tzinfo:
+                    # Convert về UTC và loại bỏ timezone info
+                    parsed = parsed.replace(tzinfo=None) + timedelta(seconds=parsed.utcoffset().total_seconds() if parsed.utcoffset() else 0)
+                return parsed
+            except (ValueError, AttributeError, TypeError):
+                try:
+                    # Fallback: parse với format khác
+                    return datetime.strptime(dt, '%Y-%m-%d %H:%M:%S')
+                except:
+                    try:
+                        # Fallback khác: chỉ lấy phần date
+                        return datetime.strptime(dt[:10], '%Y-%m-%d')
+                    except:
+                        return None
+        return None
+
     def _aggregate_total_revenue(self, start_date: datetime, end_date: Optional[datetime] = None) -> float:
         """Tính tổng doanh thu trong khoảng thời gian"""
-        match_filter = {
-            "status": OrderStatus.COMPLETED.value,
-            "createdAt": {"$gte": start_date}
-        }
-        if end_date:
-            match_filter["createdAt"]["$lt"] = end_date
+        # Query tất cả orders Completed và filter trong Python để xử lý cả datetime và string
+        all_completed = list(self.orders_collection.find({"status": OrderStatus.COMPLETED.value}))
+        total = 0.0
         
-        pipeline = [
-            {"$match": match_filter},
-            {"$group": {"_id": None, "total": {"$sum": "$total_amount"}}}
-        ]
-        result = list(self.orders_collection.aggregate(pipeline))
-        return float(result[0]["total"]) if result else 0.0
+        for order in all_completed:
+            created_at = self._parse_datetime(order.get("createdAt"))
+            if created_at and created_at >= start_date:
+                if end_date is None or created_at < end_date:
+                    total += float(order.get("total_amount", 0))
+        
+        return total
 
     def _get_active_user_ids(self, start_date: datetime) -> List[ObjectId]:
-        """Lấy danh sách user_id có hoạt động từ start_date"""
-        return self.orders_collection.distinct("userId", {
-            "createdAt": {"$gte": start_date}
-        })
+        """Lấy danh sách user_id có hoạt động từ start_date (bao gồm cả user và shipper)"""
+        # Lấy tất cả orders và filter trong Python để xử lý cả datetime và string
+        all_orders = list(self.orders_collection.find({}, {"userId": 1, "shipperId": 1, "createdAt": 1}))
+        user_ids = set()
+        
+        for order in all_orders:
+            created_at = self._parse_datetime(order.get("createdAt"))
+            if created_at and created_at >= start_date:
+                # Thêm cả userId (người đặt hàng) và shipperId (người giao hàng)
+                user_id = order.get("userId")
+                if user_id:
+                    try:
+                        user_ids.add(user_id if isinstance(user_id, ObjectId) else ObjectId(user_id))
+                    except:
+                        pass
+                
+                shipper_id = order.get("shipperId")
+                if shipper_id:
+                    try:
+                        user_ids.add(shipper_id if isinstance(shipper_id, ObjectId) else ObjectId(shipper_id))
+                    except:
+                        pass
+        
+        return list(user_ids)
+
+    def _count_active_users(self) -> int:
+        """Đếm số người dùng active (bao gồm cả user và shipper, loại trừ admin)"""
+        # Đếm tất cả users và shippers có is_active = true
+        return self.users_collection.count_documents({"is_active": True})
 
     def _count_active_restaurants(self) -> int:
         """Đếm số nhà hàng đang hoạt động"""
@@ -59,26 +111,19 @@ class DashboardService:
 
     def _aggregate_revenue_by_month(self, year: int) -> Dict[int, float]:
         """Aggregate doanh thu theo từng tháng trong năm"""
-        pipeline = [
-            {
-                "$match": {
-                    "status": OrderStatus.COMPLETED.value,
-                    "createdAt": {
-                        "$gte": datetime(year, 1, 1),
-                        "$lt": datetime(year + 1, 1, 1)
-                    }
-                }
-            },
-            {
-                "$group": {
-                    "_id": {"$month": "$createdAt"},
-                    "revenue": {"$sum": "$total_amount"}
-                }
-            },
-            {"$sort": {"_id": 1}}
-        ]
-        results = list(self.orders_collection.aggregate(pipeline))
-        return {r["_id"]: float(r["revenue"]) for r in results}
+        # Lấy tất cả orders Completed và filter trong Python
+        all_completed = list(self.orders_collection.find({"status": OrderStatus.COMPLETED.value}))
+        revenue_by_month = {i: 0.0 for i in range(1, 13)}
+        start_of_year = datetime(year, 1, 1)
+        end_of_year = datetime(year + 1, 1, 1)
+        
+        for order in all_completed:
+            created_at = self._parse_datetime(order.get("createdAt"))
+            if created_at and start_of_year <= created_at < end_of_year:
+                month = created_at.month
+                revenue_by_month[month] += float(order.get("total_amount", 0))
+        
+        return revenue_by_month
 
     def _aggregate_order_count_by_status(self) -> Dict[str, int]:
         """Đếm số đơn hàng theo từng trạng thái"""
@@ -112,36 +157,62 @@ class DashboardService:
 
     def _aggregate_top_selling_items(self, limit: int) -> List[Dict]:
         """Aggregate món ăn bán chạy nhất (phân biệt theo nhà hàng)"""
-        pipeline = [
-            {
-                "$match": {
-                    "status": {"$in": [OrderStatus.COMPLETED.value, OrderStatus.SHIPPING.value]}
-                }
-            },
-            {"$unwind": "$items"},
-            {
-                "$group": {
-                    # Nhóm theo cặp (restaurantId + food_name) để phân biệt món trùng tên ở các quán khác nhau
-                    "_id": {
-                        "resId": "$restaurantId",
-                        "fname": "$items.food_name"
-                    },
-                    "foodName": {"$first": "$items.food_name"},
-                    "restaurantName": {"$first": "$restaurantName"},  # Lấy từ field đã denormalized trong Order
-                    "restaurantId": {"$first": "$restaurantId"},
-                    "totalSold": {"$sum": "$items.quantity"}
-                }
-            },
-            {
-                "$sort": {
-                    "totalSold": -1,        # Ưu tiên số lượng bán nhiều nhất
-                    "foodName": 1,          # Nếu bằng nhau, xếp theo tên món A-Z
-                    "restaurantName": 1     # Nếu cả tên món giống nhau, xếp theo tên quán
-                }
-            },
-            {"$limit": limit}
-        ]
-        return list(self.orders_collection.aggregate(pipeline))
+        # Lấy tất cả orders hợp lệ và xử lý trong Python để đảm bảo logic chính xác
+        orders = list(self.orders_collection.find({
+            "status": {"$in": [OrderStatus.COMPLETED.value, OrderStatus.SHIPPING.value]},
+            "items": {"$exists": True, "$ne": []},
+            "restaurantId": {"$exists": True, "$ne": None},
+            "restaurantName": {"$exists": True, "$ne": None, "$ne": ""}
+        }))
+        
+        # Dictionary để nhóm và đếm: key = (restaurantId, food_name)
+        food_stats = {}
+        
+        for order in orders:
+            restaurant_id = order.get("restaurantId")
+            restaurant_name = order.get("restaurantName", "")
+            items = order.get("items", [])
+            
+            if not restaurant_id or not restaurant_name or not items:
+                continue
+            
+            for item in items:
+                food_name = item.get("food_name")
+                quantity = item.get("quantity", 0)
+                
+                # Kiểm tra item hợp lệ
+                if not food_name or not isinstance(food_name, str) or len(food_name.strip()) == 0:
+                    continue
+                
+                if not isinstance(quantity, (int, float)) or quantity <= 0:
+                    continue
+                
+                # Tạo key duy nhất cho mỗi món ở mỗi nhà hàng
+                key = (str(restaurant_id), food_name.strip())
+                
+                if key not in food_stats:
+                    food_stats[key] = {
+                        "foodName": food_name.strip(),
+                        "restaurantName": restaurant_name,
+                        "restaurantId": restaurant_id,
+                        "totalSold": 0
+                    }
+                
+                food_stats[key]["totalSold"] += int(quantity)
+        
+        # Chuyển sang list và sắp xếp
+        results = list(food_stats.values())
+        results.sort(key=lambda x: (-x["totalSold"], x["foodName"], x["restaurantName"]))
+        
+        # Giới hạn số lượng
+        results = results[:limit]
+        
+        # Debug: Log kết quả để kiểm tra
+        print(f"[DEBUG] Top selling items found: {len(results)}")
+        for idx, item in enumerate(results[:10], 1):
+            print(f"[DEBUG] {idx}. {item.get('foodName', 'N/A')} - Sold: {item.get('totalSold', 0)} - Restaurant: {item.get('restaurantName', 'N/A')}")
+        
+        return results
 
     def _aggregate_top_revenue_restaurants(self, limit: int) -> List[Dict]:
         """Aggregate nhà hàng có doanh thu cao nhất"""
@@ -180,18 +251,18 @@ class DashboardService:
         now = datetime.now()
         start_of_month = datetime(now.year, now.month, 1)
         start_of_today = datetime(now.year, now.month, now.day)
-        thirty_days_ago = now - timedelta(days=30)
 
         # Sử dụng các hàm LAYER 1
         total_revenue_month = self._aggregate_total_revenue(start_of_month)
         revenue_today = self._aggregate_total_revenue(start_of_today)
-        active_user_ids = self._get_active_user_ids(thirty_days_ago)
+        # Đếm tất cả users và shippers active trong hệ thống (không phải chỉ những người có đặt hàng)
+        total_active_users = self._count_active_users()
         total_restaurants = self._count_active_restaurants()
 
         return OverviewStats(
             totalRevenueMonth=total_revenue_month,
             revenueToday=revenue_today,
-            activeUsers=len(active_user_ids),
+            activeUsers=total_active_users,
             totalRestaurants=total_restaurants
         ).model_dump(by_alias=True)
 

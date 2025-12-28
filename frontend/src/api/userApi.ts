@@ -3,18 +3,19 @@
  * File này chứa các API endpoints liên quan đến quản lý người dùng
  */
 
-import { getBackendBaseUrl, getUsersApiBaseUrl, requestJson, getAuthHeaders } from './axiosClient';
-import { BackendUser as AdminUser, CreateUserRequest, UpdateUserRequest } from '@/types/user';
+import { getBackendBaseUrl, getUsersApiBaseUrl, requestJson, getAuthHeaders, apiClient } from './axiosClient';
+import { BackendUser as AdminUser, CreateUserRequest, UpdateUserRequest } from '../types/user';
+import { getToken } from '../utils/storage';
 
 // Re-export for backward compatibility
-export type { BackendUser as AdminUser, CreateUserRequest, UpdateUserRequest } from '@/types/user';
+export type { BackendUser as AdminUser, CreateUserRequest, UpdateUserRequest } from '../types/user';
 
 /**
  * Get all users (Admin only)
  * @returns Promise<AdminUser[]>
  */
 export const getAllUsersApi = async (): Promise<AdminUser[]> => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (!token) {
     throw new Error('Chưa đăng nhập. Vui lòng đăng nhập lại.');
   }
@@ -22,14 +23,14 @@ export const getAllUsersApi = async (): Promise<AdminUser[]> => {
   try {
     console.log('Fetching users from:', `${getUsersApiBaseUrl()}/all`);
     console.log('Token:', token.substring(0, 20) + '...');
-    
+
     const response = await fetch(`${getUsersApiBaseUrl()}/all`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
 
     console.log('Response status:', response.status);
-    
+
     const data = await response.json().catch((err) => {
       console.error('Error parsing JSON:', err);
       throw new Error('Không thể parse response từ server');
@@ -53,7 +54,7 @@ export const getAllUsersApi = async (): Promise<AdminUser[]> => {
     if (data.success && Array.isArray(data.data)) {
       return data.data;
     }
-    
+
     console.error('Unexpected response format:', data);
     throw new Error('Format dữ liệu không đúng từ server');
   } catch (error) {
@@ -70,7 +71,7 @@ export const getAllUsersApi = async (): Promise<AdminUser[]> => {
  * @param userId - User ID to delete
  */
 export const deleteUserApi = async (userId: string): Promise<void> => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (!token) {
     throw new Error('Chưa đăng nhập');
   }
@@ -91,7 +92,7 @@ export const deleteUserApi = async (userId: string): Promise<void> => {
  * @returns Updated user
  */
 export const updateUserRoleApi = async (userId: string, role: 'admin' | 'user' | 'shipper'): Promise<AdminUser> => {
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (!token) {
     throw new Error('Chưa đăng nhập');
   }
@@ -135,10 +136,10 @@ export const createUserApi = async (userData: CreateUserRequest): Promise<AdminU
   );
 
   const createdUser = data.data.user;
-  
+
   // If role is specified and different from default 'user', update it
   if (userData.role && userData.role !== 'user') {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       try {
         const updatedUser = await updateUserRoleApi(createdUser.user_id, userData.role);
@@ -154,27 +155,84 @@ export const createUserApi = async (userData: CreateUserRequest): Promise<AdminU
 };
 
 /**
- * Update user profile (Admin updating other users)
- * @param userId - User ID
+ * Get current user profile
+ * @returns User profile
+ */
+export const getUserProfileApi = async (): Promise<AdminUser> => {
+  try {
+    const response = await apiClient.get(`${getUsersApiBaseUrl()}/profile_me`);
+    if (response.data.success && response.data.data) {
+      // Return raw data - transformation is handled by userService
+      return response.data.data;
+    }
+    throw new Error('Failed to get user profile');
+  } catch (error: any) {
+    console.error('Error getting user profile:', error);
+    throw new Error(error.response?.data?.message || 'Không thể tải thông tin người dùng');
+  }
+};
+
+/**
+ * Update user profile (User updating own profile)
  * @param userData - User data to update
  * @returns Updated user
  */
-export const updateUserApi = async (userId: string, userData: UpdateUserRequest): Promise<AdminUser> => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    throw new Error('Chưa đăng nhập');
-  }
-
-  // Note: The backend update_profile endpoint updates the current user's profile
-  // For admin updating other users, we might need a different endpoint
-  // For now, we'll use get_user_by_id to fetch the updated user
-  const data = await requestJson<{ data: AdminUser }>(
-    `${getUsersApiBaseUrl()}/profile_${userId}`,
-    {
-      method: 'GET',
-      headers: getAuthHeaders(),
+export const updateUserApi = async (userData: UpdateUserRequest): Promise<AdminUser> => {
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Chưa đăng nhập');
     }
-  );
 
-  return data.data;
+    // Use update_profile endpoint which updates the current authenticated user's profile
+    const response = await apiClient.put(`${getUsersApiBaseUrl()}/update_profile`, userData);
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    throw new Error('Failed to update user profile');
+  } catch (error: any) {
+    console.error('Error updating user profile:', error);
+    throw new Error(error.response?.data?.message || 'Không thể cập nhật thông tin người dùng');
+  }
+};
+
+/**
+ * Toggle user status (Admin only) - Lock/unlock user account
+ * @param userId - User ID
+ * @param isActive - True to activate, false to lock
+ * @returns Updated user
+ */
+export const toggleUserStatusApi = async (userId: string, isActive: boolean): Promise<AdminUser> => {
+  try {
+    const response = await apiClient.put(`${getUsersApiBaseUrl()}/${userId}/toggle-status`, {
+      is_active: isActive,
+    });
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    throw new Error('Failed to toggle user status');
+  } catch (error: any) {
+    console.error('Error toggling user status:', error);
+    throw new Error(error.response?.data?.message || 'Không thể thay đổi trạng thái người dùng');
+  }
+};
+
+/**
+ * Top up balance for current user
+ * @param amount - Amount to top up
+ * @returns Updated user with new balance
+ */
+export const topUpBalanceApi = async (amount: number): Promise<AdminUser> => {
+  try {
+    const response = await apiClient.post(`${getUsersApiBaseUrl()}/balance/topup`, {
+      amount: amount,
+    });
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    throw new Error('Failed to top up balance');
+  } catch (error: any) {
+    console.error('Error topping up balance:', error);
+    throw new Error(error.response?.data?.message || 'Không thể nạp tiền');
+  }
 };

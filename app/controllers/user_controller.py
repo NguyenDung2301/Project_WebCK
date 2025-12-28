@@ -7,6 +7,7 @@ from schemas.user_schema import (
     UserRoleUpdateRequest,
     UserTopUpRequest,
     WithdrawRequest,
+    RefreshTokenRequest,
 )
 from pydantic import ValidationError
 
@@ -22,6 +23,7 @@ class UserController:
             
             # Validate request body với Pydantic
             user_data = UserRegisterRequest(**request.json)
+            
             # Gọi service
             result = user_service.register(user_data)
 
@@ -189,6 +191,22 @@ class UserController:
             return jsonify({'success': True, 'message': result['message'], 'data': result['user']}), 200
         except ValueError as e:
             return jsonify({'success': False, 'message': str(e)}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+    
+    def refresh_token(self):
+        """API refresh access token"""
+        try:
+            if not request.json:
+                return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
+            
+            refresh_data = RefreshTokenRequest(**request.json)
+            result = user_service.refresh_access_token(refresh_data.refresh_token)
+            return jsonify({'success': True, 'message': 'Làm mới token thành công', 'data': result}), 200
+        except ValidationError as e:
+            return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 401
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 

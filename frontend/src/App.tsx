@@ -4,7 +4,7 @@ import { HashRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout'; // Explicit import needed if AdminRoute doesn't wrap layout
 import { ShipperLayout } from './layouts/ShipperLayout';
-import { AdminRoute, PublicRoute, ShipperRoute } from './routes';
+import { AdminRoute, PublicRoute, ShipperRoute, UserRoute } from './routes';
 
 import { HomePage } from './page/user/HomePage';
 import { LoginPage } from './page/auth/LoginPage';
@@ -22,6 +22,7 @@ import { OrdersPage } from './page/user/OrdersPage';
 import { ProfilePage } from './page/user/ProfilePage';
 import { ReviewPage } from './page/user/ReviewPage';
 import { AuthProvider } from './contexts/AuthContext';
+import { CartProvider } from './contexts/CartContext';
 
 // Shipper Pages
 import { ShipperHomePage } from './page/shipper/ShipperHomePage';
@@ -32,170 +33,178 @@ import { ShipperProfilePage } from './page/shipper/ShipperProfilePage';
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <HashRouter>
-        <Routes>
-          {/* Admin routes - protected */}
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-          
-          <Route 
-            path="/admin/dashboard" 
-            element={
-              <AdminRoute>
-                <DashboardPage />
-              </AdminRoute>
-            } 
-          />
-          <Route 
-            path="/admin/users" 
-            element={
-              <AdminRoute>
-                <UsersManagement />
-              </AdminRoute>
-            } 
-          />
-          <Route 
-            path="/admin/restaurants" 
-            element={
-              <AdminRoute>
-                <RestaurantManagement />
-              </AdminRoute>
-            } 
-          />
-          <Route 
-            path="/admin/orders" 
-            element={
-              <AdminRoute>
-                <OrderManagement />
-              </AdminRoute>
-            } 
-          />
-          <Route 
-            path="/admin/vouchers" 
-            element={
-              <AdminRoute>
-                <VoucherManagement />
-              </AdminRoute>
-            } 
-          />
+      <CartProvider>
+        <HashRouter>
+          <Routes>
+            {/* Admin routes - protected */}
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
-          {/* Shipper routes - protected */}
-          <Route path="/shipper" element={<Navigate to="/shipper/home" replace />} />
-          
-          <Route 
-            path="/shipper/home" 
-            element={
-              <ShipperRoute>
-                <ShipperLayout>
-                  <ShipperHomePage />
-                </ShipperLayout>
-              </ShipperRoute>
-            } 
-          />
-          <Route 
-            path="/shipper/history" 
-            element={
-              <ShipperRoute>
-                <ShipperLayout>
-                  <ShipperHistoryPage />
-                </ShipperLayout>
-              </ShipperRoute>
-            } 
-          />
-          <Route 
-            path="/shipper/pending" 
-            element={
-              <ShipperRoute>
-                <ShipperLayout>
-                  <ShipperPendingPage />
-                </ShipperLayout>
-              </ShipperRoute>
-            } 
-          />
-          <Route 
-            path="/shipper/profile" 
-            element={
-              <ShipperRoute>
-                <ShipperLayout>
-                  <ShipperProfilePage />
-                </ShipperLayout>
-              </ShipperRoute>
-            } 
-          />
-          
-          {/* Auth routes - only for guests */}
-          <Route path="/login" element={
-            <PublicRoute>
+            <Route
+              path="/admin/dashboard"
+              element={
+                <AdminRoute>
+                  <DashboardPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <AdminRoute>
+                  <UsersManagement />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/restaurants"
+              element={
+                <AdminRoute>
+                  <RestaurantManagement />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/orders"
+              element={
+                <AdminRoute>
+                  <OrderManagement />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/vouchers"
+              element={
+                <AdminRoute>
+                  <VoucherManagement />
+                </AdminRoute>
+              }
+            />
+
+            {/* Shipper routes - protected */}
+            <Route path="/shipper" element={<Navigate to="/shipper/home" replace />} />
+
+            <Route
+              path="/shipper/home"
+              element={
+                <ShipperRoute>
+                  <ShipperLayout>
+                    <ShipperHomePage />
+                  </ShipperLayout>
+                </ShipperRoute>
+              }
+            />
+            <Route
+              path="/shipper/history"
+              element={
+                <ShipperRoute>
+                  <ShipperLayout>
+                    <ShipperHistoryPage />
+                  </ShipperLayout>
+                </ShipperRoute>
+              }
+            />
+            <Route
+              path="/shipper/pending"
+              element={
+                <ShipperRoute>
+                  <ShipperLayout>
+                    <ShipperPendingPage />
+                  </ShipperLayout>
+                </ShipperRoute>
+              }
+            />
+            <Route
+              path="/shipper/profile"
+              element={
+                <ShipperRoute>
+                  <ShipperLayout>
+                    <ShipperProfilePage />
+                  </ShipperLayout>
+                </ShipperRoute>
+              }
+            />
+
+            {/* Auth routes - only for guests */}
+            <Route path="/login" element={
+              <PublicRoute>
+                <MainLayout>
+                  <LoginPage />
+                </MainLayout>
+              </PublicRoute>
+            } />
+            <Route path="/register" element={
+              <PublicRoute>
+                <MainLayout>
+                  <RegisterPage />
+                </MainLayout>
+              </PublicRoute>
+            } />
+            <Route path="/forgot-password" element={
+              <PublicRoute>
+                <MainLayout>
+                  <ForgotPasswordPage />
+                </MainLayout>
+              </PublicRoute>
+            } />
+
+            {/* Public routes */}
+            <Route path="/" element={
               <MainLayout>
-                <LoginPage />
+                <HomePage />
               </MainLayout>
-            </PublicRoute>
-          } />
-          <Route path="/register" element={
-            <PublicRoute>
+            } />
+
+            <Route path="/search" element={
               <MainLayout>
-                <RegisterPage />
+                <SearchPage />
               </MainLayout>
-            </PublicRoute>
-          } />
-          <Route path="/forgot-password" element={
-            <PublicRoute>
+            } />
+
+            <Route path="/product/:id" element={
               <MainLayout>
-                <ForgotPasswordPage />
+                <ProductDetailPage />
               </MainLayout>
-            </PublicRoute>
-          } />
-          
-          {/* Public routes */}
-          <Route path="/" element={
-            <MainLayout>
-              <HomePage />
-            </MainLayout>
-          } />
+            } />
 
-          <Route path="/search" element={
-            <MainLayout>
-              <SearchPage />
-            </MainLayout>
-          } />
+            <Route path="/product/:id/reviews" element={
+              <MainLayout>
+                <ReviewPage />
+              </MainLayout>
+            } />
 
-          <Route path="/product/:id" element={
-            <MainLayout>
-              <ProductDetailPage />
-            </MainLayout>
-          } />
+            <Route path="/checkout" element={
+              <UserRoute>
+                <MainLayout>
+                  <CheckoutPage />
+                </MainLayout>
+              </UserRoute>
+            } />
 
-          <Route path="/product/:id/reviews" element={
-            <MainLayout>
-              <ReviewPage />
-            </MainLayout>
-          } />
+            <Route path="/orders" element={
+              <UserRoute>
+                <MainLayout>
+                  <OrdersPage />
+                </MainLayout>
+              </UserRoute>
+            } />
 
-          <Route path="/checkout" element={
-            <MainLayout>
-              <CheckoutPage />
-            </MainLayout>
-          } />
+            <Route path="/profile" element={
+              <UserRoute>
+                <MainLayout>
+                  <ProfilePage />
+                </MainLayout>
+              </UserRoute>
+            } />
 
-          <Route path="/orders" element={
-            <MainLayout>
-              <OrdersPage />
-            </MainLayout>
-          } />
-
-          <Route path="/profile" element={
-            <MainLayout>
-              <ProfilePage />
-            </MainLayout>
-          } />
-          
-          {/* 404 */}
-          <Route path="*" element={
-            <MainLayout>
-              <HomePage />
-            </MainLayout>
-          } />
-        </Routes>
-      </HashRouter>
+            {/* 404 */}
+            <Route path="*" element={
+              <MainLayout>
+                <HomePage />
+              </MainLayout>
+            } />
+          </Routes>
+        </HashRouter>
+      </CartProvider>
     </AuthProvider>
   );
 };

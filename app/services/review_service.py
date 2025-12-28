@@ -5,6 +5,7 @@ from bson import ObjectId
 from db.connection import reviews_collection, orders_collection, restaurants_collection, users_collection
 from db.models.review import Review
 from db.models.order import OrderStatus
+from utils.mongo_parser import parse_mongo_document
 
 
 class ReviewService:
@@ -23,6 +24,8 @@ class ReviewService:
     # ==================== Helpers ====================
     def _to_model(self, doc: dict) -> Review:
         """Chuyển MongoDB document thành Review model"""
+        # Parse MongoDB Extended JSON format
+        doc = parse_mongo_document(doc)
         return Review(**doc)
 
     def _to_dict(self, review: Review) -> Dict:
@@ -69,6 +72,12 @@ class ReviewService:
         
         result = self.collection.insert_one(review.to_mongo())
         created = self.find_by_id(str(result.inserted_id))
+        
+        # Cập nhật order: đánh dấu đã review
+        orders_collection.update_one(
+            {'_id': ObjectId(order_id)},
+            {'$set': {'isReviewed': True, 'updatedAt': datetime.now()}}
+        )
         
         # Cập nhật rating nhà hàng
         self._update_restaurant_rating(str(order['restaurantId']))
@@ -118,7 +127,16 @@ class ReviewService:
             raise ValueError('Bạn không có quyền xóa đánh giá này')
         
         restaurant_id = str(review.restaurant_id)
+        order_id = review.order_id
+        
         self.collection.delete_one({'_id': ObjectId(review_id)})
+        
+        # Cập nhật order: đánh dấu chưa review
+        if order_id:
+            orders_collection.update_one(
+                {'_id': order_id},
+                {'$set': {'isReviewed': False, 'updatedAt': datetime.now()}}
+            )
         
         # Cập nhật rating nhà hàng
         self._update_restaurant_rating(restaurant_id)
@@ -162,6 +180,53 @@ class ReviewService:
                 review_dict['userFullname'] = user.get('fullname', 'Anonymous')
             reviews.append(review_dict)
         return reviews
+
+    def find_by_food_id(self, food_id: str) -> List[Dict]:
+        """
+        Lấy tất cả reviews của một món ăn
+        Format food_id: "restaurantId-foodName"
+        """
+        try:
+            # Parse food_id: format "restaurantId-foodName"
+            parts = food_id.split('-', 1)
+            if len(parts) != 2:
+                return []
+            
+            restaurant_id_str, food_name = parts
+            try:
+                restaurant_id = ObjectId(restaurant_id_str)
+            except:
+                return []
+            
+            # Lấy tất cả reviews của restaurant
+            cursor = self.collection.find({'restaurantId': restaurant_id}).sort('createdAt', -1)
+            reviews = []
+            
+            for doc in cursor:
+                review = self._to_model(doc)
+                review_dict = self._to_dict(review)
+                
+                # Kiểm tra xem review có foodName không, nếu có thì filter theo foodName
+                # Nếu không có foodName trong review, thì lấy tất cả reviews của restaurant (fallback)
+                if 'foodName' in doc and doc['foodName']:
+                    if doc['foodName'] != food_name:
+                        continue
+                # Nếu không có foodName, vẫn lấy review (để hiển thị reviews của restaurant)
+                
+                # Hydrate thông tin user
+                user = users_collection.find_one({'_id': review.user_id})
+                if user:
+                    review_dict['userFullname'] = user.get('fullname', 'Anonymous')
+                    review_dict['userAvatar'] = user.get('avatar')
+                
+                reviews.append(review_dict)
+            
+            return reviews
+        except Exception as e:
+            print(f"Error finding reviews by food_id: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
 
     def get_restaurant_rating_stats(self, restaurant_id: str) -> Dict:
         """

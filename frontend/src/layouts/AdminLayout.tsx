@@ -23,7 +23,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => 
       <Sidebar onLogout={handleLogout} />
       
       {/* Main Content Layout */}
-      <div className="md:ml-64 transition-all duration-300">
+      <div className="md:ml-64 transition-all duration-300 min-h-screen">
          {/* Top Header */}
         <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-8 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-black text-[#EE501C]">{title}</h1>

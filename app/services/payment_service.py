@@ -4,6 +4,7 @@ from bson import ObjectId
 
 from db.connection import payments_collection, orders_collection
 from db.models.payment import Payment, PaymentStatus, PaymentMethod
+from utils.mongo_parser import parse_mongo_document
 
 
 class PaymentService:
@@ -20,6 +21,8 @@ class PaymentService:
     # ==================== Helpers ====================
     def _to_model(self, doc: dict) -> Payment:
         """Chuyển Mongo document thành model Payment"""
+        # Parse MongoDB Extended JSON format
+        doc = parse_mongo_document(doc)
         return Payment(**doc)
 
     def _to_dict(self, payment: Payment) -> Dict:

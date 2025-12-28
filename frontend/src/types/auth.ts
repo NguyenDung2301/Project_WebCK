@@ -19,6 +19,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   phone_number?: string;
+  address?: string;
   birthday?: string;
   gender?: Gender;
 }
@@ -29,6 +30,7 @@ export interface RegisterRequest {
 export interface AuthResponse {
   data?: {
     token?: string;
+    refresh_token?: string;
     user?: {
       user_id: string;
       fullname: string;

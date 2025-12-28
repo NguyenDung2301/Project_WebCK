@@ -30,6 +30,7 @@ export interface ShipperCustomer {
 export interface ShipperOrder {
   id: string;
   storeName: string;
+  foodName?: string; // Tên món đầu tiên để hiển thị
   storeImage: string;
   storeAddress: string;
   deliveryAddress: string;
@@ -50,4 +51,13 @@ export interface ShipperProfile {
   phone: string;
   address: string;
   dob: string;
+}
+
+// ShipperInfo - dùng cho ContactShipperModal
+export interface ShipperInfo {
+  name: string;
+  id: string;
+  phone: string;
+  email: string;
+  avatar?: string;
 }

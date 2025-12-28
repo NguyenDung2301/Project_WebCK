@@ -92,3 +92,12 @@ def get_restaurant_rating_stats(restaurant_id: str):
     Lấy thống kê rating nhà hàng (yêu cầu đăng nhập)
     """
     return review_controller.get_restaurant_stats(restaurant_id)
+
+@review_router.route('/food/<food_id>', methods=['GET'])
+def get_reviews_by_food(food_id: str):
+    """
+    GET /api/reviews/food/<food_id>
+    Lấy tất cả reviews của một món ăn (public - không cần auth)
+    Format food_id: "restaurantId-foodName"
+    """
+    return review_controller.get_by_food_id(food_id)

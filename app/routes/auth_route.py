@@ -12,3 +12,8 @@ def register():
 def login():
     """POST /api/auth/login - Đăng nhập"""
     return user_controller.login()
+
+@auth_router.route("/refresh", methods=["POST"])
+def refresh():
+    """POST /api/auth/refresh - Làm mới access token"""
+    return user_controller.refresh_token()

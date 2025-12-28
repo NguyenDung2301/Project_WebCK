@@ -70,6 +70,8 @@ export interface Voucher {
   status: 'Active' | 'Inactive' | 'Expired';
   condition: string; // Display text
   isExpired?: boolean; // Keep for backward compatibility logic
+  restaurantId?: string; // Optional restaurant ID if voucher is restaurant-specific
+  eligibleFirstOrder?: boolean; // True if user is eligible for first-order-only vouchers
 }
 
 export interface UserProfile {
@@ -81,10 +83,18 @@ export interface UserProfile {
   password?: string; // For mock check
 }
 
+export interface ShipperInfo {
+  shipperId: string;
+  fullname: string;
+  phone_number: string;
+  email?: string;
+}
+
 export interface Order {
   id: string;
   foodId: string;
   restaurantName: string;
+  foodName?: string; // Tên món đầu tiên trong đơn hàng
   orderTime: string;
   description: string;
   totalAmount: number;
@@ -92,21 +102,25 @@ export interface Order {
   imageUrl: string;
   isReviewed?: boolean;
   needsReview?: boolean;
+  customer?: string;
+  email?: string;
+  shipper?: ShipperInfo;
 }
 
 export interface Restaurant {
   id: string;
   name: string;
-  category: string;
+  category?: string;
   address: string;
   phone: string;
   email: string;
   rating: number;
   status: string;
-  initial: string;
-  colorClass: string;
+  initial?: string;
+  colorClass?: string;
   reviewsCount: number;
   imageUrl?: string;
+  menu?: any[]; // Menu structure: [{category: string, items: [{name, price, description, image, status}]}]
 }
 
 export interface Review {
@@ -122,3 +136,9 @@ export interface Review {
 
 // ============ Profile Types ============
 export type ProfileSubPage = 'MAIN' | 'PAYMENT' | 'FAVORITES' | 'VOUCHERS' | 'EDIT_PROFILE';
+
+// ============ Filter Types ============
+export interface FilterOption {
+  label: string;
+  value: string;
+}

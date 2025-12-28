@@ -4,14 +4,17 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Star, MapPin, Clock, Plus, Minus, ShoppingCart, ChevronRight, ChevronLeft, Heart, Lock } from 'lucide-react';
 import { FoodItem, Voucher, Review, Restaurant } from '../../types/common';
 import { getFoodByIdApi, getFoodsApi } from '../../api/productApi';
-import { getVouchersApi } from '../../api/voucherApi';
+import { getAvailableVouchersForUserApi } from '../../api/voucherApi';
 import { getReviewsByFoodIdApi } from '../../api/reviewApi';
 import { getRestaurantByIdApi } from '../../api/restaurantApi';
+import { addToCartApi } from '../../api/cartApi';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { LoginRequestModal } from '../../components/common/LoginRequestModal';
+import { formatNumber, getInitials } from '../../utils';
 
 export const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const { isAuthenticated } = useAuthContext();
 
@@ -26,6 +29,14 @@ export const ProductDetailPage: React.FC = () => {
   // Login Modal State
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+  // Reset quantity to 1 when coming from checkout
+  useEffect(() => {
+    const locationState = location.state as any;
+    if (locationState?.fromCheckout) {
+      setQuantity(1); // Always reset to 1 when adding from checkout
+    }
+  }, [location.state, id]); // Also reset when food ID changes
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -35,9 +46,18 @@ export const ProductDetailPage: React.FC = () => {
           const foodData = await getFoodByIdApi(id);
           setFood(foodData || null);
 
-          // 2. Fetch vouchers
-          const voucherData = await getVouchersApi();
-          setVouchers(voucherData);
+          // 2. Fetch vouchers (only if authenticated, otherwise empty array)
+          if (isAuthenticated && foodData?.restaurantId) {
+            try {
+              const voucherData = await getAvailableVouchersForUserApi(foodData.restaurantId);
+              setVouchers(voucherData);
+            } catch (error) {
+              console.error('Error fetching vouchers:', error);
+              setVouchers([]);
+            }
+          } else {
+            setVouchers([]);
+          }
 
           // 3. Fetch Reviews for this food
           const reviewsData = await getReviewsByFoodIdApi(id);
@@ -45,15 +65,62 @@ export const ProductDetailPage: React.FC = () => {
 
           // 4. Fetch Restaurant & Related Foods
           if (foodData && foodData.restaurantId) {
+            console.log('Fetching restaurant with ID:', foodData.restaurantId);
             const resData = await getRestaurantByIdApi(foodData.restaurantId);
+            console.log('Restaurant data received:', resData);
             setRestaurant(resData || null);
 
-            // Fetch related foods ONLY from the same restaurant
-            const allFoods = await getFoodsApi();
-            const related = allFoods
-              .filter(f => f.restaurantId === foodData.restaurantId && f.id !== id)
-              .slice(0, 4);
-            setRelatedFoods(related);
+            // Get related foods from restaurant menu (more efficient than fetching all foods)
+            if (resData && resData.menu && Array.isArray(resData.menu)) {
+              console.log('Menu found, length:', resData.menu.length);
+              const related: FoodItem[] = [];
+              const currentFoodId = id || '';
+              console.log('Current food ID:', currentFoodId);
+
+              // Iterate through menu categories and items
+              for (const category of resData.menu) {
+                console.log('Processing category:', category.category, 'items:', category.items?.length || 0);
+                if (category.items && Array.isArray(category.items)) {
+                  for (const item of category.items) {
+                    // Create food ID in the same format as backend: restaurantId-foodName
+                    const foodId = `${foodData.restaurantId}-${item.name}`;
+                    console.log('Checking item:', item.name, 'foodId:', foodId, 'status:', item.status);
+
+                    // Skip current food item and inactive items
+                    if (foodId !== currentFoodId && item.status !== false && item.status !== 'Inactive') {
+                      related.push({
+                        id: foodId,
+                        name: item.name || '',
+                        price: item.price || 0,
+                        description: item.description || '',
+                        imageUrl: item.image || item.imageUrl || '',
+                        category: category.category || '',
+                        restaurantId: foodData.restaurantId,
+                        rating: resData.rating || 4.0,
+                        deliveryTime: '15-20 phút',
+                      });
+                      console.log('Added related food:', item.name);
+
+                      // Limit to 4 items
+                      if (related.length >= 4) break;
+                    }
+                  }
+                  if (related.length >= 4) break;
+                }
+              }
+
+              console.log('Total related foods found:', related.length);
+              setRelatedFoods(related);
+            } else {
+              console.log('Menu not available, using fallback API');
+              // Fallback: Fetch related foods from API if menu is not available
+              const allFoods = await getFoodsApi();
+              const related = allFoods
+                .filter(f => f.restaurantId === foodData.restaurantId && f.id !== id)
+                .slice(0, 4);
+              console.log('Fallback related foods:', related.length);
+              setRelatedFoods(related);
+            }
           }
         }
       } catch (error) {
@@ -66,7 +133,6 @@ export const ProductDetailPage: React.FC = () => {
   }, [id]);
 
   // Auto scroll to hash (e.g. #related-foods)
-  const location = useLocation();
   useEffect(() => {
     if (location.hash && !loading) {
       const element = document.getElementById(location.hash.replace('#', ''));
@@ -94,25 +160,58 @@ export const ProductDetailPage: React.FC = () => {
     : "0.0"; // Default or fallback if no reviews
 
   // Use fetched restaurant or fallback to a default structure if missing
-  const displayRestaurant = restaurant || {
+  const displayRestaurant = restaurant ? {
+    ...restaurant,
+    initial: restaurant.initial || getInitials(restaurant.name || 'R'),
+    address: restaurant.address || 'Đang cập nhật địa chỉ',
+  } : {
     id: 'unknown',
     name: 'Nhà hàng đối tác',
     address: 'Đang cập nhật địa chỉ',
     imageUrl: '',
-    rating: 4.5, // Fallback (won't be used for display if we use calculated)
-    reviewsCount: 100, // Fallback
+    rating: 4.5,
+    reviewsCount: 0,
     initial: 'R',
     status: 'Active'
   };
 
   const totalPrice = food.price * quantity;
 
-  const handleOrderNow = () => {
+  const handleOrderNow = async () => {
     if (!isAuthenticated) {
       setShowLoginModal(true);
       return;
     }
-    navigate('/checkout', { state: { food, quantity } });
+
+    // REMOVED: Logic tự động thêm vào cart (yêu thích) khi đặt món
+    // User chỉ muốn đặt món, không muốn tự động thêm vào yêu thích
+    // Nếu muốn thêm vào yêu thích, user phải click nút "Yêu thích" riêng
+
+    // Check if coming from checkout page
+    const locationState = location.state as any;
+    if (locationState?.fromCheckout && locationState?.currentCartItems) {
+      // Add current food to existing cart
+      // When adding from checkout, always add quantity = 1 (not the current quantity state)
+      const existingItems = locationState.currentCartItems || [];
+      const existingIndex = existingItems.findIndex((item: any) => item.food.id === food.id);
+
+      let updatedItems;
+      if (existingIndex >= 0) {
+        // Item already exists: increase quantity by 1
+        updatedItems = [...existingItems];
+        updatedItems[existingIndex].quantity += 1;
+      } else {
+        // New item: add with quantity = 1 (always 1 when adding from checkout)
+        // Add new item to the beginning so it shows first
+        updatedItems = [{ food, quantity: 1 }, ...existingItems];
+      }
+
+      // Navigate back to checkout with updated items
+      navigate('/checkout', { state: { items: updatedItems } });
+    } else {
+      // Normal flow: create new order with current quantity (user can choose quantity)
+      navigate('/checkout', { state: { food, quantity: quantity || 1 } });
+    }
   };
 
   const handleApplyVoucher = (voucher: Voucher) => {
@@ -174,9 +273,9 @@ export const ProductDetailPage: React.FC = () => {
               </span>
             </div>
             <div className="flex items-baseline gap-3">
-              <div className="text-3xl font-black text-[#EE501C]">{food.price.toLocaleString()}đ</div>
+              <div className="text-3xl font-black text-[#EE501C]">{formatNumber(food.price)}đ</div>
               {food.originalPrice && (
-                <span className="text-lg text-gray-300 line-through font-bold">{food.originalPrice.toLocaleString()}đ</span>
+                <span className="text-lg text-gray-300 line-through font-bold">{formatNumber(food.originalPrice)}đ</span>
               )}
             </div>
           </div>
@@ -246,7 +345,7 @@ export const ProductDetailPage: React.FC = () => {
             className={`w-full text-white font-bold py-5 rounded-[2rem] shadow-xl shadow-orange-100 flex items-center justify-center gap-3 transform active:scale-95 transition-all ${displayRestaurant.status === 'Active' ? 'bg-[#EE501C] hover:bg-[#d44719]' : 'bg-gray-300 cursor-not-allowed shadow-none'}`}
           >
             <ShoppingCart className="w-6 h-6" />
-            <span>{displayRestaurant.status === 'Active' ? `Đặt ngay • ${totalPrice.toLocaleString()}đ` : 'Nhà hàng đang đóng cửa'}</span>
+            <span>{displayRestaurant.status === 'Active' ? `Đặt ngay • ${formatNumber(totalPrice)}đ` : 'Nhà hàng đang đóng cửa'}</span>
           </button>
         </div>
       </div>
@@ -294,41 +393,47 @@ export const ProductDetailPage: React.FC = () => {
           </button>
         </div>
         <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4">
-          {vouchers.map((v) => {
-            const isEligible = totalPrice >= v.minOrderValue;
-            const missingAmount = v.minOrderValue - totalPrice;
+          {vouchers.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200 w-full">
+              <p className="text-gray-400 text-sm">Hiện tại không có voucher khả dụng.</p>
+            </div>
+          ) : (
+            vouchers.map((v) => {
+              const isEligible = totalPrice >= v.minOrderValue;
+              const missingAmount = v.minOrderValue - totalPrice;
 
-            return (
-              <div key={v.id} className={`min-w-[280px] md:min-w-[320px] bg-white border rounded-3xl p-4 flex gap-4 items-center shadow-sm relative group transition-all cursor-pointer ${isEligible ? 'border-gray-100 hover:border-orange-200' : 'border-gray-100 opacity-70 bg-gray-50'}`}>
-                <div className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center text-white ${v.type === 'FreeShip' ? 'bg-[#EE501C]' : 'bg-orange-300'} shadow-md ${!isEligible && 'grayscale'}`}>
-                  {v.type === 'FreeShip' ? '🚢' : '%'}
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-bold text-gray-800">{v.title}</h4>
-                  <p className="text-[10px] text-gray-400 mb-2">{v.condition}</p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isEligible) handleApplyVoucher(v);
-                    }}
-                    disabled={!isEligible}
-                    className={`text-[10px] font-bold uppercase px-2 py-1 rounded transition-colors flex items-center gap-1 ${isEligible ? 'text-[#EE501C] hover:bg-orange-50' : 'text-gray-400 bg-gray-100 cursor-not-allowed'}`}
-                  >
-                    {isEligible ? 'Áp dụng' : (
-                      <span className="flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Thiếu {(missingAmount / 1000).toFixed(0)}k
-                      </span>
-                    )}
-                  </button>
-                </div>
-                {isEligible && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <ChevronRight className="w-4 h-4 text-[#EE501C]" />
+              return (
+                <div key={v.id} className={`min-w-[280px] md:min-w-[320px] bg-white border rounded-3xl p-4 flex gap-4 items-center shadow-sm relative group transition-all cursor-pointer ${isEligible ? 'border-gray-100 hover:border-orange-200' : 'border-gray-100 opacity-70 bg-gray-50'}`}>
+                  <div className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center text-white ${v.type === 'FreeShip' ? 'bg-[#EE501C]' : 'bg-orange-300'} shadow-md ${!isEligible && 'grayscale'}`}>
+                    {v.type === 'FreeShip' ? '🚢' : '%'}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-gray-800">{v.title}</h4>
+                    <p className="text-[10px] text-gray-400 mb-2">{v.condition}</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isEligible) handleApplyVoucher(v);
+                      }}
+                      disabled={!isEligible}
+                      className={`text-[10px] font-bold uppercase px-2 py-1 rounded transition-colors flex items-center gap-1 ${isEligible ? 'text-[#EE501C] hover:bg-orange-50' : 'text-gray-400 bg-gray-100 cursor-not-allowed'}`}
+                    >
+                      {isEligible ? 'Áp dụng' : (
+                        <span className="flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> Thiếu {formatNumber(missingAmount / 1000)}k
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                  {isEligible && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <ChevronRight className="w-4 h-4 text-[#EE501C]" />
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </section>
 
@@ -348,29 +453,66 @@ export const ProductDetailPage: React.FC = () => {
 
         {relatedFoods.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {relatedFoods.map((f) => (
-              <div
-                key={f.id}
-                onClick={() => navigate(`/product/${f.id}`)}
-                className="bg-white rounded-[1.5rem] md:rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer group"
-              >
-                <div className="h-32 md:h-44 relative overflow-hidden">
-                  <img src={f.imageUrl} alt={f.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                </div>
-                <div className="p-3 md:p-4">
-                  <h4 className="font-bold text-gray-800 truncate mb-1 text-sm md:text-base">{f.name}</h4>
-                  <div className="flex items-center gap-1 text-[10px] text-[#EE501C] font-bold mb-2 md:mb-3">
-                    <Star className="w-3 h-3 fill-[#EE501C]" /> {f.rating} <span className="text-gray-300 font-medium">(50+)</span>
+            {relatedFoods.map((f) => {
+              // Check if coming from checkout
+              const locationState = location.state as any;
+              const isFromCheckout = locationState?.fromCheckout && locationState?.currentCartItems;
+
+              const handleRelatedFoodClick = async () => {
+                // REMOVED: Logic tự động thêm vào cart (yêu thích) khi click món liên quan
+                // User chỉ muốn xem/đặt món, không muốn tự động thêm vào yêu thích
+                // Nếu muốn thêm vào yêu thích, user phải click nút "Yêu thích" riêng
+
+                if (isFromCheckout) {
+                  // Add directly to cart and go back to checkout
+                  const existingItems = locationState.currentCartItems || [];
+                  const existingIndex = existingItems.findIndex((item: any) => item.food.id === f.id);
+
+                  let updatedItems;
+                  if (existingIndex >= 0) {
+                    // Item already exists: increase quantity by 1
+                    updatedItems = [...existingItems];
+                    updatedItems[existingIndex].quantity += 1;
+                    // Move to front to show it first
+                    const item = updatedItems.splice(existingIndex, 1)[0];
+                    updatedItems.unshift(item);
+                  } else {
+                    // New item: add with quantity = 1 at the beginning
+                    updatedItems = [{ food: f, quantity: 1 }, ...existingItems];
+                  }
+
+                  // Navigate back to checkout with updated items
+                  navigate('/checkout', { state: { items: updatedItems } });
+                } else {
+                  // Normal flow: navigate to product detail
+                  navigate(`/product/${f.id}`);
+                }
+              };
+
+              return (
+                <div
+                  key={f.id}
+                  onClick={handleRelatedFoodClick}
+                  className="bg-white rounded-[1.5rem] md:rounded-[2rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all cursor-pointer group"
+                >
+                  <div className="h-32 md:h-44 relative overflow-hidden">
+                    <img src={f.imageUrl} alt={f.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-base md:text-lg font-black text-[#EE501C]">{f.price.toLocaleString()}đ</span>
-                    <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg md:rounded-xl bg-orange-50 flex items-center justify-center text-[#EE501C] group-hover:bg-[#EE501C] group-hover:text-white transition-colors">
-                      <Plus className="w-4 h-4" />
+                  <div className="p-3 md:p-4">
+                    <h4 className="font-bold text-gray-800 truncate mb-1 text-sm md:text-base">{f.name}</h4>
+                    <div className="flex items-center gap-1 text-[10px] text-[#EE501C] font-bold mb-2 md:mb-3">
+                      <Star className="w-3 h-3 fill-[#EE501C]" /> {f.rating} <span className="text-gray-300 font-medium">(50+)</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-base md:text-lg font-black text-[#EE501C]">{formatNumber(f.price)}đ</span>
+                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg md:rounded-xl bg-orange-50 flex items-center justify-center text-[#EE501C] group-hover:bg-[#EE501C] group-hover:text-white transition-colors">
+                        <Plus className="w-4 h-4" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-10 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">

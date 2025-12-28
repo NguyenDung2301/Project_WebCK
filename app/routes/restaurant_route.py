@@ -12,11 +12,41 @@ def list_all():
     """User xem danh sách nhà hàng đang hoạt động"""
     return restaurant_controller.list_all()
 
-# Lấy chi tiết nhà hàng (chỉ nếu đang hoạt động)
+# Lấy danh sách promotions (public - không cần auth)
+@restaurant_router.route('/promotions', methods=['GET'])
+def get_promotions():
+    """Lấy danh sách promotions từ restaurants có reviews tốt nhất"""
+    return restaurant_controller.get_promotions()
+
+# Lấy danh sách categories (public - không cần auth)
+@restaurant_router.route('/categories', methods=['GET'])
+def get_categories():
+    """Lấy danh sách categories từ restaurants với hình ảnh random"""
+    return restaurant_controller.get_categories()
+
+# Lấy tất cả foods (public - không cần auth)
+@restaurant_router.route('/foods', methods=['GET'])
+def get_all_foods():
+    """Lấy tất cả foods từ restaurants đang hoạt động"""
+    return restaurant_controller.get_all_foods()
+
+# Lấy food by id (public - không cần auth)
+@restaurant_router.route('/foods/<food_id>', methods=['GET'])
+def get_food_by_id(food_id: str):
+    """Lấy food item theo ID"""
+    return restaurant_controller.get_food_by_id(food_id)
+
+# Lấy chi tiết nhà hàng (public - không cần auth, chỉ nhà hàng đang hoạt động)
 @restaurant_router.route('/<restaurant_id>', methods=['GET'])
+def get_by_id_public(restaurant_id: str):
+    """Public xem chi tiết nhà hàng đang hoạt động (không cần đăng nhập)"""
+    return restaurant_controller.get_by_id(restaurant_id)
+
+# Lấy chi tiết nhà hàng (yêu cầu auth - cho user đã đăng nhập)
+@restaurant_router.route('/user/<restaurant_id>', methods=['GET'])
 @user_or_admin_required
 def get_by_id(restaurant_id: str):
-    """User xem chi tiết nhà hàng đang hoạt động"""
+    """User xem chi tiết nhà hàng đang hoạt động (yêu cầu đăng nhập)"""
     return restaurant_controller.get_by_id(restaurant_id)
 
 # Search cho user: chỉ tìm food và category ở quán đang hoạt động

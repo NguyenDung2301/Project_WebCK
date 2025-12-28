@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { Voucher } from '../../types/common';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { DeleteConfirmModal } from '../common/DeleteConfirmModal';
 
 interface VoucherModalsProps {
   modalType: 'ADD' | 'EDIT' | 'DELETE' | null;
@@ -13,12 +13,12 @@ interface VoucherModalsProps {
   onDelete: () => void;
 }
 
-export const VoucherModals: React.FC<VoucherModalsProps> = ({ 
-  modalType, 
-  voucher, 
-  onClose, 
-  onSave, 
-  onDelete 
+export const VoucherModals: React.FC<VoucherModalsProps> = ({
+  modalType,
+  voucher,
+  onClose,
+  onSave,
+  onDelete
 }) => {
   const [formData, setFormData] = useState<Partial<Voucher>>({
     code: '',
@@ -129,14 +129,14 @@ export const VoucherModals: React.FC<VoucherModalsProps> = ({
               <input type="date" name="endDate" value={formData.endDate?.split('T')[0]} onChange={handleChange} className={inputClass} />
             </div>
           </div>
-          
+
           <div>
-             <label className={labelClass}>Trạng thái</label>
-             <select name="status" value={formData.status} onChange={handleChange} className={inputClass}>
-               <option value="Active">Đang hoạt động</option>
-               <option value="Inactive">Tạm dừng</option>
-               <option value="Expired">Hết hạn</option>
-             </select>
+            <label className={labelClass}>Trạng thái</label>
+            <select name="status" value={formData.status} onChange={handleChange} className={inputClass}>
+              <option value="Active">Đang hoạt động</option>
+              <option value="Inactive">Tạm dừng</option>
+              <option value="Expired">Hết hạn</option>
+            </select>
           </div>
 
           <div className="pt-4 border-t border-gray-100 flex justify-end gap-3">
@@ -146,24 +146,15 @@ export const VoucherModals: React.FC<VoucherModalsProps> = ({
         </form>
       </Modal>
 
-      {/* DELETE MODAL */}
-      <Modal isOpen={modalType === 'DELETE'} onClose={onClose} maxWidth="sm">
-        <div className="flex flex-col items-center text-center p-2">
-           <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center text-red-500 mb-5">
-              <Trash2 size={32} />
-           </div>
-           <h3 className="text-xl font-bold text-gray-900 mb-2">Xác nhận xóa voucher</h3>
-           <p className="text-sm text-gray-500 mb-8 leading-relaxed px-4">
-             Bạn có chắc chắn muốn xóa voucher <strong className="text-gray-900">{voucher?.code}</strong> không? 
-             Hành động này không thể hoàn tác.
-           </p>
-           
-           <div className="flex w-full gap-3">
-             <Button variant="secondary" className="flex-1 py-3" onClick={onClose}>Hủy</Button>
-             <Button variant="danger" className="flex-1 py-3 bg-[#EE501C] hover:bg-[#d44719] border-transparent shadow-orange-100" onClick={onDelete}>Xác nhận</Button>
-           </div>
-        </div>
-      </Modal>
+      {/* DELETE MODAL - sử dụng DeleteConfirmModal component */}
+      <DeleteConfirmModal
+        isOpen={modalType === 'DELETE'}
+        onClose={onClose}
+        onConfirm={onDelete}
+        title="Xác nhận xóa voucher"
+        itemName={voucher?.code || ''}
+        description={`Bạn có chắc chắn muốn xóa voucher ${voucher?.code || ''} không? Hành động này không thể hoàn tác.`}
+      />
     </>
   );
 };

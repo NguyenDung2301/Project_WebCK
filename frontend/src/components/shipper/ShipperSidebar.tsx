@@ -30,10 +30,9 @@ export const ShipperSidebar: React.FC<SidebarProps> = ({ onLogout, profile }) =>
         {profile.email ? (
           <div className="flex items-center gap-4 pb-6 border-b border-[#f3eae7]">
             <div 
-              className="shrink-0 w-14 h-14 rounded-full bg-center bg-no-repeat bg-cover border-2 border-[#EE501C] shadow-md" 
-              style={{ backgroundImage: profile.avatar ? `url("${profile.avatar}")` : undefined }}
+              className="shrink-0 w-14 h-14 rounded-full bg-gradient-to-br from-[#EE501C] to-[#FF7043] border-2 border-[#EE501C] shadow-md flex items-center justify-center text-white text-xl font-black"
             >
-               {!profile.avatar && <div className="w-full h-full bg-orange-100 rounded-full flex items-center justify-center text-[#EE501C] font-bold">{profile.name.charAt(0)}</div>}
+              {profile.name ? profile.name.charAt(0).toUpperCase() : 'S'}
             </div>
             <div className="hidden lg:flex flex-col overflow-hidden">
               <h1 className="text-gray-900 text-lg font-bold leading-tight truncate">{profile.name}</h1>

@@ -22,8 +22,12 @@ class ReviewController:
             if not request.json:
                 return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
             
+            print(f"[ReviewController.create] Request body: {request.json}")
             user_id = request.user_id
+            print(f"[ReviewController.create] user_id: {user_id}")
+            
             req = CreateReviewRequest(**request.json)
+            print(f"[ReviewController.create] Parsed request - order_id: {req.order_id}, rating: {req.rating}")
             
             result = review_service.create(
                 order_id=req.order_id,
@@ -34,10 +38,13 @@ class ReviewController:
             
             return jsonify({'success': True, 'message': 'Đánh giá thành công', 'data': result}), 201
         except ValidationError as e:
+            print(f"[ReviewController.create] ValidationError: {e.errors()}")
             return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
         except ValueError as e:
+            print(f"[ReviewController.create] ValueError: {str(e)}")
             return jsonify({'success': False, 'message': str(e)}), 400
         except Exception as e:
+            print(f"[ReviewController.create] Exception: {str(e)}")
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 
     def update(self, review_id: str):
@@ -127,6 +134,14 @@ class ReviewController:
         try:
             stats = review_service.get_restaurant_rating_stats(restaurant_id)
             return jsonify({'success': True, 'data': stats}), 200
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def get_by_food_id(self, food_id: str):
+        """Lấy tất cả reviews của một món ăn (public)"""
+        try:
+            reviews = review_service.find_by_food_id(food_id)
+            return jsonify({'success': True, 'data': reviews}), 200
         except Exception as e:
             return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
 

@@ -42,6 +42,22 @@ export const registerApi = async (userData: RegisterRequest): Promise<AuthRespon
 };
 
 /**
+ * Refresh Token API
+ * @param refreshToken - Refresh token
+ * @returns AuthResponse with new access token
+ */
+export const refreshTokenApi = async (refreshToken: string): Promise<AuthResponse> => {
+  return requestJson<AuthResponse>(
+    `${getAuthApiBaseUrl()}/refresh`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    }
+  );
+};
+
+/**
  * Forgot Password API (placeholder - cần backend hỗ trợ)
  * @param email - User email
  * @returns Promise<void>

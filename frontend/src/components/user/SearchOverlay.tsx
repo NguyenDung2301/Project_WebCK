@@ -27,10 +27,10 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
   }, []);
 
   const handleSearchTrigger = async (term: string) => {
-      // Add to history store
-      const newHistory = await addSearchHistoryApi(term);
-      setHistory(newHistory);
-      onSearch(term);
+    // Add to history store
+    const newHistory = await addSearchHistoryApi(term);
+    setHistory(newHistory);
+    onSearch(term);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -40,7 +40,7 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
   };
 
   const handleRemoveHistoryItem = (e: React.MouseEvent, term: string) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     // In real app, we might need a specific remove API, for now filter local visual
     setHistory(prev => prev.filter(item => item !== term));
   };
@@ -66,7 +66,7 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
           />
           <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-[#EE501C] w-5 h-5" />
           {searchValue && (
-            <button 
+            <button
               onClick={() => handleSearchTrigger(searchValue)}
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#EE501C] text-white p-2 rounded-xl hover:bg-[#d44719] transition-colors"
             >
@@ -84,7 +84,7 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
               <Clock className="w-4 h-4 text-orange-500" />
               <span>Lịch sử tìm kiếm</span>
             </div>
-            <button 
+            <button
               onClick={handleClearAllHistory}
               className="text-xs font-bold text-orange-500 hover:text-orange-700 flex items-center gap-1 transition-colors"
             >
@@ -94,14 +94,14 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
           <div className="flex flex-wrap gap-3">
             {/* Limit display to 5 most recent items for a cleaner look */}
             {history.slice(0, 5).map((term, idx) => (
-              <div 
-                key={`${term}-${idx}`} 
+              <div
+                key={`${term}-${idx}`}
                 onClick={() => handleSearchTrigger(term)}
                 className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full cursor-pointer hover:bg-orange-50 group transition-all"
               >
                 <Clock className="w-3 h-3 text-gray-400 group-hover:text-orange-400" />
                 <span className="text-sm text-gray-700 group-hover:text-orange-700 font-medium">{term}</span>
-                <button 
+                <button
                   onClick={(e) => handleRemoveHistoryItem(e, term)}
                   className="p-0.5 rounded-full hover:bg-gray-200 text-gray-400 hover:text-red-500 transition-all"
                 >
@@ -119,17 +119,17 @@ export const SearchOverlay: React.FC<SearchProps> = ({ onSearch, searchValue, on
           <TrendingUp className="w-4 h-4 text-orange-500" />
           <span>Gợi ý cho bạn</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {suggestions.slice(0, 6).map((item, idx) => (
-            <div 
-              key={idx} 
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {suggestions.slice(0, 8).map((item, idx) => (
+            <div
+              key={idx}
               onClick={() => handleSearchTrigger(item.name)}
-              className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md hover:border-orange-100 cursor-pointer transition-all group"
+              className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center gap-3 hover:shadow-md hover:border-orange-100 cursor-pointer transition-all group"
             >
-              <div className="w-14 h-14 md:w-16 md:h-16 shrink-0 rounded-xl overflow-hidden">
+              <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-xl overflow-hidden">
                 <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               </div>
-              <div className="min-w-0">
+              <div className="text-center min-w-0 w-full">
                 <h4 className="font-bold text-sm text-gray-800 group-hover:text-orange-600 transition-colors truncate">{item.name}</h4>
                 <p className="text-[10px] text-gray-400 mt-0.5 truncate">{item.tag}</p>
               </div>

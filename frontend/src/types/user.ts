@@ -19,6 +19,7 @@ export interface User {
   avatarUrl?: string;
   gender?: GenderVN;
   dob?: string;
+  address?: string;
 }
 
 // ============ Backend User Model ============
@@ -31,6 +32,7 @@ export interface BackendUser {
   gender: Gender | null;
   created_at: string;
   role: BackendRole;
+  is_active?: boolean; // Trạng thái tài khoản (true: hoạt động, false: bị khóa)
   // Extended fields for Profile unification
   address?: string;
   balance?: number;

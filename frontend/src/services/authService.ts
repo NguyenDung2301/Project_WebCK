@@ -4,15 +4,17 @@
  */
 
 import { jwtDecode } from 'jwt-decode';
-import { loginApi, registerApi, LoginRequest, RegisterRequest } from '../api/authApi';
+import { loginApi, registerApi, refreshTokenApi, LoginRequest, RegisterRequest } from '../api/authApi';
 import { buildNetworkErrorMessage } from '../api/axiosClient';
 import { TokenPayload, LoginResult, RegisterResult, CurrentUser } from '../types/auth';
-import { 
-  getToken, 
-  setToken, 
-  clearAuthData, 
+import {
+  getToken,
+  setToken,
+  getRefreshToken,
+  setRefreshToken,
+  clearAuthData,
   getAdminInfo as getStoredAdminInfo,
-  setAdminInfo 
+  setAdminInfo
 } from '../utils';
 
 // Re-export types for backward compatibility
@@ -28,7 +30,7 @@ const createMockToken = (payload: any) => {
   const encode = (str: string) => {
     return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
       function toSolidBytes(match, p1) {
-          return String.fromCharCode(parseInt(p1, 16));
+        return String.fromCharCode(parseInt(p1, 16));
       }));
   };
 
@@ -66,18 +68,20 @@ export const login = async (credentials: LoginRequest): Promise<LoginResult> => 
         exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
       };
     } else if (credentials.email === 'shipper@food.com') {
-        mockPayload = {
-          user_id: 'usr-shipper',
-          email: 'shipper@food.com',
-          fullname: 'Trần Văn Shipper',
-          role: 'shipper', // BackendRole
-          exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
-        };
+      mockPayload = {
+        user_id: 'usr-shipper',
+        email: 'shipper@food.com',
+        fullname: 'Trần Văn Shipper',
+        role: 'shipper', // BackendRole
+        exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24h
+      };
     }
 
     if (mockPayload) {
       const fakeToken = createMockToken(mockPayload);
+      const fakeRefreshToken = createMockToken({ ...mockPayload, type: 'refresh' });
       setToken(fakeToken);
+      setRefreshToken(fakeRefreshToken);
       return {
         success: true,
         message: 'Đăng nhập Test thành công!',
@@ -88,11 +92,16 @@ export const login = async (credentials: LoginRequest): Promise<LoginResult> => 
   // -----------------------------
   try {
     const data = await loginApi(credentials);
-    
+
     const token = data?.data?.token;
+    const refreshToken = data?.data?.refresh_token;
+
     if (token) {
       setToken(token);
-      
+      if (refreshToken) {
+        setRefreshToken(refreshToken);
+      }
+
       // Check if user is admin
       try {
         const decoded = jwtDecode<TokenPayload>(token);
@@ -105,7 +114,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginResult> => 
         console.error('Error decoding token:', error);
       }
     }
-    
+
     return {
       success: true,
       message: 'Đăng nhập thành công!',
@@ -126,12 +135,17 @@ export const login = async (credentials: LoginRequest): Promise<LoginResult> => 
 export const register = async (userData: RegisterRequest): Promise<RegisterResult> => {
   try {
     const data = await registerApi(userData);
-    
+
     const token = data?.data?.token;
+    const refreshToken = data?.data?.refresh_token;
+
     if (token) {
       setToken(token);
+      if (refreshToken) {
+        setRefreshToken(refreshToken);
+      }
     }
-    
+
     return {
       success: true,
       message: 'Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.',
@@ -158,7 +172,7 @@ export const logout = (): void => {
 export const getTokenPayload = (): TokenPayload | null => {
   const token = getToken();
   if (!token) return null;
-  
+
   try {
     return jwtDecode<TokenPayload>(token);
   } catch (error) {
@@ -174,13 +188,13 @@ export const getTokenPayload = (): TokenPayload | null => {
 export const isTokenValid = (): boolean => {
   const payload = getTokenPayload();
   if (!payload) return false;
-  
+
   // Check if token is expired
   if (payload.exp && payload.exp * 1000 < Date.now()) {
     logout();
     return false;
   }
-  
+
   return true;
 };
 
@@ -200,7 +214,7 @@ export const isAdmin = (): boolean => {
 export const getCurrentUser = (): CurrentUser | null => {
   const payload = getTokenPayload();
   if (!payload) return null;
-  
+
   return {
     id: payload.user_id,
     email: payload.email,
@@ -210,16 +224,44 @@ export const getCurrentUser = (): CurrentUser | null => {
 };
 
 /**
+ * Refresh access token bằng refresh token
+ * @returns Promise<boolean> - true nếu refresh thành công
+ */
+export const refreshAccessToken = async (): Promise<boolean> => {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    return false;
+  }
+
+  try {
+    const data = await refreshTokenApi(refreshToken);
+    const newToken = data?.data?.token;
+
+    if (newToken) {
+      setToken(newToken);
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    // Nếu refresh token cũng hết hạn, xóa tất cả và yêu cầu đăng nhập lại
+    clearAuthData();
+    return false;
+  }
+};
+
+/**
  * Lấy thông tin admin từ storage hoặc token
  * @returns Admin info { name, email }
  */
 export const getAdminInfo = (): { name: string; email: string } => {
   const storedInfo = getStoredAdminInfo();
-  
+
   if (storedInfo.name && storedInfo.email) {
     return { name: storedInfo.name, email: storedInfo.email };
   }
-  
+
   // Fallback to token
   const user = getCurrentUser();
   return {
@@ -227,3 +269,13 @@ export const getAdminInfo = (): { name: string; email: string } => {
     email: user?.email || 'admin@food.com',
   };
 };
+
+/**
+ * Kiểm tra user đã đăng nhập chưa (có token trong storage)
+ * @returns boolean
+ */
+export const isAuthenticated = (): boolean => {
+  const token = getToken();
+  return !!token;
+};
+

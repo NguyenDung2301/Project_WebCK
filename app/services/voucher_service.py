@@ -5,6 +5,7 @@ from bson import ObjectId
 from db.connection import vouchers_collection, orders_collection
 from db.models.vouchers import Promotion, PromotionType
 from db.models.order import OrderStatus
+from utils.mongo_parser import parse_mongo_document
 
 
 class VoucherService:
@@ -24,6 +25,16 @@ class VoucherService:
     # ============== Helpers ==============
     def _to_model(self, doc: dict) -> Promotion:
         """Chuyển MongoDB document thành Promotion model"""
+        # Remove fields that are no longer in the model
+        doc = doc.copy()  # Don't modify original
+        doc.pop('usage_count', None)
+        doc.pop('user_usage_history', None)
+        doc.pop('updatedAt', None)
+        doc.pop('updated_at', None)
+        
+        # Parse MongoDB Extended JSON format (dates, ObjectIds, etc.)
+        doc = parse_mongo_document(doc)
+        
         return Promotion(**doc)
 
     def _to_dict(self, promotion: Promotion) -> Dict:
@@ -106,8 +117,32 @@ class VoucherService:
 
     def list_all(self) -> List[Dict]:
         """Lấy tất cả voucher (Admin) - Trả về list dict"""
-        cursor = self.collection.find().sort('createdAt', -1)
-        return [self._to_dict(self._to_model(doc)) for doc in cursor]
+        result = []
+        # Sort by createdAt (camelCase) or created_at (snake_case) - try both
+        try:
+            cursor = self.collection.find().sort('createdAt', -1)
+        except:
+            try:
+                cursor = self.collection.find().sort('created_at', -1)
+            except:
+                cursor = self.collection.find()
+        
+        total_docs = 0
+        for doc in cursor:
+            total_docs += 1
+            try:
+                result.append(self._to_dict(self._to_model(doc)))
+            except Exception as e:
+                # Log error nhưng tiếp tục với document tiếp theo
+                promo_id = doc.get('_id', 'unknown')
+                print(f"Error parsing voucher {promo_id}: {e}")
+                print(f"  Document keys: {list(doc.keys())}")
+                import traceback
+                traceback.print_exc()
+                continue
+        
+        print(f"list_all: Found {total_docs} documents, returning {len(result)} vouchers")
+        return result
 
     # ==================== Business Logic ====================
     def _is_date_active(self, promo: Promotion, now: Optional[datetime] = None) -> bool:
@@ -117,16 +152,74 @@ class VoucherService:
 
     def _is_first_order_eligible(self, user_id: str) -> bool:
         """
-        Kiểm tra user có đơn hàng nào chưa (cho voucher first order only).
-        Đếm TẤT CẢ đơn hàng (trừ Cancelled) để chặn lỗ hổng:
-        - User không thể dùng nhiều voucher first_order_only cho nhiều đơn đồng thời
-        - Chỉ loại trừ đơn Cancelled vì đã bị hủy bỏ
+        Kiểm tra user có thể dùng voucher first_order_only không.
+        Logic mới: Chỉ khi user đã từng áp dụng voucher first_order_only thì mới không được dùng.
+        - Nếu user chưa từng dùng voucher first_order_only nào → True (có thể dùng)
+        - Nếu user đã dùng voucher first_order_only nào đó → False (không thể dùng)
+        - Chỉ đếm đơn hàng không bị hủy (status != 'Cancelled')
         """
-        count = orders_collection.count_documents({
-            'userId': ObjectId(user_id),
-            'status': {'$ne': 'Cancelled'}  # Đếm tất cả trừ Cancelled
-        })
-        return count == 0
+        try:
+            user_oid = ObjectId(user_id)
+            
+            # Tìm tất cả đơn hàng của user có sử dụng voucher (trừ đơn bị hủy)
+            orders_with_voucher = orders_collection.find({
+                'userId': user_oid,
+                'promoId': {'$ne': None},  # Có voucher
+                'status': {'$ne': 'Cancelled'}  # Không bị hủy
+            }, {'promoId': 1})  # Chỉ lấy promoId để tối ưu
+            
+            # Kiểm tra từng voucher xem có first_order_only không
+            for order in orders_with_voucher:
+                promo_id = order.get('promoId')
+                if not promo_id:
+                    continue
+                
+                # Tìm voucher tương ứng
+                promo = self.find_by_id(str(promo_id))
+                if promo and promo.first_order_only:
+                    # User đã từng dùng voucher first_order_only
+                    return False
+            
+            # User chưa từng dùng voucher first_order_only nào
+            return True
+        except Exception as e:
+            print(f"Error in _is_first_order_eligible: {e}")
+            import traceback
+            traceback.print_exc()
+            # Nếu có lỗi, trả về False để an toàn (không cho dùng)
+            return False
+
+    def _has_user_used_voucher(self, promo_id: str, user_id: str) -> bool:
+        """
+        Kiểm tra user đã sử dụng voucher này chưa.
+        Query orders collection để tìm đơn hàng có promoId này và status không phải CANCELLED.
+        """
+        try:
+            if not promo_id:
+                return False
+            
+            # Convert to ObjectId
+            try:
+                promo_oid = ObjectId(promo_id)
+                user_oid = ObjectId(user_id)
+            except Exception as e:
+                print(f"Error converting IDs to ObjectId: {e}")
+                return False
+            
+            # Query orders collection
+            query = {
+                'userId': user_oid,
+                'promoId': promo_oid,
+                'status': {'$ne': 'Cancelled'}  # Chỉ đếm đơn không bị hủy
+            }
+            
+            count = orders_collection.count_documents(query)
+            return count > 0
+        except Exception as e:
+            print(f"Error in _has_user_used_voucher: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     def _restaurant_scope_ok(self, promo: Promotion, restaurant_id: str) -> bool:
         """Kiểm tra voucher có áp dụng cho nhà hàng này không"""
@@ -175,10 +268,8 @@ class VoucherService:
         if promo.first_order_only and not self._is_first_order_eligible(user_id):
             raise ValueError('Voucher chỉ áp dụng cho đơn đầu tiên')
         # Kiểm tra user đã dùng voucher này chưa
-        user_oid = ObjectId(user_id)
-        for usage in promo.user_usage_history:
-            if usage.get('user_id') == user_oid:
-                raise ValueError('Bạn đã sử dụng voucher này rồi')
+        if self._has_user_used_voucher(str(promo.promo_id), user_id):
+            raise ValueError('Bạn đã sử dụng voucher này rồi')
         return self.calculate_discount(promo, subtotal, shipping_fee)
 
     def get_available_for_user(self, user_id: str, restaurant_id: Optional[str] = None) -> List[Dict]:
@@ -190,27 +281,55 @@ class VoucherService:
         - Loại bỏ voucher user đã sử dụng rồi
         - Trả về thêm flag eligible_first_order để client biết voucher first order
         """
-        now = datetime.now()
+        # Use UTC time to match ISO date strings from JSON
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
         user_oid = ObjectId(user_id)
         query: Dict = {
             'active': True,
             'start_date': { '$lte': now },
-            'end_date': { '$gte': now },
-            # Chỉ lấy voucher mà user CHƯA sử dụng
-            'user_usage_history.user_id': {'$ne': user_oid}
+            'end_date': { '$gte': now }
         }
         if restaurant_id:
             query['$or'] = [
                 { 'restaurantId': None },
                 { 'restaurantId': ObjectId(restaurant_id) }
             ]
+        
+        print(f"get_available_for_user: Query: {query}")
         cursor = self.collection.find(query).sort('createdAt', -1)
+        total_found = self.collection.count_documents(query)
+        print(f"get_available_for_user: Found {total_found} vouchers matching query")
+        
         result: List[Dict] = []
+        # Kiểm tra xem user đã từng dùng voucher first_order_only chưa
+        can_use_first_order = self._is_first_order_eligible(user_id)
+        
         for doc in cursor:
-            promo = self._to_model(doc)
-            item = promo.to_dict()
-            item['eligible_first_order'] = promo.first_order_only and self._is_first_order_eligible(user_id)
-            result.append(item)
+            try:
+                promo = self._to_model(doc)
+                # Kiểm tra user đã dùng voucher này chưa
+                if self._has_user_used_voucher(str(promo.promo_id), user_id):
+                    continue  # Bỏ qua voucher user đã dùng
+                
+                # Nếu user đã dùng voucher first_order_only nào đó, thì không hiển thị voucher first_order_only nữa
+                if promo.first_order_only and not can_use_first_order:
+                    continue  # Bỏ qua voucher first_order_only nếu user đã dùng voucher first_order_only rồi
+                
+                item = promo.to_dict()
+                # Set eligible_first_order:
+                # - If voucher is NOT first_order_only: always True (no restriction)
+                # - If voucher IS first_order_only: True only if user hasn't used any first_order_only voucher yet
+                if promo.first_order_only:
+                    item['eligible_first_order'] = can_use_first_order
+                else:
+                    item['eligible_first_order'] = True  # No first-order restriction
+                result.append(item)
+            except Exception as e:
+                print(f"Error processing voucher {doc.get('_id', 'unknown')}: {e}")
+                continue
+        
+        print(f"get_available_for_user: Returning {len(result)} vouchers (filtered out used vouchers)")
         return result
 
     def get_expired_for_user(self, user_id: Optional[str], restaurant_id: Optional[str] = None) -> List[Dict]:
@@ -220,7 +339,9 @@ class VoucherService:
         - Hoặc voucher user đã sử dụng rồi (nếu có user_id)
         - Áp dụng cho nhà hàng (nếu filter) hoặc toàn hệ thống
         """
-        now = datetime.now()
+        # Use UTC time to match ISO date strings from JSON
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
         
         # Build restaurant filter
         restaurant_filter = []
@@ -251,23 +372,26 @@ class VoucherService:
         seen_ids = set()
         
         # Lấy voucher hết hạn
-        for doc in self.collection.find(expired_query).sort('createdAt', -1):
-            promo = self._to_model(doc)
-            if promo.promo_id not in seen_ids:
-                result.append(promo.to_dict())
-                seen_ids.add(promo.promo_id)
+        print(f"get_expired_for_user: Query: {expired_query}")
+        total_found = self.collection.count_documents(expired_query)
+        print(f"get_expired_for_user: Found {total_found} expired vouchers")
         
-        # Query 2: Voucher user đã dùng (chỉ khi có user_id)
-        if user_id:
-            used_query = {'user_usage_history.user_id': ObjectId(user_id)}
-            if restaurant_filter:
-                used_query['$or'] = restaurant_filter
-            
-            for doc in self.collection.find(used_query).sort('createdAt', -1):
+        for doc in self.collection.find(expired_query).sort('createdAt', -1):
+            try:
                 promo = self._to_model(doc)
                 if promo.promo_id not in seen_ids:
                     result.append(promo.to_dict())
                     seen_ids.add(promo.promo_id)
+            except Exception as e:
+                print(f"Error processing expired voucher {doc.get('_id', 'unknown')}: {e}")
+                continue
+        
+        print(f"get_expired_for_user: Returning {len(result)} expired vouchers")
+        
+        # Query 2: Voucher user đã dùng (removed - user_usage_history no longer exists)
+        # if user_id:
+        #     used_query = {'user_usage_history.user_id': ObjectId(user_id)}
+        #     ...
         
         return result
 
@@ -322,57 +446,16 @@ class VoucherService:
     def mark_voucher_used(self, promo_id: str, user_id: str) -> None:
         """
         Ghi nhận voucher đã được sử dụng bởi user cụ thể
-        - Increment usage_count
-        - Thêm user vào user_usage_history
+        (Tracking fields removed - no action needed)
         """
-        try:
-            self.collection.update_one(
-                {'_id': ObjectId(promo_id)},
-                {
-                    '$inc': {'usage_count': 1},
-                    '$push': {
-                        'user_usage_history': {
-                            'user_id': ObjectId(user_id),
-                            'used_at': datetime.now()
-                        }
-                    },
-                    '$set': {'updatedAt': datetime.now()}
-                }
-            )
-        except Exception as e:
-            print(f"Error marking voucher as used: {e}")
+        pass  # Tracking fields removed, no action needed
 
     def refund_voucher_used(self, promo_id: str, user_id: str) -> None:
         """
         Hoàn lại voucher đã đánh dấu sử dụng khi đơn hàng bị hủy.
-        - Xóa user khỏi user_usage_history (nếu có)
-        - Giảm usage_count xuống 1 (chỉ khi thực sự có bản ghi bị xóa)
+        (Tracking fields removed - no action needed)
         """
-        try:
-            # Xóa bản ghi usage của user
-            pull_result = self.collection.update_one(
-                {'_id': ObjectId(promo_id)},
-                {
-                    '$pull': {
-                        'user_usage_history': {
-                            'user_id': ObjectId(user_id)
-                        }
-                    },
-                    '$set': {'updatedAt': datetime.now()}
-                }
-            )
-
-            # Nếu có thay đổi (tức là đã xóa usage), thì giảm usage_count
-            if pull_result.modified_count > 0:
-                self.collection.update_one(
-                    {'_id': ObjectId(promo_id)},
-                    {
-                        '$inc': {'usage_count': -1},
-                        '$set': {'updatedAt': datetime.now()}
-                    }
-                )
-        except Exception as e:
-            print(f"Error refunding voucher usage: {e}")
+        pass  # Tracking fields removed, no action needed
 
 
 

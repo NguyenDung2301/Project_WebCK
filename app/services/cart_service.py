@@ -132,12 +132,7 @@ class CartService:
             if not cart:
                 cart = self._create_cart(user_id)
             
-            # Kiểm tra nếu đã có món từ nhà hàng khác
-            if cart.items:
-                first_restaurant_id = str(cart.items[0].restaurant_id)
-                if first_restaurant_id != req.restaurant_id:
-                    raise ValueError("Giỏ hàng chỉ có thể chứa món từ một nhà hàng. Vui lòng xóa giỏ hàng hiện tại trước.")
-            
+            # Cho phép giỏ hàng chứa món từ nhiều nhà hàng (vì giỏ hàng = món yêu thích)
             # Kiểm tra món đã có trong giỏ chưa
             existing_item = None
             for item in cart.items:

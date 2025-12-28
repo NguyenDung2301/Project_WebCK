@@ -3,13 +3,14 @@
  * File này chứa các nghiệp vụ liên quan đến quản lý người dùng
  */
 
-import { 
-  getAllUsersApi, 
-  deleteUserApi, 
-  updateUserRoleApi, 
+import {
+  getAllUsersApi,
+  deleteUserApi,
+  updateUserRoleApi,
   createUserApi,
+  toggleUserStatusApi,
   AdminUser,
-  CreateUserRequest 
+  CreateUserRequest
 } from '../api/userApi';
 import { buildNetworkErrorMessage } from '../api/axiosClient';
 import { User } from '../types/user';
@@ -22,22 +23,31 @@ import { mapRole, mapGender, mapRoleToBackend, mapGenderToBackend, formatDateISO
  */
 export const mapBackendUserToFrontend = (backendUser: AdminUser | Record<string, unknown>): User => {
   // Handle both formats: user_id or _id
-  const userId = (backendUser as AdminUser).user_id || 
-                 (backendUser as Record<string, unknown>)._id || 
-                 (backendUser as Record<string, unknown>).id;
-  
+  const userId = (backendUser as AdminUser).user_id ||
+    (backendUser as Record<string, unknown>)._id ||
+    (backendUser as Record<string, unknown>).id;
+
   const user = backendUser as AdminUser;
-  
+
+  // Map status from backend is_active field
+  let status: 'Active' | 'Inactive' | 'Banned' = 'Active';
+  if ('is_active' in backendUser) {
+    status = (backendUser as any).is_active ? 'Active' : 'Banned';
+  } else if ('status' in backendUser) {
+    status = (backendUser as any).status as 'Active' | 'Inactive' | 'Banned';
+  }
+
   return {
     id: userId as string,
     name: user.fullname || (backendUser as Record<string, unknown>).name as string || '',
     email: user.email || '',
     phone: user.phone_number || (backendUser as Record<string, unknown>).phone as string || '',
     role: mapRole(user.role),
-    status: 'Active' as const, // Backend doesn't have status field yet
+    status: status,
     joinDate: formatDateISO(user.created_at) || new Date().toISOString().split('T')[0],
     gender: mapGender(user.gender),
     dob: formatDateISO(user.birthday) || undefined,
+    address: user.address || (backendUser as Record<string, unknown>).address as string || undefined,
   };
 };
 
@@ -93,9 +103,31 @@ export const createUser = async (userData: {
     gender: userData.gender ? mapGenderToBackend(userData.gender) : undefined,
     role: userData.role ? mapRoleToBackend(userData.role) : 'user',
   };
-  
+
   const createdUser = await createUserApi(createRequest);
   return mapBackendUserToFrontend(createdUser);
+};
+
+/**
+ * Toggle user status (lock/unlock account)
+ * @param userId - User ID
+ * @param isActive - True to activate, false to lock
+ * @returns Updated user
+ */
+export const toggleUserStatus = async (userId: string, isActive: boolean): Promise<User> => {
+  const updatedUser = await toggleUserStatusApi(userId, isActive);
+  return mapBackendUserToFrontend(updatedUser);
+};
+
+/**
+ * Transform user profile data from backend
+ * Ensures consistent field names (phone_number normalization)
+ */
+export const transformUserProfile = (userData: any): AdminUser => {
+  return {
+    ...userData,
+    phone_number: userData.phone_number || userData.phone || '',
+  };
 };
 
 /**

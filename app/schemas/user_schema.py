@@ -13,10 +13,10 @@ class UserRegisterRequest(BaseModel):
     fullname: str = Field(..., min_length=2, max_length=100, description="Tên người dùng")
     email: EmailStr = Field(..., description="Email")
     password: str = Field(..., min_length=6, description="Mật khẩu")
-    phone_number: Optional[str] = Field(..., min_length=10, max_length=11, description="Số điện thoại")
+    phone_number: Optional[str] = Field(None, min_length=10, max_length=11, description="Số điện thoại")
     address: Optional[str] = Field(None, description="Địa chỉ")
     birthday: Optional[datetime] = Field(None, description="Ngày sinh")
-    gender: Optional[GenderEnum] = Field(..., description="Giới tính")
+    gender: Optional[GenderEnum] = Field(None, description="Giới tính")
     
     class Config:
         json_schema_extra = {
@@ -57,7 +57,8 @@ class UserResponse(BaseModel):
 class UserLoginResponse(BaseModel):
     """Schema cho response đăng nhập""" #form khi đăng nhập thành công, có thêm token
     user: UserResponse
-    token: str
+    token: str  # Access token
+    refresh_token: str  # Refresh token
 
 
 class UserRoleUpdateRequest(BaseModel):
@@ -79,3 +80,16 @@ class WithdrawRequest(BaseModel):
 
     class Config:
         json_schema_extra = {"example": {"amount": 500000}}
+
+
+class RefreshTokenRequest(BaseModel):
+    """Schema cho refresh token request"""
+    refresh_token: str = Field(..., description="Refresh token để lấy access token mới")
+
+    class Config:
+        json_schema_extra = {"example": {"refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}}
+
+
+class RefreshTokenResponse(BaseModel):
+    """Schema cho refresh token response"""
+    token: str  # Access token mới

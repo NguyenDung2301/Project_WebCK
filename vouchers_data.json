@@ -1,0 +1,170 @@
+[
+  {
+    "_id": {
+      "$oid": "694d2c9c57f95133c9bd7e7f"
+    },
+    "code": "WELCOME10",
+    "promo_name": "Giảm 10% cho đơn đầu tiên",
+    "type": "Percent",
+    "value": 10,
+    "max_discount": 50000,
+    "min_order_amount": 100000,
+    "restaurantId": null,
+    "first_order_only": true,
+    "active": true,
+    "start_date": {
+      "$date": "2025-12-01T00:00:00.000Z"
+    },
+    "end_date": {
+      "$date": "2025-12-31T23:59:59.000Z"
+    },
+    "description": "Giảm 10% cho đơn hàng đầu tiên, tối đa 50.000đ. Áp dụng cho đơn từ 100.000đ trở lên.",
+    "createdAt": {
+      "$date": "2025-11-30T10:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d2c9c57f95133c9bd7e81"
+    },
+    "code": "FREESHIP99",
+    "promo_name": "Miễn phí ship đơn từ 99k",
+    "type": "Freeship",
+    "value": 0,
+    "max_discount": 25000,
+    "min_order_amount": 99000,
+    "restaurantId": null,
+    "first_order_only": false,
+    "active": true,
+    "start_date": {
+      "$date": "2025-12-01T00:00:00.000Z"
+    },
+    "end_date": {
+      "$date": "2025-12-31T23:59:59.000Z"
+    },
+    "description": "Miễn phí ship cho đơn hàng từ 99.000đ, tối đa 25.000đ. Áp dụng toàn hệ thống.",
+    "createdAt": {
+      "$date": "2025-11-30T08:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d2c9c57f95133c9bd7e82"
+    },
+    "code": "VIP15",
+    "promo_name": "Giảm 15% đơn lớn",
+    "type": "Percent",
+    "value": 15,
+    "max_discount": 100000,
+    "min_order_amount": 500000,
+    "restaurantId": null,
+    "first_order_only": false,
+    "active": true,
+    "start_date": {
+      "$date": "2025-12-01T00:00:00.000Z"
+    },
+    "end_date": {
+      "$date": "2025-12-31T23:59:59.000Z"
+    },
+    "description": "Giảm 15% cho đơn hàng từ 500.000đ, tối đa 100.000đ. Áp dụng toàn hệ thống.",
+    "createdAt": {
+      "$date": "2025-11-30T07:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d2c9c57f95133c9bd7e84"
+    },
+    "code": "NEWUSER",
+    "promo_name": "Giảm 30.000đ cho tài khoản mới",
+    "type": "Fixed",
+    "value": 30000,
+    "max_discount": null,
+    "min_order_amount": 100000,
+    "restaurantId": null,
+    "first_order_only": true,
+    "active": true,
+    "start_date": {
+      "$date": "2025-12-01T00:00:00.000Z"
+    },
+    "end_date": {
+      "$date": "2025-12-31T23:59:59.000Z"
+    },
+    "description": "Giảm 30.000đ cho đơn hàng đầu tiên. Áp dụng cho đơn từ 100.000đ trở lên.",
+    "createdAt": {
+      "$date": "2025-11-30T11:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d2c9c57f95133c9bd7e85"
+    },
+    "code": "WEEKEND20",
+    "promo_name": "Giảm 20% cuối tuần",
+    "type": "Percent",
+    "value": 20,
+    "max_discount": 80000,
+    "min_order_amount": 200000,
+    "restaurantId": null,
+    "first_order_only": false,
+    "active": true,
+    "start_date": {
+      "$date": "2025-12-01T00:00:00.000Z"
+    },
+    "end_date": {
+      "$date": "2025-12-31T23:59:59.000Z"
+    },
+    "description": "Giảm 20% cho đơn hàng cuối tuần, tối đa 80.000đ. Áp dụng thứ 7 và Chủ nhật. Đơn từ 200.000đ trở lên.",
+    "createdAt": {
+      "$date": "2025-11-30T12:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d2c9c57f95133c9bd7e87"
+    },
+    "code": "EXPIRED01",
+    "promo_name": "Voucher đã hết hạn (Test)",
+    "type": "Percent",
+    "value": 25,
+    "max_discount": 50000,
+    "min_order_amount": 100000,
+    "restaurantId": null,
+    "first_order_only": false,
+    "active": false,
+    "start_date": {
+      "$date": "2025-11-01T00:00:00.000Z"
+    },
+    "end_date": {
+      "$date": "2025-11-30T23:59:59.000Z"
+    },
+    "description": "Voucher đã hết hạn để test tính năng hiển thị voucher cũ.",
+    "createdAt": {
+      "$date": "2025-10-30T10:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d2c9c57f95133c9bd7e89"
+    },
+    "code": "FUTURE01",
+    "promo_name": "Voucher chưa bắt đầu (Test)",
+    "type": "Fixed",
+    "value": 10000,
+    "max_discount": null,
+    "min_order_amount": 50000,
+    "restaurantId": null,
+    "first_order_only": false,
+    "active": true,
+    "start_date": {
+      "$date": "2026-01-01T00:00:00.000Z"
+    },
+    "end_date": {
+      "$date": "2026-01-31T23:59:59.000Z"
+    },
+    "description": "Voucher sẽ bắt đầu vào tháng 1/2026 để test tính năng hiển thị voucher sắp tới.",
+    "createdAt": {
+      "$date": "2025-12-20T10:00:00.000Z"
+    }
+  }
+]

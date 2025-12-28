@@ -163,16 +163,24 @@ class OrderSimpleResponse(BaseModel):
     user_id: str = Field(..., alias="userId")
     restaurant_id: str = Field(..., alias="restaurantId")
     user_fullname: str = Field(..., alias="userFullname")
+    user_phone: str = Field(..., alias="userPhone")
+    user_email: Optional[str] = Field(None, alias="userEmail")  # Email của user (bổ sung từ user service)
     restaurant_name: str = Field(..., alias="restaurantName")
     restaurant_address: str = Field(..., alias="restaurantAddress")
     address: str
+    items: List[OrderItemResponse] = Field(default_factory=list)
+    food_name: Optional[str] = Field(None, alias="foodName")  # Tên món đầu tiên để hiển thị
     shipping_fee: float
     total_amount: float
     status: str
+    is_reviewed: bool = Field(default=False, alias="isReviewed")
+    imageUrl: Optional[str] = Field(None, alias="imageUrl")
     refunded: bool = False
     refunded_amount: float = 0
     refund_at: Optional[datetime] = None
     created_at: datetime = Field(..., alias="createdAt")
+    # Thông tin shipper bổ sung (nếu có)
+    shipper: Optional[dict] = None
 
     class Config:
         populate_by_name = True

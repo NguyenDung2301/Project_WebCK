@@ -18,11 +18,13 @@ class OrderController:
             if not request.json:
                 return jsonify({'success': False, 'message': 'Request body không được để trống'}), 400
             
+            print(f"[OrderController.create_order] Received data: {request.json}")
             req = CreateOrderRequest(**request.json)
             user_id = request.user_id
             result = order_service.create_order(req, user_id)
             return jsonify({'success': True, 'message': 'Tạo đơn hàng thành công', 'data': result}), 201
         except ValidationError as e:
+            print(f"[OrderController.create_order] ValidationError: {e.errors()}")
             return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ', 'errors': e.errors()}), 400
         except ValueError as e:
             return jsonify({'success': False, 'message': str(e)}), 400
@@ -81,7 +83,8 @@ class OrderController:
     def get_pending_orders(self):
         """Shipper xem danh sách đơn chờ (PENDING)"""
         try:
-            result = order_service.get_pending_orders()
+            shipper_id = request.user_id
+            result = order_service.get_pending_orders(shipper_id)
             return jsonify({'success': True, 'data': result}), 200
         except ValueError as e:
             return jsonify({'success': False, 'message': str(e)}), 400
@@ -116,6 +119,19 @@ class OrderController:
             shipper_id = request.user_id
             result = order_service.complete_order(order_id, shipper_id)
             return jsonify({'success': True, 'message': 'Hoàn thành đơn hàng thành công', 'data': result}), 200
+        except ValueError as e:
+            return jsonify({'success': False, 'message': str(e)}), 400
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Lỗi server: {str(e)}'}), 500
+
+    def decline_order(self, order_id: str):
+        """Shipper từ chối đơn PENDING (chưa nhận)"""
+        try:
+            shipper_id = request.user_id
+            data = request.get_json() or {}
+            reason = data.get('reason')
+            result = order_service.decline_pending_order(order_id, shipper_id, reason)
+            return jsonify({'success': True, 'message': 'Đã từ chối đơn hàng', 'data': result}), 200
         except ValueError as e:
             return jsonify({'success': False, 'message': str(e)}), 400
         except Exception as e:

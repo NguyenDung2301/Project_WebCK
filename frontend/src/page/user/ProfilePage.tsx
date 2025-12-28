@@ -8,10 +8,11 @@ import {
 } from 'lucide-react';
 import { FoodItem, ProfileSubPage, UserProfile, Voucher } from '../../types/common';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { getVouchersApi } from '../../api/voucherApi';
+import { getAvailableVouchersForUserApi, getExpiredVouchersForUserApi } from '../../api/voucherApi';
 import { getFoodsApi } from '../../api/productApi';
-import { getUserProfileApi, updateUserApi } from '../../api/userApi';
-import { formatDateISO, formatDateVN } from '../../utils';
+import { getUserProfileApi, updateUserApi, topUpBalanceApi } from '../../api/userApi';
+import { getCartApi, removeFromCartApi } from '../../api/cartApi';
+import { formatDateISO, formatDateVN, formatNumber, extractErrorMessage } from '../../utils';
 import { PasswordModal } from '../../components/common/PasswordModal';
 
 const ProfileItem = ({
@@ -94,20 +95,23 @@ export const ProfilePage: React.FC = () => {
     }
   }, [location.state]);
 
-  // Fetch data
+  // Fetch data - chỉ chạy khi component mount hoặc user.id thay đổi
   useEffect(() => {
+    // Chỉ fetch khi có user và user.id hợp lệ
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Get user ID from Auth Context, default to 'usr-1' for demo if not logged in
-        const userId = user?.id || 'usr-1';
-
-        // 1. Fetch Profile
-        const profileData = await getUserProfileApi(userId);
+        // 1. Fetch Profile (uses current authenticated user)
+        const profileData = await getUserProfileApi();
         setUserProfile({
           name: profileData.fullname,
           email: profileData.email,
-          phone: profileData.phone,
+          phone: profileData.phone_number || '',
           address: profileData.address || '',
           balance: profileData.balance || 0
         });
@@ -117,16 +121,62 @@ export const ProfilePage: React.FC = () => {
         // Init form data
         setFormName(profileData.fullname);
         setFormEmail(profileData.email);
-        setFormPhone(profileData.phone);
+        setFormPhone(profileData.phone_number || '');
         setFormAddress(profileData.address || '');
 
-        // 2. Fetch Vouchers & Favorites
-        const vData = await getVouchersApi();
-        setVouchers(vData);
+        // 2. Fetch Vouchers & Favorites in parallel
+        try {
+          // Fetch both available and expired vouchers
+          const [availableVouchers, expiredVouchers] = await Promise.all([
+            getAvailableVouchersForUserApi(),
+            getExpiredVouchersForUserApi()
+          ]);
+          // Merge both arrays
+          setVouchers([...availableVouchers, ...expiredVouchers]);
+        } catch (error) {
+          console.error('Error fetching vouchers:', error);
+          setVouchers([]);
+        }
 
-        const fData = await getFoodsApi();
-        // Simulate favorites by picking random 2
-        setFavoriteFoods(fData.slice(0, 2));
+        // Load favorites from cart
+        try {
+          const cart = await getCartApi();
+          if (cart && cart.items && cart.items.length > 0) {
+            // Transform cart items to FoodItem format
+            const favorites: FoodItem[] = [];
+            // Fetch all foods ONCE outside the loop
+            const allFoods = await getFoodsApi();
+
+            for (const item of cart.items) {
+              const foodId = `${item.restaurantId}-${item.foodName}`;
+              const food = allFoods.find(f => f.id === foodId);
+
+              if (food) {
+                favorites.push(food);
+              } else {
+                // If food not found in all foods, create a basic FoodItem from cart item
+                favorites.push({
+                  id: foodId,
+                  name: item.foodName,
+                  price: item.unitPrice,
+                  description: '',
+                  imageUrl: '',
+                  category: '',
+                  restaurantId: item.restaurantId,
+                  rating: 4.0,
+                  distance: '1.5',
+                  deliveryTime: '15-20 phút',
+                });
+              }
+            }
+            setFavoriteFoods(favorites);
+          } else {
+            setFavoriteFoods([]);
+          }
+        } catch (error) {
+          console.error('Error fetching favorites from cart:', error);
+          setFavoriteFoods([]);
+        }
       } catch (error) {
         console.error("Error fetching profile", error);
       } finally {
@@ -134,17 +184,24 @@ export const ProfilePage: React.FC = () => {
       }
     };
     fetchData();
-  }, [user]);
+  }, [user?.id]); // Chỉ phụ thuộc vào user.id thay vì toàn bộ user object
 
   const handleSaveProfile = async () => {
     try {
-      const userId = user?.id || 'usr-1';
-      await updateUserApi(userId, {
+      // Map gender from frontend format to backend format
+      const genderMap: Record<string, 'Male' | 'Female' | undefined> = {
+        'male': 'Male',
+        'female': 'Female',
+        'other': undefined
+      };
+
+      await updateUserApi({
         fullname: formName,
         email: formEmail,
         phone_number: formPhone,
         address: formAddress,
-        // dob and gender update logic to be added
+        birthday: dob ? new Date(dob).toISOString() : undefined,
+        gender: genderMap[gender]
       });
 
       // Update local state
@@ -158,8 +215,8 @@ export const ProfilePage: React.FC = () => {
 
       alert('Cập nhật thành công!');
       setSubPage('MAIN');
-    } catch (error) {
-      alert('Cập nhật thất bại.');
+    } catch (error: unknown) {
+      alert(extractErrorMessage(error));
     }
   };
 
@@ -168,8 +225,35 @@ export const ProfilePage: React.FC = () => {
     navigate('/login');
   };
 
-  const onToggleFavorite = (id: string) => {
+  const onToggleFavorite = async (id: string) => {
+    // Update local state
     setFavoriteFoods(prev => prev.filter(f => f.id !== id));
+
+    // Remove from cart (favorites) in backend
+    try {
+      // Extract food name from food.id format: restaurantId-foodName
+      const foodName = id.includes('-') ? id.split('-').slice(1).join('-') : '';
+      if (foodName) {
+        await removeFromCartApi(foodName);
+      }
+    } catch (error: any) {
+      console.error('Failed to remove from favorites:', error);
+      // Revert local state on error
+      const food = await getFoodsApi();
+      const cart = await getCartApi();
+      if (cart && cart.items) {
+        const favorites: FoodItem[] = [];
+        for (const item of cart.items) {
+          const foodId = `${item.restaurantId}-${item.foodName}`;
+          const foundFood = food.find(f => f.id === foodId);
+          if (foundFood) {
+            favorites.push(foundFood);
+          }
+        }
+        setFavoriteFoods(favorites);
+      }
+      alert(extractErrorMessage(error));
+    }
   };
 
   const onOrderNow = (item: FoodItem) => {
@@ -192,12 +276,29 @@ export const ProfilePage: React.FC = () => {
   };
 
   const handlePasswordConfirm = async (password: string) => {
-    // Simulate password verification and deposit
-    const amount = parseInt(depositAmount);
-    setUserProfile(prev => ({ ...prev, balance: prev.balance + amount }));
-    setShowPasswordModal(false);
-    setDepositAmount('');
-    alert(`Nạp tiền thành công! Số dư mới: ${(userProfile.balance + amount).toLocaleString()}đ`);
+    try {
+      const amount = parseFloat(depositAmount);
+      if (isNaN(amount) || amount <= 0) {
+        alert('Vui lòng nhập số tiền hợp lệ!');
+        return;
+      }
+
+      // Call API to top up balance
+      const updatedUser = await topUpBalanceApi(amount);
+
+      // Update local state with new balance
+      setUserProfile(prev => ({
+        ...prev,
+        balance: updatedUser.balance || prev.balance + amount
+      }));
+
+      setShowPasswordModal(false);
+      setDepositAmount('');
+      alert(`Nạp tiền thành công! Số dư mới: ${formatNumber(updatedUser.balance || userProfile.balance + amount)}đ`);
+    } catch (error: unknown) {
+      alert(extractErrorMessage(error));
+      setShowPasswordModal(false);
+    }
   };
 
   // Helper function to check voucher validity dynamically
@@ -342,7 +443,7 @@ export const ProfilePage: React.FC = () => {
           <ProfileItem
             icon={Wallet}
             title="Số dư tài khoản"
-            subtitle={`${userProfile.balance.toLocaleString()}đ`}
+            subtitle={`${formatNumber(userProfile.balance)}đ`}
             action={
               <button
                 onClick={(e) => {
@@ -384,7 +485,7 @@ export const ProfilePage: React.FC = () => {
               </div>
               <div className="flex justify-between items-start mb-1 px-1">
                 <h4 className="font-bold text-gray-900 group-hover:text-[#EE501C] transition-colors">{item.name}</h4>
-                <span className="text-[#EE501C] font-black">{item.price.toLocaleString()}đ</span>
+                <span className="text-[#EE501C] font-black">{formatNumber(item.price)}đ</span>
               </div>
               <button
                 onClick={() => onOrderNow(item)}
@@ -662,7 +763,7 @@ export const ProfilePage: React.FC = () => {
                     onClick={() => setDepositAmount(amount.toString())}
                     className="px-4 py-2 bg-orange-50 text-[#EE501C] text-xs font-bold rounded-xl hover:bg-orange-100 transition-colors"
                   >
-                    {amount.toLocaleString()}đ
+                    {formatNumber(amount)}đ
                   </button>
                 ))}
               </div>

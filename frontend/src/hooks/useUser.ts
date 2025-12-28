@@ -10,11 +10,12 @@ import {
   getAllUsers, 
   deleteUser, 
   updateUserRole, 
-  createUser, 
+  createUser,
+  toggleUserStatus,
   buildNetworkErrorMessage 
 } from '../services/userService';
 import { useAuth } from './useAuth';
-import { filterBySearch, filterByField, applyFilters } from '@/utils';
+import { filterBySearch, filterByField, applyFilters } from '../utils';
 
 export const useUser = () => {
   // Auth hook
@@ -95,14 +96,18 @@ export const useUser = () => {
   }, [modal.data, loadUsers]);
 
   /**
-   * Toggle user status (placeholder - backend doesn't support yet)
+   * Toggle user status (lock/unlock account)
    */
-  const handleToggleStatus = useCallback((user: User) => {
-    const newStatus = user.status === 'Banned' ? 'Active' : 'Banned';
-    setUsers(prev => prev.map(u => 
-      u.id === user.id ? { ...u, status: newStatus } : u
-    ));
-  }, []);
+  const handleToggleStatus = useCallback(async (user: User) => {
+    try {
+      const isActive = user.status !== 'Banned' && user.status !== 'Inactive';
+      await toggleUserStatus(user.id, !isActive);
+      await loadUsers(); // Reload users to get updated status
+    } catch (err) {
+      setError(buildNetworkErrorMessage(err));
+      console.error('Error toggling user status:', err);
+    }
+  }, [loadUsers]);
 
   /**
    * Save user (create or update)

@@ -8,6 +8,7 @@ from db.models.order import Order, OrderItem, OrderStatus
 from db.models.payment import PaymentMethod, PaymentStatus
 from services.voucher_service import voucher_service
 from services.payment_service import payment_service
+from utils.mongo_parser import parse_mongo_document
 from schemas.order_schema import (
     CreateOrderRequest,
     UpdateOrderStatusRequest,
@@ -37,11 +38,78 @@ class OrderService:
     # ==================== Helpers ====================
     def _to_model(self, doc: dict) -> Order:
         """Convert MongoDB doc to Order model"""
+        # Parse MongoDB Extended JSON format
+        doc = parse_mongo_document(doc)
         return Order(**doc)
 
     def _to_simple_response(self, order: Order) -> Dict:
         """Convert Order model to simple response dict"""
-        return OrderSimpleResponse(**order.to_dict()).model_dump(by_alias=True)
+        data = order.to_dict()
+        
+        # Thêm foodName (tên món đầu tiên) để frontend hiển thị
+        if order.items and len(order.items) > 0:
+            data['foodName'] = order.items[0].food_name
+        
+        # Thêm imageUrl từ món ăn đầu tiên trong order
+        try:
+            if order.items and len(order.items) > 0:
+                first_food_name = order.items[0].food_name
+                # Lấy hình ảnh từ restaurant menu
+                restaurant = self.restaurant_service.find_by_id(str(order.restaurant_id))
+                if restaurant and restaurant.menu:
+                    # Normalize food name for comparison (remove extra spaces, lowercase)
+                    normalized_order_name = first_food_name.lower().strip()
+                    
+                    for category in restaurant.menu:
+                        for food_item in category.items:
+                            # Normalize menu item name for comparison
+                            normalized_menu_name = food_item.name.lower().strip()
+                            
+                            # Exact match or contains match
+                            if normalized_menu_name == normalized_order_name or normalized_order_name in normalized_menu_name or normalized_menu_name in normalized_order_name:
+                                # Get image from food_item
+                                food_image = None
+                                if hasattr(food_item, 'image') and food_item.image:
+                                    food_image = food_item.image
+                                elif hasattr(food_item, 'imageUrl') and food_item.imageUrl:
+                                    food_image = food_item.imageUrl
+                                
+                                if food_image:
+                                    data['imageUrl'] = food_image
+                                    break
+                        if 'imageUrl' in data:
+                            break
+        except Exception as e:
+            # Log error for debugging but don't fail the response
+            print(f"Error getting image for order {order.order_id}: {e}")
+            pass
+        
+        # Bổ sung thông tin user (email) - để shipper có thể liên hệ
+        try:
+            if order.user_id:
+                user = self.user_service.find_by_id(str(order.user_id))
+                if user:
+                    data['userEmail'] = user.email
+        except Exception:
+            # Không chặn response nếu lấy user info lỗi
+            pass
+        
+        # Bổ sung thông tin shipper (nếu có) - giống như _to_full_response
+        try:
+            if order.shipper_id:
+                shipper = self.user_service.find_by_id(str(order.shipper_id))
+                if shipper:
+                    data['shipper'] = {
+                        'shipperId': str(order.shipper_id),
+                        'fullname': shipper.fullname,
+                        'phone_number': shipper.phone_number,
+                        'email': shipper.email
+                    }
+        except Exception:
+            # Không chặn response nếu lấy shipper info lỗi
+            pass
+        
+        return OrderSimpleResponse(**data).model_dump(by_alias=True)
 
     def _to_full_response(self, order: Order) -> Dict:
         """Convert Order model to full response dict + shipper details if available"""
@@ -99,9 +167,22 @@ class OrderService:
     def find_by_shipper_id(self, shipper_id: str) -> List[Order]:
         """Tìm tất cả đơn hàng của shipper"""
         try:
+            # Validate shipper_id
+            if not shipper_id:
+                print("Warning: shipper_id is empty")
+                return []
+            
+            # Convert to ObjectId and query - only return orders where shipperId is not None
             result = []
-            for doc in self.collection.find({'shipperId': ObjectId(shipper_id)}):
-                result.append(self._to_model(doc))
+            query = {'shipperId': ObjectId(shipper_id)}
+            for doc in self.collection.find(query):
+                # Double check that the order actually belongs to this shipper
+                order = self._to_model(doc)
+                if order.shipper_id and str(order.shipper_id) == shipper_id:
+                    result.append(order)
+                else:
+                    # This shouldn't happen, but log it if it does
+                    print(f"Warning: Order {order.id} has shipperId {order.shipper_id} but query was for {shipper_id}")
             return result
         except Exception as e:
             print(f"Error finding orders by shipper id: {e}")
@@ -120,14 +201,17 @@ class OrderService:
 
     def find_all(self) -> List[Order]:
         """Lấy tất cả đơn hàng"""
-        try:
-            result = []
-            for doc in self.collection.find().sort('createdAt', -1):
+        result = []
+        for doc in self.collection.find().sort('createdAt', -1):
+            try:
                 result.append(self._to_model(doc))
-            return result
-        except Exception as e:
-            print(f"Error finding all orders: {e}")
-            return []
+            except Exception as e:
+                # Log error nhưng tiếp tục với document tiếp theo
+                order_id = doc.get('_id', 'unknown')
+                print(f"Error parsing order {order_id}: {e}")
+                print(f"  Document: {doc}")
+                continue
+        return result
 
     def create_order_in_db(self, req: CreateOrderRequest, user_id: str) -> Optional[Order]:
         """Tạo đơn hàng mới - Lấy giá từ DB, lưu thông tin denormalized cho shipper"""
@@ -185,18 +269,22 @@ class OrderService:
             discount = 0.0
             if req.promo_id:
                 try:
-                    discount = voucher_service.preview_discount(
+                    preview_result = voucher_service.preview_discount(
                         user_id=user_id,
                         restaurant_id=req.restaurant_id,
                         subtotal=subtotal,
                         shipping_fee=req.shipping_fee,
                         promo_id=req.promo_id
-                    )['discount']
+                    )
+                    discount = preview_result['discount']
+                    print(f"[DEBUG] Voucher applied - promo_id: {req.promo_id}, discount: {discount}, subtotal: {subtotal}, shipping_fee: {req.shipping_fee}")
                 except Exception as e:
+                    print(f"[ERROR] Failed to apply voucher {req.promo_id}: {str(e)}")
                     raise ValueError(f'Không thể áp dụng voucher: {str(e)}')
 
             # Tính total_amount
             total_amount = subtotal + req.shipping_fee - discount
+            print(f"[DEBUG] Order calculation - subtotal: {subtotal}, shipping_fee: {req.shipping_fee}, discount: {discount}, total_amount: {total_amount}")
             
             # ===== Tạo Order object với denormalized data =====
             order = Order(
@@ -222,8 +310,16 @@ class OrderService:
             )
             
             # Insert vào MongoDB
-            insert_result = self.collection.insert_one(order.to_mongo())
+            order_doc = order.to_mongo()
+            print(f"[DEBUG] Saving order to MongoDB - discount: {order_doc.get('discount')}, total_amount: {order_doc.get('total_amount')}, promoId: {order_doc.get('promoId')}")
+            insert_result = self.collection.insert_one(order_doc)
             created = self.find_by_id(str(insert_result.inserted_id))
+            
+            # Verify the order was saved correctly
+            if created:
+                print(f"[DEBUG] Order created successfully - ID: {created.id}, discount: {created.discount}, total_amount: {created.total_amount}, promoId: {created.promo_id}")
+            else:
+                print(f"[ERROR] Failed to retrieve created order")
             
             # NOTE: Không mark voucher ở đây để tránh mất voucher khi payment fail
             # Voucher sẽ được mark trong create_order() sau khi payment thành công
@@ -294,8 +390,10 @@ class OrderService:
             try:
                 if req.payment_method == PaymentMethod.BALANCE:
                     # Kiểm tra và trừ số dư
+                    print(f"[DEBUG] Deducting balance - user_id: {user_id}, amount: {created.total_amount}, order_id: {created.id}")
                     self.user_service.deduct_balance(user_id, created.total_amount)
                     payment_status = PaymentStatus.PAID
+                    print(f"[DEBUG] Balance deducted successfully")
 
                 payment = payment_service.create_payment(
                     order_id=str(created.id),
@@ -354,10 +452,30 @@ class OrderService:
         return self._to_full_response(order)
 
     def get_user_orders(self, user_id: str) -> List[Dict]:
-        """Lấy danh sách đơn hàng của user"""
+        """Lấy danh sách đơn hàng của user - tự động sync isReviewed từ reviews collection"""
         try:
+            from db.connection import reviews_collection
+            
             orders = self.find_by_user_id(user_id)
-            return [self._to_simple_response(o) for o in orders]
+            result = []
+            
+            for order in orders:
+                order_dict = self._to_simple_response(order)
+                
+                # Sync isReviewed: kiểm tra xem order đã có review chưa
+                if order.status.value == 'Completed' and not order.is_reviewed:
+                    existing_review = reviews_collection.find_one({'orderId': order.id})
+                    if existing_review:
+                        # Cập nhật DB và response
+                        self.collection.update_one(
+                            {'_id': order.id},
+                            {'$set': {'isReviewed': True}}
+                        )
+                        order_dict['isReviewed'] = True
+                
+                result.append(order_dict)
+            
+            return result
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy danh sách đơn: {str(e)}')
 
@@ -387,10 +505,43 @@ class OrderService:
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy đơn hàng nhà hàng: {str(e)}')
 
-    def get_pending_orders(self) -> List[Dict]:
-        """Lấy đơn hàng đang chờ (PENDING) - cho Shipper xem"""
+    def get_pending_orders(self, shipper_id: str) -> List[Dict]:
+        """Lấy đơn hàng đang chờ (PENDING) - cho Shipper xem
+        
+        Chỉ trả về những đơn:
+        - Status = PENDING
+        - Chưa có shipperId (chưa có ai nhận) hoặc shipperId is null
+        - Shipper này chưa từ chối (không có trong shipperRejections với shipperId này)
+        """
         try:
-            orders = self.find_by_status(OrderStatus.PENDING.value)
+            shipper_object_id = ObjectId(shipper_id)
+            
+            # Tìm tất cả đơn PENDING và chưa có shipper nhận
+            # MongoDB: shipperId có thể là null hoặc không tồn tại
+            query = {
+                'status': OrderStatus.PENDING.value,
+                '$or': [
+                    {'shipperId': None},
+                    {'shipperId': {'$exists': False}}
+                ]
+            }
+            
+            orders = []
+            for doc in self.collection.find(query).sort('createdAt', -1):
+                order = self._to_model(doc)
+                
+                # Kiểm tra shipper này đã từ chối đơn này chưa
+                has_declined = False
+                if order.shipper_rejections:
+                    for rejection in order.shipper_rejections:
+                        if rejection.shipper_id == shipper_object_id:
+                            has_declined = True
+                            break
+                
+                # Chỉ thêm vào danh sách nếu shipper này chưa từ chối
+                if not has_declined:
+                    orders.append(order)
+            
             return [self._to_simple_response(o) for o in orders]
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy đơn chờ: {str(e)}')
@@ -539,6 +690,47 @@ class OrderService:
             
             updated = self.find_by_id(order_id)
             return self._to_full_response(updated)
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f'Lỗi khi từ chối đơn: {str(e)}')
+
+    def decline_pending_order(self, order_id: str, shipper_id: str, reason: Optional[str] = None) -> Dict:
+        """Shipper từ chối đơn PENDING (chưa nhận)
+        
+        - Ghi lại lịch sử từ chối vào mảng shipperRejections
+        - Đơn vẫn ở trạng thái PENDING (không thay đổi gì)
+        """
+        try:
+            order = self.find_by_id(order_id)
+            if not order:
+                raise ValueError('Không tìm thấy đơn hàng')
+            
+            if order.status != OrderStatus.PENDING:
+                raise ValueError('Chỉ có thể từ chối đơn khi đang ở trạng thái PENDING')
+            
+            # Thêm entry vào shipperRejections
+            result = self.collection.update_one(
+                {'_id': ObjectId(order_id)},
+                {
+                    '$push': {
+                        'shipperRejections': {
+                            'shipperId': ObjectId(shipper_id),
+                            'reason': reason,
+                            'timestamp': datetime.now()
+                        }
+                    },
+                    '$set': {
+                        'updatedAt': datetime.now()
+                    }
+                }
+            )
+            
+            if result.matched_count == 0:
+                raise ValueError('Không thể cập nhật đơn hàng')
+            
+            updated = self.find_by_id(order_id)
+            return self._to_simple_response(updated)
         except ValueError:
             raise
         except Exception as e:

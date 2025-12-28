@@ -1,32 +1,7 @@
 /**
  * Validation Utils
- * Các hàm tiện ích để validate dữ liệu và type guards
+ * Các hàm tiện ích để validate dữ liệu
  */
-
-import { Role, BackendRole, Gender } from '../types/common';
-
-// ============ Type Guards ============
-
-/**
- * Kiểm tra role có hợp lệ (frontend format)
- */
-export const isValidRole = (role: string): role is Role => {
-  return ['Admin', 'User', 'Shipper'].includes(role);
-};
-
-/**
- * Kiểm tra role có hợp lệ (backend format)
- */
-export const isValidBackendRole = (role: string): role is BackendRole => {
-  return ['admin', 'user', 'shipper'].includes(role);
-};
-
-/**
- * Kiểm tra gender có hợp lệ
- */
-export const isValidGender = (gender: string): gender is Gender => {
-  return ['Male', 'Female'].includes(gender);
-};
 
 // ============ Field Validators ============
 
@@ -90,78 +65,19 @@ export const validateDob = (dob: string, minAge: number = 13): { isValid: boolea
   if (!dob) {
     return { isValid: true }; // Optional field
   }
-  
+
   const dobDate = new Date(dob);
   const today = new Date();
   let age = today.getFullYear() - dobDate.getFullYear();
   const monthDiff = today.getMonth() - dobDate.getMonth();
-  
+
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
     age--;
   }
-  
+
   if (age < minAge) {
     return { isValid: false, message: `Người dùng phải từ ${minAge} tuổi trở lên` };
   }
-  
+
   return { isValid: true };
-};
-
-/**
- * Validate all form fields for registration
- * @param formData - Form data object
- * @returns Object with errors for each field
- */
-export interface RegistrationFormData {
-  name?: string;
-  email?: string;
-  phone?: string;
-  password?: string;
-  dob?: string;
-}
-
-export interface FormErrors {
-  name?: string;
-  email?: string;
-  phone?: string;
-  password?: string;
-  dob?: string;
-}
-
-export const validateRegistrationForm = (formData: RegistrationFormData): FormErrors => {
-  const errors: FormErrors = {};
-  
-  // Validate name
-  const nameResult = validateName(formData.name || '');
-  if (!nameResult.isValid) {
-    errors.name = nameResult.message;
-  }
-  
-  // Validate email
-  if (!formData.email?.trim()) {
-    errors.email = 'Email không được để trống';
-  } else if (!isValidEmail(formData.email)) {
-    errors.email = 'Email không hợp lệ';
-  }
-  
-  // Validate phone
-  if (!formData.phone?.trim()) {
-    errors.phone = 'Số điện thoại không được để trống';
-  } else if (!isValidPhone(formData.phone)) {
-    errors.phone = 'Số điện thoại không hợp lệ (phải 10-11 chữ số)';
-  }
-  
-  // Validate password
-  const passwordResult = validatePassword(formData.password || '');
-  if (!passwordResult.isValid) {
-    errors.password = passwordResult.message;
-  }
-  
-  // Validate DOB
-  const dobResult = validateDob(formData.dob || '');
-  if (!dobResult.isValid) {
-    errors.dob = dobResult.message;
-  }
-  
-  return errors;
 };

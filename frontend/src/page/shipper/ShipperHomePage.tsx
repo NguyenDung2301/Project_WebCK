@@ -3,19 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShipperOrder, OrderStatus } from '../../types/shipper';
 import { getShipperOrdersApi, completeOrderApi, getShipperStatsApi } from '../../api/shipperApi';
-import { Wallet, Check, Truck, Store, MapPin, FileText, Phone, CheckCircle2, Loader2, ClipboardCheck, Timer, User, Mail, X } from 'lucide-react';
-import { Modal } from '../../components/common/Modal';
+import { Wallet, Check, Truck, Store, MapPin, FileText, Phone, CheckCircle2, Loader2, ClipboardCheck, Timer } from 'lucide-react';
+import { CustomerInfoModal } from '../../components/shipper/CustomerInfoModal';
 
 export const ShipperHomePage: React.FC = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<ShipperOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [stats, setStats] = useState({ todayIncome: 0, completedCount: 0, activeHours: '0h 00p' });
+  const [stats, setStats] = useState({ todayIncome: 0, completedCount: 0, activeHours: '5h 34p' });
 
-  // Call Customer Modal State
-  const [callModalOpen, setCallModalOpen] = useState(false);
-  const [selectedOrderForCall, setSelectedOrderForCall] = useState<ShipperOrder | null>(null);
+  // Customer Info Modal State
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<ShipperOrder | null>(null);
 
   // Load active orders and stats
   const loadData = async () => {
@@ -40,7 +40,7 @@ export const ShipperHomePage: React.FC = () => {
 
   const handleComplete = async (id: string) => {
     if (processingId) return;
-    
+
     setProcessingId(id);
     try {
       const success = await completeOrderApi(id);
@@ -56,15 +56,9 @@ export const ShipperHomePage: React.FC = () => {
     }
   };
 
-  const handleOpenCallModal = (order: ShipperOrder) => {
-    setSelectedOrderForCall(order);
-    setCallModalOpen(true);
-  };
-
-  const handleConfirmCall = () => {
-    const phoneNumber = selectedOrderForCall?.customer?.phone?.replace(/\s/g, '') || '0901234567';
-    window.location.href = `tel:${phoneNumber}`;
-    setCallModalOpen(false);
+  const handleOpenCustomerModal = (order: ShipperOrder) => {
+    setSelectedOrder(order);
+    setCustomerModalOpen(true);
   };
 
   if (loading) {
@@ -85,7 +79,7 @@ export const ShipperHomePage: React.FC = () => {
             <h3 className="text-2xl font-black text-gray-900">{stats.todayIncome.toLocaleString('vi-VN')}đ</h3>
           </div>
         </div>
-        
+
         {/* Card 2: Completed Orders */}
         <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
           <div className="w-14 h-14 rounded-full bg-[#FFF5F1] flex items-center justify-center text-[#EE501C] shrink-0">
@@ -125,18 +119,18 @@ export const ShipperHomePage: React.FC = () => {
       <div className="flex flex-col gap-8">
         {orders.map((order) => (
           <div key={order.id} className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm flex flex-col lg:flex-row relative overflow-hidden group hover:shadow-xl transition-all duration-300">
-            
+
             {/* Left side: Information */}
             <div className="flex-1 p-8 flex flex-col gap-8">
               {/* Header inside card */}
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-5">
-                  <div 
-                    className="w-16 h-16 rounded-2xl bg-cover bg-center shrink-0 border border-gray-100 shadow-sm" 
+                  <div
+                    className="w-16 h-16 rounded-2xl bg-cover bg-center shrink-0 border border-gray-100 shadow-sm"
                     style={{ backgroundImage: `url("${order.storeImage}")` }}
                   />
                   <div>
-                    <h3 className="font-bold text-xl text-gray-900 leading-tight mb-1">{order.storeName}</h3>
+                    <h3 className="font-bold text-xl text-gray-900 leading-tight mb-1">{order.foodName || order.storeName}</h3>
                     <p className="text-sm text-gray-400 font-medium">Mã đơn: <span className="font-mono text-gray-600">{order.id}</span></p>
                   </div>
                 </div>
@@ -149,7 +143,7 @@ export const ShipperHomePage: React.FC = () => {
               <div className="bg-gray-50 rounded-[1.5rem] p-6 relative border border-gray-100/50">
                 {/* Dashed Line */}
                 <div className="absolute left-[39px] top-[45px] bottom-[45px] w-px border-l-2 border-dashed border-gray-300"></div>
-                
+
                 <div className="flex gap-5 items-start relative z-10 mb-8">
                   <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0 text-blue-600 shadow-sm">
                     <Store size={20} />
@@ -195,39 +189,37 @@ export const ShipperHomePage: React.FC = () => {
             <div className="lg:w-[360px] bg-white lg:border-l border-gray-100 flex flex-col">
               <div className="flex-1 p-8 flex flex-col items-center justify-center gap-6">
                 <div className="text-center w-full">
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-2">Tổng thu tiền</p>
-                    <p className="text-4xl font-black text-[#EE501C] leading-none mb-4">{order.totalAmount.toLocaleString('vi-VN')}đ</p>
-                    <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-[11px] font-bold ${
-                        order.paymentMethod === 'Cash' 
-                        ? 'bg-gray-50 border-gray-200 text-gray-600' 
-                        : 'bg-green-50 border-green-200 text-green-700'
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-2">Tổng thu tiền</p>
+                  <p className="text-4xl font-black text-[#EE501C] leading-none mb-4">{order.totalAmount.toLocaleString('vi-VN')}đ</p>
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-[11px] font-bold ${order.paymentMethod === 'Cash'
+                      ? 'bg-gray-50 border-gray-200 text-gray-600'
+                      : 'bg-green-50 border-green-200 text-green-700'
                     }`}>
-                        {order.paymentMethod === 'Cash' ? '💵 Tiền mặt khi giao hàng' : '💳 Đã thanh toán Online'}
-                    </div>
+                    {order.paymentMethod === 'Cash' ? '💵 Tiền mặt khi giao hàng' : '💳 Đã thanh toán Online'}
+                  </div>
                 </div>
 
                 <div className="w-full space-y-4">
-                    <button 
-                      onClick={() => handleOpenCallModal(order)}
-                      className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 border-gray-100 text-gray-700 font-bold text-sm hover:border-gray-300 hover:bg-gray-50 transition-all active:scale-[0.98]"
-                    >
-                      <Phone size={20} />
-                      Gọi Khách
-                    </button>
-                    <button 
+                  <button
+                    onClick={() => handleOpenCustomerModal(order)}
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 border-gray-100 text-gray-700 font-bold text-sm hover:border-gray-300 hover:bg-gray-50 transition-all active:scale-[0.98]"
+                  >
+                    <Phone size={20} />
+                    Gọi Khách
+                  </button>
+                  <button
                     onClick={() => handleComplete(order.id)}
                     disabled={!!processingId}
-                    className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-[#1db954] text-white font-bold text-sm shadow-xl shadow-green-200 hover:bg-[#159c46] hover:shadow-green-300 transition-all active:scale-[0.98] ${
-                      processingId === order.id ? 'opacity-80 cursor-wait' : ''
-                    }`}
-                    >
+                    className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-[#1db954] text-white font-bold text-sm shadow-xl shadow-green-200 hover:bg-[#159c46] hover:shadow-green-300 transition-all active:scale-[0.98] ${processingId === order.id ? 'opacity-80 cursor-wait' : ''
+                      }`}
+                  >
                     {processingId === order.id ? (
                       <Loader2 size={20} className="animate-spin" />
                     ) : (
                       <CheckCircle2 size={20} className="stroke-[3]" />
                     )}
                     Đã giao
-                    </button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -246,93 +238,12 @@ export const ShipperHomePage: React.FC = () => {
       </div>
 
       {/* Customer Info Modal */}
-      <Modal isOpen={callModalOpen} onClose={() => setCallModalOpen(false)} maxWidth="md" hideCloseButton={true}>
-        <div className="flex flex-col -m-6 bg-white relative">
-            {/* Header */}
-            <div className="bg-[#EE501C] px-6 py-4 flex justify-between items-center">
-                <h3 className="text-white font-bold text-lg">Thông tin khách hàng</h3>
-                <button 
-                  onClick={() => setCallModalOpen(false)} 
-                  className="text-white/80 hover:text-white hover:bg-white/20 p-1.5 rounded-full transition-all"
-                >
-                  <X size={20} />
-                </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-6">
-                {/* Profile Section (Horizontal) */}
-                <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-[#EE501C] border-[3px] border-[#EE501C]/10 shadow-sm shrink-0 overflow-hidden">
-                        {selectedOrderForCall?.customer?.avatar ? (
-                            <img 
-                                src={selectedOrderForCall.customer.avatar} 
-                                alt={selectedOrderForCall.customer.name} 
-                                className="w-full h-full rounded-full object-cover"
-                            />
-                        ) : (
-                            <User size={32} strokeWidth={2.5} />
-                        )}
-                    </div>
-                    <div className="flex flex-col">
-                        <h4 className="font-bold text-xl text-gray-900 leading-tight">
-                            {selectedOrderForCall?.customer?.name || 'Khách hàng'}
-                        </h4>
-                        {selectedOrderForCall?.customer?.rank && (
-                            <span className="inline-block bg-[#E8F5E9] text-[#2E7D32] text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide mt-1 w-fit">
-                                {selectedOrderForCall.customer.rank}
-                            </span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Details Fields */}
-                <div className="space-y-3">
-                    <div className="flex items-center gap-4 px-4 py-3.5 border border-gray-200 rounded-[1.5rem] bg-white hover:border-gray-300 transition-colors">
-                        <Phone size={20} className="text-[#EE501C] shrink-0" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">SỐ ĐIỆN THOẠI</p>
-                            <p className="text-sm font-bold text-gray-900">{selectedOrderForCall?.customer?.phone || '09xx xxx xxx'}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 px-4 py-3.5 border border-gray-200 rounded-[1.5rem] bg-white hover:border-gray-300 transition-colors">
-                        <Mail size={20} className="text-[#EE501C] shrink-0" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">EMAIL</p>
-                            <p className="text-sm font-bold text-gray-900 truncate">{selectedOrderForCall?.customer?.email || 'N/A'}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start gap-4 px-4 py-3.5 border border-gray-200 rounded-[1.5rem] bg-white hover:border-gray-300 transition-colors">
-                        <MapPin size={20} className="text-[#EE501C] shrink-0 mt-1" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">ĐỊA CHỈ GIAO HÀNG</p>
-                            <p className="text-sm font-bold text-gray-900 leading-snug">
-                                {selectedOrderForCall?.deliveryAddress}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 mt-6">
-                    <button 
-                        onClick={() => setCallModalOpen(false)}
-                        className="flex-1 py-3.5 rounded-full border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-all text-sm"
-                    >
-                        Hủy
-                    </button>
-                    <button 
-                        onClick={handleConfirmCall}
-                        className="flex-1 py-3.5 rounded-full bg-[#EE501C] text-white font-bold shadow-lg shadow-orange-200 hover:bg-[#d44719] transition-all flex items-center justify-center gap-2 text-sm"
-                    >
-                        <Phone size={18} className="fill-white" /> Gọi ngay
-                    </button>
-                </div>
-            </div>
-        </div>
-      </Modal>
+      <CustomerInfoModal
+        isOpen={customerModalOpen}
+        onClose={() => { setCustomerModalOpen(false); setSelectedOrder(null); }}
+        customer={selectedOrder?.customer}
+        deliveryAddress={selectedOrder?.deliveryAddress}
+      />
     </div>
   );
 };

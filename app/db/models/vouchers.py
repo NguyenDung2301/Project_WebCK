@@ -51,10 +51,7 @@ class Promotion(BaseModel):
     start_date: datetime
     end_date: datetime
     description: Optional[str] = None
-    usage_count: int = Field(default=0, description="Số lần voucher đã được sử dụng")
-    user_usage_history: list = Field(default_factory=list, description="Lịch sử sử dụng: [{user_id, used_at}, ...]")
     created_at: datetime = Field(default_factory=datetime.now, alias="createdAt")
-    updated_at: datetime = Field(default_factory=datetime.now, alias="updatedAt")
 
     @property
     def id(self):
@@ -77,13 +74,7 @@ class Promotion(BaseModel):
             "start_date": self.start_date.isoformat(),
             "end_date": self.end_date.isoformat(),
             "description": self.description,
-            "usage_count": self.usage_count,
-            "user_usage_history": [
-                {"user_id": str(h.get('user_id')), "used_at": h.get('used_at').isoformat() if h.get('used_at') else None}
-                for h in self.user_usage_history
-            ],
             "createdAt": self.created_at.isoformat(),
-            "updatedAt": self.updated_at.isoformat(),
         }
 
     def to_mongo(self):
@@ -101,10 +92,7 @@ class Promotion(BaseModel):
             "start_date": self.start_date,
             "end_date": self.end_date,
             "description": self.description,
-            "usage_count": self.usage_count,
-            "user_usage_history": self.user_usage_history,
             "createdAt": self.created_at,
-            "updatedAt": self.updated_at,
         }
         if self.promo_id:
             doc["_id"] = self.promo_id

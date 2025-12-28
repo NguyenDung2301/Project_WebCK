@@ -16,9 +16,14 @@ export const PromoSection: React.FC = () => {
     const fetchPromos = async () => {
       try {
         const data = await getPromotionsApi();
-        setPromotions(data);
+        console.log('Promotions loaded:', data);
+        if (data && Array.isArray(data) && data.length > 0) {
+          setPromotions(data);
+        } else {
+          console.warn('No promotions data received');
+        }
       } catch (error) {
-        console.error(error);
+        console.error('Error fetching promotions:', error);
       } finally {
         setLoading(false);
       }
@@ -36,6 +41,21 @@ export const PromoSection: React.FC = () => {
 
   if (loading) return <div className="h-60 flex items-center justify-center text-gray-400">Đang tải khuyến mãi...</div>;
 
+  if (!promotions || promotions.length === 0) {
+    return (
+      <section className="px-4 md:px-10 pb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-800">
+            FoodDelivery Promotion in <span className="text-[#EE501C]">Hanoi</span>
+          </h2>
+        </div>
+        <div className="text-center py-12 text-gray-400">
+          Không có khuyến mãi nào tại thời điểm này.
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="px-4 md:px-10 pb-12">
       <div className="flex items-center justify-between mb-6">
@@ -44,7 +64,7 @@ export const PromoSection: React.FC = () => {
         </h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {promotions.map((promo) => (
+        {promotions.slice(0, 8).map((promo) => (
           <div
             key={promo.id}
             onClick={() => handlePromoClick(promo.foodId)}

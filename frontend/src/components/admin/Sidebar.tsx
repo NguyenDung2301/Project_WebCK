@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { LayoutDashboard, Users, Store, ShoppingBag, LogOut, Ticket } from 'lucide-react';
+import React, { useState } from 'react';
+import { LayoutDashboard, Users, Store, ShoppingBag, LogOut, Ticket, Menu, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getAdminInfo } from '../../services/authService';
 
@@ -12,6 +12,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   const adminInfo = getAdminInfo();
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Determine active tab based on current path
   const currentPath = location.pathname;
@@ -26,8 +27,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
 
   const isActive = (path: string) => currentPath.startsWith(path);
 
-  return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 flex flex-col z-20 hidden md:flex shadow-sm">
+  const handleMenuClick = (path: string) => {
+    navigate(path);
+    setMobileMenuOpen(false);
+  };
+
+  const MenuContent = () => (
+    <>
       {/* Brand */}
       <div className="h-16 flex items-center px-6 border-b border-gray-100">
         <div className="w-8 h-8 mr-3">
@@ -68,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
         {menuItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => navigate(item.path)}
+            onClick={() => handleMenuClick(item.path)}
             className={`w-full flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all duration-200 group ${
               isActive(item.path)
                 ? 'bg-[#EE501C] text-white shadow-md shadow-orange-200'
@@ -86,13 +92,50 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
       {/* Footer */}
       <div className="p-4 border-t border-gray-100">
         <button 
-          onClick={onLogout}
+          onClick={() => {
+            onLogout();
+            setMobileMenuOpen(false);
+          }}
           className="w-full flex items-center px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
         >
           <LogOut size={20} className="mr-3" />
           Đăng xuất
         </button>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="md:hidden fixed top-4 left-4 z-30 p-2 bg-white rounded-lg shadow-md border border-gray-200"
+      >
+        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Desktop Sidebar */}
+      <div className="w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 flex flex-col z-20 hidden md:flex shadow-sm">
+        <MenuContent />
+      </div>
+
+      {/* Mobile Sidebar */}
+      <div
+        className={`md:hidden w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 flex flex-col z-40 shadow-lg transform transition-transform duration-300 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <MenuContent />
+      </div>
+    </>
   );
 };

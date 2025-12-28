@@ -1,16 +1,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { AdminLayout } from '../../layouts/AdminLayout';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts';
-import { 
-  Download, DollarSign, Wallet, Users, Store, 
+import {
+  Download, DollarSign, Wallet, Users, Store,
   Check, X, Bike
 } from 'lucide-react';
 import { getDashboardStatsApi } from '../../api/dashboardApi';
-import { formatNumber } from '../../utils';
+import { formatNumber, extractErrorMessage, getInitials } from '../../utils';
 
 // Format helpers specifically for the Dashboard Cards
 const formatCompactMoney = (amount: number) => {
@@ -39,10 +39,10 @@ const StatCard = ({ title, value, icon: Icon, iconBg, iconColor }: any) => (
 export const DashboardPage: React.FC = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Default to current year
   const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(currentYear); 
+  const [year, setYear] = useState(currentYear);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,9 +50,11 @@ export const DashboardPage: React.FC = () => {
         setLoading(true);
         // Pass selected year to API
         const stats = await getDashboardStatsApi(year);
+        console.log('Dashboard data received:', stats);
         setData(stats);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Failed to load dashboard data", error);
+        alert(extractErrorMessage(error));
       } finally {
         setLoading(false);
       }
@@ -63,21 +65,39 @@ export const DashboardPage: React.FC = () => {
   if (loading && !data) {
     return (
       <AdminLayout title="Dashboard">
-         <div className="flex items-center justify-center h-[80vh]">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EE501C]"></div>
-         </div>
+        <div className="flex items-center justify-center h-[80vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#EE501C]"></div>
+        </div>
       </AdminLayout>
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <AdminLayout title="Dashboard">
+        <div className="flex items-center justify-center h-[80vh]">
+          <div className="text-center">
+            <p className="text-gray-500">Không có dữ liệu để hiển thị</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
-  const { revenue, status, activities, topItems, topRestaurants, summary } = data;
+  const { revenue = [], status = [], activities = [], topItems = [], topRestaurants = [], summary = {} } = data;
+
+  // Ensure summary has default values
+  const safeSummary = {
+    totalRevenue: summary.totalRevenue || 0,
+    todayRevenue: summary.todayRevenue || 0,
+    totalUsers: summary.totalUsers || 0,
+    totalRestaurants: summary.totalRestaurants || 0,
+  };
 
   return (
     <AdminLayout title="Dashboard">
       <div className="space-y-8 animate-in fade-in duration-500 pb-10">
-        
+
         {/* Dashboard Title & Actions */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-2">
           <div>
@@ -92,33 +112,33 @@ export const DashboardPage: React.FC = () => {
 
         {/* Stats Grid - Data from API */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard 
-            title="Tổng doanh thu" 
-            value={formatCompactMoney(summary.totalRevenue)} 
-            icon={Wallet} 
-            iconBg="bg-red-50" 
-            iconColor="text-[#EE501C]" 
+          <StatCard
+            title="Tổng doanh thu"
+            value={formatCompactMoney(safeSummary.totalRevenue)}
+            icon={Wallet}
+            iconBg="bg-red-50"
+            iconColor="text-[#EE501C]"
           />
-          <StatCard 
-            title="Doanh thu hôm nay" 
-            value={formatCompactMoney(summary.todayRevenue)}
-            icon={DollarSign} 
-            iconBg="bg-green-50" 
-            iconColor="text-emerald-500" 
+          <StatCard
+            title="Doanh thu hôm nay"
+            value={formatCompactMoney(safeSummary.todayRevenue)}
+            icon={DollarSign}
+            iconBg="bg-green-50"
+            iconColor="text-emerald-500"
           />
-          <StatCard 
-            title="Người dùng active" 
-            value={formatNumber(summary.totalUsers)}
-            icon={Users} 
-            iconBg="bg-blue-50" 
-            iconColor="text-blue-500" 
+          <StatCard
+            title="Người dùng active"
+            value={formatNumber(safeSummary.totalUsers)}
+            icon={Users}
+            iconBg="bg-blue-50"
+            iconColor="text-blue-500"
           />
-          <StatCard 
-            title="Tổng số nhà hàng" 
-            value={formatNumber(summary.totalRestaurants)}
-            icon={Store} 
-            iconBg="bg-orange-50" 
-            iconColor="text-amber-500" 
+          <StatCard
+            title="Tổng số nhà hàng"
+            value={formatNumber(safeSummary.totalRestaurants)}
+            icon={Store}
+            iconBg="bg-orange-50"
+            iconColor="text-amber-500"
           />
         </div>
 
@@ -129,10 +149,10 @@ export const DashboardPage: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-gray-900">Biểu đồ doanh thu năm {year}</h3>
               <div className="bg-gray-50 rounded-lg px-2 py-1">
-                <select 
-                    className="bg-transparent border-none text-xs text-gray-500 font-bold outline-none cursor-pointer"
-                    value={year}
-                    onChange={(e) => setYear(parseInt(e.target.value))}
+                <select
+                  className="bg-transparent border-none text-xs text-gray-500 font-bold outline-none cursor-pointer"
+                  value={year}
+                  onChange={(e) => setYear(parseInt(e.target.value))}
                 >
                   <option value={currentYear}>{currentYear}</option>
                   <option value={currentYear - 1}>{currentYear - 1}</option>
@@ -144,23 +164,23 @@ export const DashboardPage: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={revenue} barSize={28}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#9CA3AF' }} 
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#9CA3AF' }}
                     dy={10}
                   />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#9CA3AF' }} 
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#9CA3AF' }}
                   />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: 'rgba(238, 80, 28, 0.05)' }}
-                    contentStyle={{ 
-                      borderRadius: '8px', 
-                      border: 'none', 
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: 'none',
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                       backgroundColor: '#FFFFFF',
                       padding: '8px 12px',
@@ -185,7 +205,7 @@ export const DashboardPage: React.FC = () => {
                     data={status}
                     cx="50%"
                     cy="50%"
-                    innerRadius={70} 
+                    innerRadius={70}
                     outerRadius={100}
                     paddingAngle={0}
                     dataKey="value"
@@ -196,7 +216,7 @@ export const DashboardPage: React.FC = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={2} stroke="#fff" />
                     ))}
                   </Pie>
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   />
                 </PieChart>
@@ -219,23 +239,27 @@ export const DashboardPage: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <h3 className="text-lg font-bold text-gray-900 mb-6">Hoạt động gần đây</h3>
             <div className="space-y-6">
-              {activities.map((act: any) => (
-                <div key={act.id} className="flex items-start gap-4">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 
-                    ${act.type === 'order' ? 'bg-blue-100 text-blue-600' : 
-                      act.type === 'delivery' ? 'bg-green-100 text-green-600' :
-                      act.type === 'cancellation' ? 'bg-red-100 text-red-600' :
-                      'bg-orange-100 text-orange-600'}`}>
-                    <span className="text-xs font-bold">{act.user.charAt(0)}</span>
+              {activities.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Chưa có hoạt động nào</p>
+              ) : (
+                activities.map((act: any) => (
+                  <div key={act.id} className="flex items-start gap-4">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 
+                      ${act.type === 'order' ? 'bg-blue-100 text-blue-600' :
+                        act.type === 'delivery' ? 'bg-green-100 text-green-600' :
+                          act.type === 'cancellation' ? 'bg-red-100 text-red-600' :
+                            'bg-orange-100 text-orange-600'}`}>
+                      <span className="text-xs font-bold">{getInitials(act.user || '?')}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-gray-800 leading-snug">
+                        <span className="font-bold">{act.user || 'Unknown'}</span> {act.action || ''} <span className="text-[#EE501C] font-semibold">{act.target || ''}</span>
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-1">{act.time || ''}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-gray-800 leading-snug">
-                      <span className="font-bold">{act.user}</span> {act.action} <span className="text-[#EE501C] font-semibold">{act.target}</span>
-                    </p>
-                    <p className="text-[10px] text-gray-400 mt-1">{act.time}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -243,16 +267,28 @@ export const DashboardPage: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <h3 className="text-lg font-bold text-gray-900 mb-6">Top món bán chạy</h3>
             <div className="space-y-5">
-              {topItems.map((item: any) => (
-                <div key={item.id} className="flex items-center gap-4">
-                  <img alt={item.name} className="w-12 h-12 rounded-lg object-cover bg-gray-100" src={item.image} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-800 truncate">{item.name}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">#{item.id}</p>
-                  </div>
-                  <span className="text-sm font-bold text-[#EE501C]">{item.sales}</span>
-                </div>
-              ))}
+              {topItems.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Chưa có dữ liệu</p>
+              ) : (
+                topItems.map((item: any) => {
+                  // Tạo placeholder với chữ cái đầu của tên món
+                  const initial = getInitials(item.name || '?');
+                  const displayId = item.restaurantId || item.id || '';
+
+                  return (
+                    <div key={item.id || item.foodId} className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-lg flex items-center justify-center font-bold text-sm bg-gray-100 text-gray-600 shrink-0">
+                        {initial}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-800 truncate">{item.name}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{displayId}</p>
+                      </div>
+                      <span className="text-sm font-bold text-[#EE501C] shrink-0">{item.sales}</span>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -260,22 +296,26 @@ export const DashboardPage: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
             <h3 className="text-lg font-bold text-gray-900 mb-6">Top doanh thu nhà hàng</h3>
             <div className="space-y-6">
-              {topRestaurants.map((res: any) => (
-                <div key={res.id} className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${res.color}`}>
-                    {res.logoInitial}
+              {topRestaurants.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Chưa có dữ liệu</p>
+              ) : (
+                topRestaurants.map((res: any) => (
+                  <div key={res.id} className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${res.color}`}>
+                      {res.logoInitial}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800 truncate">{res.name}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{res.id}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-gray-900">
+                        {formatCompactMoney(res.revenue)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-800 truncate">{res.name}</p>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{res.id}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-gray-900">
-                      {formatCompactMoney(res.revenue)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

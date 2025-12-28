@@ -1,8 +1,9 @@
 from typing import Optional, List, Dict
 import re
+import random
 from bson import ObjectId
 from pymongo.collection import Collection
-from db.connection import restaurants_collection
+from db.connection import restaurants_collection, reviews_collection, vouchers_collection
 from db.models.restaurants import Restaurant, MenuCategory, FoodMenuItem
 from schemas.restaurant_schema import (
     CreateRestaurantRequest,
@@ -11,6 +12,7 @@ from schemas.restaurant_schema import (
     RestaurantSimpleResponse,
     SearchFoodResponse,
 )
+from utils.mongo_parser import parse_mongo_document
 
 class RestaurantService:
     def __init__(self):
@@ -18,13 +20,84 @@ class RestaurantService:
 
     # ==================== Helpers ====================
     def _to_model(self, doc: dict) -> Restaurant:
-        return Restaurant(**doc)
+        """Convert MongoDB document to Restaurant model"""
+        try:
+            # Parse MongoDB Extended JSON format
+            doc = parse_mongo_document(doc)
+            
+            # Ensure menu is properly structured
+            if doc.get('menu') and isinstance(doc['menu'], list):
+                # Menu should be list of categories with items
+                for category in doc['menu']:
+                    if isinstance(category, dict):
+                        # Ensure items is a list
+                        if 'items' in category and not isinstance(category['items'], list):
+                            category['items'] = []
+            return Restaurant(**doc)
+        except Exception as e:
+            print(f"Error converting document to Restaurant model: {e}")
+            print(f"  Document keys: {list(doc.keys())}")
+            print(f"  Document _id: {doc.get('_id')}")
+            print(f"  Menu type: {type(doc.get('menu'))}")
+            if doc.get('menu'):
+                print(f"  Menu length: {len(doc.get('menu', []))}")
+            raise
 
     def _to_simple_response(self, restaurant: Restaurant) -> Dict:
+        """Convert Restaurant to simple response dict, calculating rating from reviews"""
+        # Calculate rating from reviews
+        try:
+            restaurant_id = restaurant.restaurant_id
+            reviews = list(reviews_collection.find({'restaurantId': restaurant_id}))
+            total_reviews = len(reviews)
+            if total_reviews > 0:
+                avg_rating = sum(r.get('rating', 0) for r in reviews) / total_reviews
+                avg_rating = round(avg_rating, 1)  # Round to 1 decimal place
+            else:
+                avg_rating = 0.0
+        except Exception as e:
+            print(f"Error calculating rating for restaurant {restaurant.restaurant_id}: {e}")
+            avg_rating = round(restaurant.average_rating or 0.0, 1) if restaurant.average_rating else 0.0
+            total_reviews = restaurant.total_reviews or 0
+        
+        # Update restaurant with calculated values
+        restaurant.average_rating = avg_rating
+        restaurant.total_reviews = total_reviews
+        
         return RestaurantSimpleResponse(**restaurant.to_dict()).model_dump(by_alias=True)
 
     def _to_full_response(self, restaurant: Restaurant) -> Dict:
-        return RestaurantResponse(**restaurant.to_dict()).model_dump(by_alias=True)
+        """Convert Restaurant to full response dict with menu, calculating rating from reviews"""
+        # Calculate rating from reviews
+        try:
+            restaurant_id = restaurant.restaurant_id
+            reviews = list(reviews_collection.find({'restaurantId': restaurant_id}))
+            total_reviews = len(reviews)
+            if total_reviews > 0:
+                avg_rating = sum(r.get('rating', 0) for r in reviews) / total_reviews
+                avg_rating = round(avg_rating, 1)  # Round to 1 decimal place
+            else:
+                avg_rating = 0.0
+        except Exception as e:
+            print(f"Error calculating rating for restaurant {restaurant.restaurant_id}: {e}")
+            avg_rating = round(restaurant.average_rating or 0.0, 1) if restaurant.average_rating else 0.0
+            total_reviews = restaurant.total_reviews or 0
+        
+        # Update restaurant with calculated values
+        restaurant.average_rating = avg_rating
+        restaurant.total_reviews = total_reviews
+        
+        # Ensure menu is properly structured
+        if not restaurant.menu:
+            restaurant.menu = []
+        
+        # Convert to dict and ensure menu is properly serialized
+        restaurant_dict = restaurant.to_dict()
+        # Ensure menu is a list of dicts (not Pydantic models)
+        if restaurant_dict.get('menu'):
+            restaurant_dict['menu'] = [cat.to_dict() if hasattr(cat, 'to_dict') else cat for cat in restaurant.menu]
+        
+        return RestaurantResponse(**restaurant_dict).model_dump(by_alias=True)
 
     # ==================== LAYER 1: MongoDB CRUD Operations (Data Access) ====================
 
@@ -243,7 +316,13 @@ class RestaurantService:
         restaurant = self.find_by_id(restaurant_id)
         if not restaurant:
             raise ValueError('Không tìm thấy nhà hàng')
-        return self._to_full_response(restaurant)
+        response = self._to_full_response(restaurant)
+        # Debug: log menu structure
+        print(f"Restaurant {restaurant_id} menu: {len(restaurant.menu) if restaurant.menu else 0} categories")
+        if restaurant.menu:
+            total_items = sum(len(cat.items) for cat in restaurant.menu)
+            print(f"Total menu items: {total_items}")
+        return response
 
     def create_restaurant(self, req: CreateRestaurantRequest) -> Dict:
         """Tạo nhà hàng mới - Kiểm tra trùng theo (name + address)"""
@@ -352,4 +431,371 @@ class RestaurantService:
             'restaurant': self._to_simple_response(updated_restaurant)
         }
 
+    def get_promotions(self, limit: int = 8) -> List[Dict]:
+        """
+        Lấy danh sách promotions từ restaurants có reviews tốt nhất
+        Dựa trên reviews_data.json thông qua reviews_collection
+        Nếu không có reviews, vẫn hiển thị restaurants với promotions mặc định
+        """
+        try:
+            # Lấy tất cả restaurants đang hoạt động
+            restaurants = self.find_all()
+            active_restaurants = [r for r in restaurants if r.status]
+            
+            if not active_restaurants:
+                return []
+            
+            # Lấy reviews cho mỗi restaurant và tính điểm
+            promotions = []
+            for restaurant in active_restaurants:
+                if not restaurant.restaurant_id:
+                    continue
+                
+                restaurant_id = restaurant.restaurant_id
+                restaurant_id_str = str(restaurant_id)
+                
+                # Đếm số reviews và tính rating trung bình
+                # restaurantId trong MongoDB là ObjectId, không phải string
+                reviews = list(reviews_collection.find({'restaurantId': restaurant_id}))
+                total_reviews = len(reviews)
+                
+                # Tính rating trung bình (mặc định 4.0 nếu không có reviews)
+                if total_reviews > 0:
+                    avg_rating = sum(r.get('rating', 0) for r in reviews) / total_reviews
+                else:
+                    avg_rating = 4.0  # Rating mặc định cho restaurants chưa có reviews
+                    total_reviews = 0
+                
+                # Lấy món ăn đầu tiên từ menu làm foodId
+                food_id = None
+                food_name = None
+                food_image = None
+                if restaurant.menu and len(restaurant.menu) > 0:
+                    first_category = restaurant.menu[0]
+                    if first_category.items and len(first_category.items) > 0:
+                        first_food = first_category.items[0]
+                        food_id = f"{restaurant_id_str}-{first_food.name}" if first_food.name else None
+                        food_name = first_food.name
+                        food_image = first_food.image if hasattr(first_food, 'image') and first_food.image else None
+                
+                # Lấy danh sách vouchers đang active từ database
+                active_vouchers = list(vouchers_collection.find({
+                    'active': True,
+                    'first_order_only': False  # Chỉ lấy voucher áp dụng chung
+                }))
+                
+                # Tạo action dựa trên voucher thực
+                if active_vouchers:
+                    # Random một voucher từ danh sách
+                    voucher = random.choice(active_vouchers)
+                    voucher_type = voucher.get('type', 'Percent')
+                    voucher_value = voucher.get('value', 10)
+                    
+                    if voucher_type == 'Freeship':
+                        action = "Free Ship"
+                    elif voucher_type == 'Fixed':
+                        # Format: Giảm 30K
+                        action = f"Giảm {int(voucher_value/1000)}K"
+                    elif voucher_type == 'Percent':
+                        # Format: Giảm 15%
+                        action = f"Giảm {int(voucher_value)}%"
+                    else:
+                        action = "Ưu đãi"
+                else:
+                    # Fallback nếu không có vouchers
+                    action = "Ưu đãi đặc biệt"
+                
+                # Lấy image từ food hoặc restaurant
+                image_url = food_image
+                if not image_url and hasattr(restaurant, 'map_link') and restaurant.map_link:
+                    image_url = restaurant.map_link
+                
+                # Fallback images dựa trên tên nhà hàng
+                if not image_url:
+                    name_lower = restaurant.restaurant_name.lower()
+                    if "kfc" in name_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462793/Screenshot_2025-11-29_092812_fgyur2.png"
+                    elif "mcdonald" in name_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462710/Screenshot_2025-11-30_072620_ak9ylz.png"
+                    elif "phúc long" in name_lower or "phuclong" in name_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462712/Screenshot_2025-11-30_072914_omsuvg.png"
+                    elif "sushi" in name_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764462283/Screenshot_2025-11-30_072347_zzyj7x.png"
+                    elif "pizza" in name_lower:
+                        image_url = "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800"
+                    elif "bánh mì" in name_lower or "banh mi" in name_lower:
+                        image_url = "https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=800"
+                    elif "phở" in name_lower or "pho" in name_lower:
+                        image_url = "https://images.unsplash.com/photo-1582878826618-c05326eff935?q=80&w=800"
+                    elif "coffee" in name_lower:
+                        image_url = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=800"
+                    else:
+                        image_url = "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800"
+                
+                promotions.append({
+                    'id': restaurant_id_str,
+                    'name': food_name or restaurant.restaurant_name,  # Tên món ăn (hoặc fallback tên nhà hàng)
+                    'foodName': food_name,  # Tên món ăn
+                    'restaurantName': restaurant.restaurant_name,  # Tên nhà hàng
+                    'vendor': restaurant.restaurant_name,  # Vendor là tên nhà hàng
+                    'image': image_url,
+                    'action': action,
+                    'foodId': food_id or restaurant_id_str,
+                    'rating': round(avg_rating, 1),
+                    'totalReviews': total_reviews
+                })
+            
+            # Sắp xếp theo rating và số lượng reviews (restaurants có reviews được ưu tiên)
+            promotions.sort(key=lambda x: (x['totalReviews'] > 0, x['rating'], x['totalReviews']), reverse=True)
+            
+            # Giới hạn số lượng
+            return promotions[:limit]
+            
+        except Exception as e:
+            print(f"Error getting promotions: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+    def get_categories(self) -> List[Dict]:
+        """
+        Lấy danh sách categories từ tất cả restaurants
+        Mỗi category sẽ có một hình ảnh random từ items trong category đó
+        Loại bỏ các categories trùng lặp bằng cách normalize tên
+        """
+        try:
+            import random
+            
+            # Lấy tất cả restaurants đang hoạt động
+            restaurants = self.find_all()
+            active_restaurants = [r for r in restaurants if r.status]
+            
+            # Dictionary để lưu categories và danh sách images
+            # Key là normalized name để tránh trùng lặp
+            categories_dict: Dict[str, Dict] = {}
+            
+            def normalize_category_name(name: str) -> str:
+                """Chuẩn hóa tên category để loại bỏ trùng lặp"""
+                if not name:
+                    return ""
+                # Chuyển về lowercase và loại bỏ khoảng trắng thừa
+                normalized = name.strip().lower()
+                # Loại bỏ các ký tự đặc biệt và chuẩn hóa
+                normalized = normalized.replace('  ', ' ')
+                return normalized
+            
+            # Duyệt qua tất cả restaurants và thu thập categories
+            for restaurant in active_restaurants:
+                if not restaurant.menu:
+                    continue
+                
+                for menu_category in restaurant.menu:
+                    category_name = menu_category.category
+                    if not category_name:
+                        continue
+                    
+                    # Chuẩn hóa tên category để loại bỏ trùng lặp
+                    normalized_name = normalize_category_name(category_name)
+                    if not normalized_name:
+                        continue
+                    
+                    # Sử dụng normalized name làm key, nhưng lưu original name để hiển thị
+                    if normalized_name not in categories_dict:
+                        categories_dict[normalized_name] = {
+                            'original_name': category_name,
+                            'images': []
+                        }
+                    
+                    # Thu thập images từ items trong category
+                    if menu_category.items:
+                        for item in menu_category.items:
+                            # Kiểm tra image từ FoodMenuItem
+                            item_image = None
+                            if isinstance(item, FoodMenuItem):
+                                item_image = item.image
+                            elif isinstance(item, dict):
+                                item_image = item.get('image')
+                            elif hasattr(item, 'image'):
+                                item_image = item.image
+                            
+                            if item_image and item_image not in categories_dict[normalized_name]['images']:
+                                # Chỉ thêm nếu chưa có trong list để tránh duplicate images
+                                categories_dict[normalized_name]['images'].append(item_image)
+            
+            # Tạo danh sách categories với hình ảnh random
+            categories = []
+            seen_names = set()  # Track để đảm bảo không có duplicate
+            
+            for normalized_name, category_data in categories_dict.items():
+                original_name = category_data['original_name']
+                images = category_data['images']
+                
+                # Kiểm tra xem đã có category này chưa (theo original name)
+                if original_name in seen_names:
+                    continue
+                
+                seen_names.add(original_name)
+                
+                # Chọn một hình ảnh random từ danh sách
+                image_url = random.choice(images) if images else None
+                
+                # Nếu không có hình ảnh, sử dụng fallback dựa trên tên category
+                if not image_url:
+                    category_lower = normalized_name
+                    if "phở" in category_lower or "pho" in category_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070845_fcckkb.png"
+                    elif "bún" in category_lower or "bun" in category_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070845_fcckkb.png"
+                    elif "cơm" in category_lower or "com" in category_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764460831/Screenshot_2025-11-30_070009_s8hzez.png"
+                    elif "đồ uống" in category_lower or "drink" in category_lower or ("trà" in category_lower and "trà sữa" not in category_lower and "trà trái" not in category_lower):
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070905_sde2iv.png"
+                    elif "bánh" in category_lower or "banh" in category_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070813_ldmmy9.png"
+                    elif "xôi" in category_lower or "xoi" in category_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764460831/Screenshot_2025-11-30_070009_s8hzez.png"
+                    elif "lẩu" in category_lower or "lau" in category_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461746/Screenshot_2025-11-30_070845_fcckkb.png"
+                    elif "nướng" in category_lower or "nuong" in category_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461748/Screenshot_2025-11-30_070923_miqawt.png"
+                    elif "xào" in category_lower or "xao" in category_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461748/Screenshot_2025-11-30_070923_miqawt.png"
+                    elif "kem" in category_lower:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461748/Screenshot_2025-11-30_071007_euepva.png"
+                    else:
+                        image_url = "https://res.cloudinary.com/dvobb8q7p/image/upload/v1764461748/Screenshot_2025-11-30_070923_miqawt.png"
+                
+                # Tạo ID từ normalized name
+                category_id = normalized_name.replace(' ', '-').replace('đ', 'd').replace('ộ', 'o').replace('ồ', 'o').replace('á', 'a').replace('à', 'a').replace('ả', 'a').replace('ã', 'a').replace('ạ', 'a')
+                
+                categories.append({
+                    'id': category_id,
+                    'name': original_name,  # Sử dụng original name để hiển thị
+                    'image': image_url
+                })
+            
+            # Sắp xếp theo tên để có thứ tự nhất quán
+            categories.sort(key=lambda x: x['name'])
+            
+            return categories
+            
+        except Exception as e:
+            print(f"Error getting categories: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+    def get_all_foods(self) -> List[Dict]:
+        """
+        Lấy tất cả foods từ tất cả restaurants đang hoạt động
+        Format: [{id, name, price, description, imageUrl, category, restaurantId, rating, ...}]
+        """
+        try:
+            foods = []
+            restaurants = self.find_all()
+            active_restaurants = [r for r in restaurants if r.status]
+            
+            for restaurant in active_restaurants:
+                if not restaurant.restaurant_id or not restaurant.menu:
+                    continue
+                
+                restaurant_id_str = str(restaurant.restaurant_id)
+                
+                # Lấy reviews để tính rating
+                reviews = list(reviews_collection.find({'restaurantId': restaurant.restaurant_id}))
+                
+                for menu_category in restaurant.menu:
+                    category_name = menu_category.category
+                    if not menu_category.items:
+                        continue
+                    
+                    for item in menu_category.items:
+                        # Tạo unique ID cho food: restaurantId-foodName
+                        food_id = f"{restaurant_id_str}-{item.name}" if item.name else None
+                        if not food_id:
+                            continue
+                        
+                        # Tính rating từ reviews (có thể lấy từ food name hoặc restaurant)
+                        # Tạm thời dùng restaurant rating
+                        avg_rating = sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 4.0
+                        
+                        foods.append({
+                            'id': food_id,
+                            'name': item.name,
+                            'price': float(item.price) if item.price else 0.0,
+                            'description': item.description or '',
+                            'imageUrl': item.image or '',
+                            'category': category_name,
+                            'restaurantId': restaurant_id_str,
+                            'restaurantName': restaurant.restaurant_name,
+                            'rating': round(avg_rating, 1),
+                            'distance': '1.5',  # Default
+                            'deliveryTime': '15-20 phút',  # Default
+                            'status': item.status if hasattr(item, 'status') else True
+                        })
+            
+            return foods
+            
+        except Exception as e:
+            print(f"Error getting all foods: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+    def get_food_by_id(self, food_id: str) -> Optional[Dict]:
+        """
+        Lấy food item theo ID
+        Format food_id: "restaurantId-foodName"
+        """
+        try:
+            # Parse food_id: format "restaurantId-foodName"
+            parts = food_id.split('-', 1)
+            if len(parts) != 2:
+                return None
+            
+            restaurant_id_str, food_name = parts
+            try:
+                restaurant_id = ObjectId(restaurant_id_str)
+            except:
+                return None
+            
+            # Tìm restaurant
+            restaurant = self.find_by_id(restaurant_id_str)
+            if not restaurant or not restaurant.status or not restaurant.menu:
+                return None
+            
+            # Tìm food trong menu
+            for menu_category in restaurant.menu:
+                if not menu_category.items:
+                    continue
+                
+                for item in menu_category.items:
+                    if item.name == food_name:
+                        # Lấy reviews để tính rating
+                        reviews = list(reviews_collection.find({'restaurantId': restaurant_id}))
+                        avg_rating = sum(r.get('rating', 0) for r in reviews) / len(reviews) if reviews else 4.0
+                        
+                        return {
+                            'id': food_id,
+                            'name': item.name,
+                            'price': float(item.price) if item.price else 0.0,
+                            'description': item.description or '',
+                            'imageUrl': item.image or '',
+                            'category': menu_category.category,
+                            'restaurantId': restaurant_id_str,
+                            'restaurantName': restaurant.restaurant_name,
+                            'rating': round(avg_rating, 1),
+                            'distance': '1.5',
+                            'deliveryTime': '15-20 phút',
+                            'status': item.status if hasattr(item, 'status') else True
+                        }
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error getting food by id: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+            
 restaurant_service = RestaurantService()

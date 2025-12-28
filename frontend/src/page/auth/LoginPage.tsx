@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { AuthLayout } from '../../components/common/AuthLayout';
+import { AuthLayout } from '../../layouts/AuthLayout';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { getTokenPayload } from '../../services/authService';
 
@@ -42,7 +42,7 @@ export const LoginPage: React.FC = () => {
     if (result.success) {
       setStatus('success');
       setMessage(result.message);
-      
+
       // Logic phân quyền
       // Lấy payload để check role chính xác hơn (isAdmin trong result đôi khi chỉ check admin)
       const payload = getTokenPayload();
@@ -122,9 +122,8 @@ export const LoginPage: React.FC = () => {
 
         {message && (
           <p
-            className={`rounded-2xl px-4 py-3 text-sm ${
-              status === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
-            }`}
+            className={`rounded-2xl px-4 py-3 text-sm ${status === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+              }`}
           >
             {message}
           </p>
@@ -137,14 +136,6 @@ export const LoginPage: React.FC = () => {
         >
           {status === 'loading' ? 'Đang xử lý...' : 'Đăng nhập'}
         </button>
-        
-        {/* Helper text for testing */}
-        <div className="mt-4 p-3 bg-blue-50 rounded-xl text-xs text-blue-700 space-y-1">
-          <p className="font-bold">Tài khoản Test (Mock):</p>
-          <p>User: user@gmail.com / 123456</p>
-          <p>Admin: admin@gmail.com / 123456</p>
-          <p>Shipper: shipper@food.com / 123456 (Cần tạo nếu chưa có)</p>
-        </div>
       </form>
     </AuthLayout>
   );

@@ -1,0 +1,456 @@
+[
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb792724"
+    },
+    "userId": {
+      "$oid": "6949768cc4034997f273e881"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86b"
+        },
+        "restaurantName": "Phở Thìn Bờ Hồ",
+        "foodName": "Phở Gà",
+        "quantity": 2,
+        "unitPrice": 70000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86b"
+        },
+        "restaurantName": "Phở Thìn Bờ Hồ",
+        "foodName": "Bò Viên",
+        "quantity": 1,
+        "unitPrice": 30000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86b"
+        },
+        "restaurantName": "Phở Thìn Bờ Hồ",
+        "foodName": "Trà Tắc",
+        "quantity": 1,
+        "unitPrice": 15000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-24T09:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T09:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb792725"
+    },
+    "userId": {
+      "$oid": "6949768cc4034997f273e883"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86c"
+        },
+        "restaurantName": "Bún Chả Hàng Mành",
+        "foodName": "Bún Chả Cá",
+        "quantity": 1,
+        "unitPrice": 75000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86c"
+        },
+        "restaurantName": "Bún Chả Hàng Mành",
+        "foodName": "Thịt Nướng",
+        "quantity": 1,
+        "unitPrice": 45000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86c"
+        },
+        "restaurantName": "Bún Chả Hàng Mành",
+        "foodName": "Nước Mơ",
+        "quantity": 2,
+        "unitPrice": 20000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-24T08:30:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T10:15:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb792726"
+    },
+    "userId": {
+      "$oid": "6949768cc4034997f273e887"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86e"
+        },
+        "restaurantName": "Cơm Niêu Ngon",
+        "foodName": "Cơm Niêu Sườn Nướng",
+        "quantity": 1,
+        "unitPrice": 90000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86e"
+        },
+        "restaurantName": "Cơm Niêu Ngon",
+        "foodName": "Rau Muống Xào Tỏi",
+        "quantity": 1,
+        "unitPrice": 45000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86e"
+        },
+        "restaurantName": "Cơm Niêu Ngon",
+        "foodName": "Nước Dừa Tươi",
+        "quantity": 1,
+        "unitPrice": 30000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-24T07:45:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T11:20:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb792727"
+    },
+    "userId": {
+      "$oid": "6949768cc4034997f273e889"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86f"
+        },
+        "restaurantName": "Bún Đậu Mắm Tôm Hàng Khay",
+        "foodName": "Bún Đậu Đặc Biệt",
+        "quantity": 1,
+        "unitPrice": 80000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86f"
+        },
+        "restaurantName": "Bún Đậu Mắm Tôm Hàng Khay",
+        "foodName": "Dồi Sụn",
+        "quantity": 1,
+        "unitPrice": 45000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86f"
+        },
+        "restaurantName": "Bún Đậu Mắm Tôm Hàng Khay",
+        "foodName": "Nước Chanh Dây",
+        "quantity": 2,
+        "unitPrice": 20000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-24T06:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T08:20:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb792728"
+    },
+    "userId": {
+      "$oid": "6949768cc4034997f273e88b"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e870"
+        },
+        "restaurantName": "Bánh Mì Hà Nội",
+        "foodName": "Bánh Mì Chảo",
+        "quantity": 2,
+        "unitPrice": 40000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e870"
+        },
+        "restaurantName": "Bánh Mì Hà Nội",
+        "foodName": "Xúc Xích Nướng",
+        "quantity": 2,
+        "unitPrice": 25000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e870"
+        },
+        "restaurantName": "Bánh Mì Hà Nội",
+        "foodName": "Trà Chanh Sả",
+        "quantity": 1,
+        "unitPrice": 20000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-24T05:30:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T09:45:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb792729"
+    },
+    "userId": {
+      "$oid": "6949768cc4034997f273e88d"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e871"
+        },
+        "restaurantName": "Xôi Vàng",
+        "foodName": "Xôi Thập Cẩm",
+        "quantity": 1,
+        "unitPrice": 40000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e871"
+        },
+        "restaurantName": "Xôi Vàng",
+        "foodName": "Xôi Xoài",
+        "quantity": 1,
+        "unitPrice": 35000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e871"
+        },
+        "restaurantName": "Xôi Vàng",
+        "foodName": "Trà Trái Cây",
+        "quantity": 1,
+        "unitPrice": 25000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-23T18:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T08:25:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb79272a"
+    },
+    "userId": {
+      "$oid": "6949771ec4034997f273e88f"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e872"
+        },
+        "restaurantName": "Trà Sữa Hà Nội",
+        "foodName": "Trà Sữa Hoa Nhài",
+        "quantity": 2,
+        "unitPrice": 38000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e872"
+        },
+        "restaurantName": "Trà Sữa Hà Nội",
+        "foodName": "Sữa Chua Trái Cây",
+        "quantity": 1,
+        "unitPrice": 35000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e872"
+        },
+        "restaurantName": "Trà Sữa Hà Nội",
+        "foodName": "Kem Socola Bạc Hà",
+        "quantity": 1,
+        "unitPrice": 38000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-24T10:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T10:00:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb79272b"
+    },
+    "userId": {
+      "$oid": "6949771ec4034997f273e891"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e873"
+        },
+        "restaurantName": "Lẩu Hà Nội",
+        "foodName": "Lẩu Hải Sản",
+        "quantity": 1,
+        "unitPrice": 240000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e873"
+        },
+        "restaurantName": "Lẩu Hà Nội",
+        "foodName": "Cua Hấp",
+        "quantity": 1,
+        "unitPrice": 260000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e873"
+        },
+        "restaurantName": "Lẩu Hà Nội",
+        "foodName": "Tôm Sú",
+        "quantity": 1,
+        "unitPrice": 170000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e873"
+        },
+        "restaurantName": "Lẩu Hà Nội",
+        "foodName": "Bia",
+        "quantity": 3,
+        "unitPrice": 25000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-24T11:05:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T11:05:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb79272c"
+    },
+    "userId": {
+      "$oid": "6949768cc4034997f273e885"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86d"
+        },
+        "restaurantName": "Bánh Cuốn Gia An",
+        "foodName": "Bánh Cuốn Trứng",
+        "quantity": 2,
+        "unitPrice": 40000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86d"
+        },
+        "restaurantName": "Bánh Cuốn Gia An",
+        "foodName": "Chả Quế",
+        "quantity": 1,
+        "unitPrice": 25000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86d"
+        },
+        "restaurantName": "Bánh Cuốn Gia An",
+        "foodName": "Sữa Ngô",
+        "quantity": 1,
+        "unitPrice": 10000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-24T06:30:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T06:30:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb79272d"
+    },
+    "userId": {
+      "$oid": "6949768cc4034997f273e883"
+    },
+    "items": [
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86c"
+        },
+        "restaurantName": "Bún Chả Hàng Mành",
+        "foodName": "Bún Chả Lá Lốt",
+        "quantity": 1,
+        "unitPrice": 70000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86c"
+        },
+        "restaurantName": "Bún Chả Hàng Mành",
+        "foodName": "Chả Cốm",
+        "quantity": 1,
+        "unitPrice": 40000
+      },
+      {
+        "restaurantId": {
+          "$oid": "69496ebac4034997f273e86c"
+        },
+        "restaurantName": "Bún Chả Hàng Mành",
+        "foodName": "Nước Cam",
+        "quantity": 1,
+        "unitPrice": 25000
+      }
+    ],
+    "createdAt": {
+      "$date": "2025-12-23T20:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T09:30:00.000Z"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "694d29c92a39a853cb79272e"
+    },
+    "userId": {
+      "$oid": "6949768cc4034997f273e88d"
+    },
+    "items": [],
+    "createdAt": {
+      "$date": "2025-12-24T07:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-12-24T07:00:00.000Z"
+    }
+  }
+]

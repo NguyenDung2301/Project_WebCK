@@ -7,6 +7,7 @@ from core.security import security
 from db.connection import users_collection, orders_collection
 from db.models.order import OrderStatus
 from db.models.user import User
+from utils.mongo_parser import parse_mongo_document
 from schemas.user_schema import (
     UserLoginRequest,
     UserRegisterRequest,
@@ -24,20 +25,50 @@ class UserService:
         self.collection = users_collection
         self.secret_key = os.getenv('JWT_SECRET')
 
+    def _user_to_response(self, user: User) -> UserResponse:
+        """Helper function to convert User object to UserResponse"""
+        if not user or not user.user_id:
+            raise ValueError('User không hợp lệ')
+        return UserResponse(
+            _id=str(user.user_id),
+            fullname=user.fullname or '',
+            email=user.email,
+            phone_number=user.phone_number,
+            address=user.address,
+            balance=user.balance,
+            birthday=user.birthday,
+            gender=user.gender,
+            is_active=user.is_active,
+            created_at=user.created_at,
+            role=user.role
+        )
+
 # ==================== MongoDB CRUD Operations ==================== dùng để làm việc với database trên mongo
     def find_by_id(self, user_id: str) -> Optional[User]:
         """Tìm user theo ID"""
         try:
             doc = self.collection.find_one({'_id': ObjectId(user_id)})
-            return User(**doc) if doc else None
+            if doc:
+                # Parse MongoDB Extended JSON format
+                doc = parse_mongo_document(doc)
+                return User(**doc)
+            return None
         except Exception as e:
             print(f"Error finding user by id: {e}")
             return None
     
     def find_by_email(self, email: str) -> Optional[User]:
         """Tìm user theo email"""
-        doc = self.collection.find_one({'email': email})
-        return User(**doc) if doc else None
+        try:
+            doc = self.collection.find_one({'email': email})
+            if doc:
+                # Parse MongoDB Extended JSON format
+                doc = parse_mongo_document(doc)
+                return User(**doc)
+            return None
+        except Exception as e:
+            print(f"Error finding user by email: {e}")
+            return None
     
     def create_user(self, user_data: UserRegisterRequest) -> User:
         """Tạo user mới trong MongoDB"""
@@ -107,13 +138,15 @@ class UserService:
         # Tạo user
         user = self.create_user(user_data) #gọi hàm create_user bên trên
         
-        # Generate JWT token
-        token = security.create_user_token(user_id=str(user.id), email=user.email, role=user.role.value)
+        # Generate JWT tokens
+        access_token = security.create_user_token(user_id=str(user.id), email=user.email, role=user.role.value)
+        refresh_token = security.create_refresh_token(user_id=str(user.id), email=user.email, role=user.role.value)
         
         # Return response
         return UserLoginResponse(
-            user=UserResponse(**user.to_dict()),
-            token=token
+            user=self._user_to_response(user),
+            token=access_token,
+            refresh_token=refresh_token
         ).model_dump()
 
     def login(self, login_data: UserLoginRequest) -> Dict:
@@ -131,13 +164,42 @@ class UserService:
         if not security.verify_password(login_data.password, user.password):
             raise ValueError('Email hoặc mật khẩu không đúng')
         
-        # Generate token
-        token = security.create_user_token(user_id=str(user.id), email=user.email, role=user.role.value)
+        # Generate access token và refresh token
+        access_token = security.create_user_token(user_id=str(user.id), email=user.email, role=user.role.value)
+        refresh_token = security.create_refresh_token(user_id=str(user.id), email=user.email, role=user.role.value)
         
         return UserLoginResponse(
-            user=UserResponse(**user.to_dict()),
-            token=token
+            user=self._user_to_response(user),
+            token=access_token,
+            refresh_token=refresh_token
         ).model_dump()
+    
+    def refresh_access_token(self, refresh_token: str) -> Dict:
+        """Refresh access token bằng refresh token"""
+        # Verify refresh token
+        payload = security.verify_refresh_token(refresh_token)
+        
+        # Lấy thông tin user
+        user_id = payload['user_id']
+        user = self.find_by_id(user_id)
+        
+        if not user:
+            raise ValueError('Người dùng không tồn tại')
+        
+        # Kiểm tra tài khoản có bị khóa không
+        if not user.is_active:
+            raise ValueError('Tài khoản của bạn đã bị khóa')
+        
+        # Tạo access token mới
+        new_access_token = security.create_user_token(
+            user_id=str(user.id), 
+            email=user.email, 
+            role=user.role.value
+        )
+        
+        return {
+            'token': new_access_token
+        }
 
     def update_user(self, user_id: str, user_data: UserUpdateRequest) -> Dict:
         """Cập nhật thông tin user"""
@@ -148,8 +210,10 @@ class UserService:
         
         # Update
         updated_user = self.update_user_in_db(user_id, user_data)
+        if not updated_user:
+            raise ValueError('Không thể cập nhật user')
         
-        return UserResponse(**updated_user.to_dict()).model_dump()
+        return self._user_to_response(updated_user).model_dump()
 
     def delete_user(self, user_id: str) -> Dict:
         """Xóa user"""
@@ -170,15 +234,15 @@ class UserService:
         if not user:
             raise ValueError('Không tìm thấy user')
         
-        return UserResponse(**user.to_dict()).model_dump()
+        return self._user_to_response(user).model_dump()
 
     def get_user_by_email(self, email: str) -> Dict:
         """Lấy thông tin user theo email (chỉ dùng trong các API yêu cầu quyền phù hợp)"""
         user = self.find_by_email(email)
         if not user:
             raise ValueError('Không tìm thấy user')
-
-        return UserResponse(**user.to_dict()).model_dump()
+        
+        return self._user_to_response(user).model_dump()
 
     def get_all_users(self) -> List[Dict]:
         """Lấy danh sách tất cả users (chỉ admin được phép gọi API)"""
@@ -186,8 +250,10 @@ class UserService:
             users = self.collection.find({'role': {'$ne': 'admin'}})
             result = []
             for doc in users:
+                # Parse MongoDB Extended JSON format
+                doc = parse_mongo_document(doc)
                 user = User(**doc)
-                result.append(UserResponse(**user.to_dict()).model_dump())
+                result.append(self._user_to_response(user).model_dump())
             return result
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy danh sách users: {str(e)}')
@@ -230,7 +296,9 @@ class UserService:
             raise ValueError('Không thể cập nhật số dư user')
 
         updated = self.find_by_id(user_id)
-        return UserResponse(**updated.to_dict()).model_dump()
+        if not updated:
+            raise ValueError('Không tìm thấy user')
+        return self._user_to_response(updated).model_dump()
 
     def credit_balance(self, user_id: str, amount: float) -> User:
         """Cộng tiền vào tài khoản user (dùng nội bộ cho refund)."""
@@ -278,7 +346,9 @@ class UserService:
             raise ValueError('Không thể cập nhật vai trò user')
 
         updated_user = self.find_by_id(user_id)
-        return UserResponse(**updated_user.to_dict()).model_dump()
+        if not updated_user:
+            raise ValueError('Không tìm thấy user')
+        return self._user_to_response(updated_user).model_dump()
 
     def withdraw_balance(self, user_id: str, withdraw_data: 'WithdrawRequest') -> Dict:
         """Shipper rút tiền từ balance (rút toàn bộ hoặc một phần)"""
@@ -323,7 +393,7 @@ class UserService:
             'message': f'Rút tiền thành công {amount_to_withdraw:,.0f} VNĐ',
             'withdrawn_amount': float(amount_to_withdraw),
             'remaining_balance': float(updated_user.balance),
-            'user': UserResponse(**updated_user.to_dict()).model_dump()
+            'user': self._user_to_response(updated_user).model_dump()
         }
 
     def toggle_user_status(self, user_id: str, is_active: bool) -> Dict:
@@ -356,7 +426,7 @@ class UserService:
         
         return {
             'message': f'Đã {action} tài khoản thành công',
-            'user': UserResponse(**updated_user.to_dict()).model_dump()
+            'user': self._user_to_response(updated_user).model_dump()
         }
 
 user_service = UserService()

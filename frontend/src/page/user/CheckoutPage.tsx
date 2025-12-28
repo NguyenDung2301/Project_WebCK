@@ -1,12 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MapPin, Ticket, CreditCard, ChevronRight, CheckCircle2, Lock, Eye, EyeOff, Check, Wallet, Search, Plus, Heart, Loader2 } from 'lucide-react';
+import { MapPin, Ticket, CreditCard, ChevronRight, CheckCircle2, Wallet, Search, Plus, Loader2, X } from 'lucide-react';
 import { FoodItem, UserProfile, Voucher } from '../../types/common';
-import { getVouchersApi } from '../../api/voucherApi';
+import { getAvailableVouchersForUserApi } from '../../api/voucherApi';
 import { createOrderApi } from '../../api/orderApi';
+import { getUserProfileApi } from '../../api/userApi';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { PasswordModal } from '../../components/common/PasswordModal';
+import { OrderSuccessModal } from '../../components/user/OrderSuccessModal';
+import { formatPhone, formatNumber, extractErrorMessage, isVoucherError } from '../../utils';
 
 const DEFAULT_FOOD: FoodItem = {
   id: '1',
@@ -23,26 +26,64 @@ export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthContext();
-  const state = location.state as { food: FoodItem, quantity: number, voucher?: Voucher } | undefined;
+  const state = location.state as {
+    food?: FoodItem,
+    quantity?: number,
+    voucher?: Voucher,
+    items?: Array<{ food: FoodItem, quantity: number }>
+  } | undefined;
 
-  // Use passed data or fall back to default
-  const food = state?.food || DEFAULT_FOOD;
-  const quantity = state?.quantity || 2;
+  // Cart items state - support multiple items
+  const [cartItems, setCartItems] = useState<Array<{ food: FoodItem, quantity: number }>>(() => {
+    if (state?.items && Array.isArray(state.items) && state.items.length > 0) {
+      return state.items;
+    } else if (state?.food) {
+      return [{ food: state.food, quantity: state.quantity || 1 }];
+    }
+    return [{ food: DEFAULT_FOOD, quantity: 1 }];
+  });
 
-  // Construct UserProfile from AuthContext or fallback
-  const userProfile: UserProfile = {
+  useEffect(() => {
+    if (state?.items && Array.isArray(state.items) && state.items.length > 0) {
+      setCartItems(state.items);
+    }
+  }, [state?.items]);
+
+  const restaurantId = cartItems[0]?.food?.restaurantId || 'res-1';
+
+  // User profile state
+  const [userProfile, setUserProfile] = useState<UserProfile>({
     name: user?.name || 'Khách hàng',
     email: user?.email || 'email@example.com',
-    phone: '(+84) 901 234 567', // Default for now, as AuthContext doesn't have phone
+    phone: '(+84) 901 234 567',
     address: '123 Đường ABC, Phường Bến Nghé, Quận 1, Thành phố Hồ Chí Minh.',
-    balance: 500000, // Default mock balance
+    balance: 0,
     password: 'password123'
-  };
+  });
 
-  // Calculate subtotal immediately for validation
-  const subtotal = food.price * quantity;
+  // Fetch user profile on mount
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user?.id) {
+        try {
+          const profile = await getUserProfileApi();
+          setUserProfile({
+            name: profile.fullname || 'Khách hàng',
+            email: profile.email || '',
+            phone: formatPhone(profile.phone_number),
+            address: profile.address || 'Đang cập nhật địa chỉ',
+            balance: profile.balance || 0,
+            password: 'password123'
+          });
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+    };
+    fetchUserProfile();
+  }, [user?.id]);
 
-  // Validate passed voucher against subtotal
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.food.price * item.quantity), 0);
   const initialVoucher = state?.voucher && subtotal >= state.voucher.minOrderValue ? state.voucher : null;
 
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'cash'>('wallet');
@@ -52,17 +93,14 @@ export const CheckoutPage: React.FC = () => {
   // Modals
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-  // States
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch vouchers
   useEffect(() => {
     const fetchVouchers = async () => {
       try {
-        const data = await getVouchersApi();
+        const data = await getAvailableVouchersForUserApi(restaurantId);
         setAvailableVouchers(data);
-        // Auto select best voucher if none selected
         if (!initialVoucher) {
           const valid = data.find(v => subtotal >= v.minOrderValue && !v.isExpired);
           if (valid) setSelectedVoucher(valid);
@@ -72,42 +110,91 @@ export const CheckoutPage: React.FC = () => {
       }
     };
     fetchVouchers();
-  }, [initialVoucher, subtotal]);
+  }, [initialVoucher, subtotal, restaurantId]);
 
   const deliveryFee = 15000;
-  const discount = selectedVoucher ? selectedVoucher.discountValue : 0;
 
-  // Ensure total doesn't go below 0
+  // Calculate discount based on voucher type
+  const calculateDiscount = () => {
+    if (!selectedVoucher) return 0;
+
+    switch (selectedVoucher.type) {
+      case 'Percent':
+        const percentDiscount = Math.round(subtotal * selectedVoucher.discountValue / 100);
+        if (selectedVoucher.maxDiscount && percentDiscount > selectedVoucher.maxDiscount) {
+          return selectedVoucher.maxDiscount;
+        }
+        return percentDiscount;
+      case 'FreeShip':
+        return Math.min(selectedVoucher.discountValue, deliveryFee);
+      case 'Fixed':
+      default:
+        return selectedVoucher.discountValue;
+    }
+  };
+
+  const discount = calculateDiscount();
   const total = Math.max(0, subtotal + deliveryFee - discount);
 
-  // Helper to submit order
-  const submitOrder = async () => {
-    setIsProcessing(true);
-    try {
-      // Build Payload based on MasterOrder structure
-      const payload = {
-        userId: user?.id || 'usr-1',
-        restaurantId: food.restaurantId || 'res-1',
-        items: [{
-          foodId: food.id,
-          quantity: quantity,
-          price: food.price
-        }],
-        totalAmount: total,
-        deliveryAddress: userProfile.address,
-        paymentMethod: paymentMethod === 'wallet' ? 'Wallet' : 'Cash',
-      };
+  // Cart management
+  const removeItemFromCart = (foodId: string) => {
+    setCartItems(prev => prev.filter(item => item.food.id !== foodId));
+  };
 
-      // Call API
+  // Submit order
+  const submitOrder = async (skipVoucher: boolean = false) => {
+    if (cartItems.length === 0) {
+      alert('Vui lòng chọn ít nhất một món ăn');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    const promoId = skipVoucher ? null : (selectedVoucher?.id || null);
+    const payload = {
+      restaurantId: restaurantId,
+      items: cartItems.map(item => ({
+        food_name: item.food.name,
+        quantity: item.quantity
+      })),
+      address: userProfile.address,
+      note: '',
+      payment_method: paymentMethod === 'wallet' ? 'Balance' : 'COD',
+      shipping_fee: deliveryFee,
+      promoId: promoId,
+    };
+
+    try {
       await createOrderApi(payload as any);
 
-      // Show success
+      try {
+        const updatedVouchers = await getAvailableVouchersForUserApi(restaurantId);
+        setAvailableVouchers(updatedVouchers);
+        if (selectedVoucher && !updatedVouchers.find(v => v.id === selectedVoucher.id)) {
+          setSelectedVoucher(null);
+        }
+      } catch (voucherError) {
+        console.error("Failed to refresh vouchers:", voucherError);
+      }
+
       setShowSuccessModal(true);
-    } catch (error) {
-      console.error('Failed to create order', error);
-      alert('Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
-    } finally {
       setIsProcessing(false);
+    } catch (error) {
+      const originalMessage = error instanceof Error ? error.message : String(error);
+      const hadVoucher = !skipVoucher && !!payload.promoId;
+      const isVoucherErr = isVoucherError(originalMessage);
+
+      if (isVoucherErr && hadVoucher) {
+        setIsProcessing(false);
+        const errorMessage = extractErrorMessage(error);
+        alert(errorMessage + '\n\nVui lòng chọn voucher khác hoặc tiếp tục không có voucher.');
+        setSelectedVoucher(null);
+        return;
+      } else {
+        const errorMessage = extractErrorMessage(error);
+        alert(errorMessage);
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -124,7 +211,6 @@ export const CheckoutPage: React.FC = () => {
   };
 
   const handlePasswordConfirm = async (password: string) => {
-    // Simple mock validation
     if (password.length > 0) {
       setShowPasswordModal(false);
       await submitOrder();
@@ -166,34 +252,62 @@ export const CheckoutPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Cart Item */}
+          {/* Cart Items */}
           <div className="bg-white rounded-3xl p-6 border-2 border-gray-200 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2 text-[#EE501C] font-bold">
                 <Ticket className="w-5 h-5" /> Món đã chọn
               </div>
               <button
-                onClick={() => navigate(`/product/${food.id}#related-foods`)}
+                onClick={() => {
+                  navigate(`/product/${cartItems[0]?.food?.id || ''}#related-foods`, {
+                    state: { fromCheckout: true, currentCartItems: cartItems, restaurantId }
+                  });
+                }}
                 className="text-xs font-bold flex items-center gap-1.5 text-gray-500 hover:text-[#EE501C] hover:bg-orange-50 px-3 py-1.5 rounded-full transition-all"
               >
                 <Plus className="w-3.5 h-3.5" /> Thêm món
               </button>
             </div>
-            <div className="flex gap-4">
-              <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
-                <img src={food.imageUrl} alt={food.name} className="w-full h-full object-cover" />
+            {cartItems.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p className="text-sm">Chưa có món nào được chọn</p>
               </div>
-              <div className="flex-1">
-                <div className="flex justify-between">
-                  <h3 className="font-bold text-gray-800">{food.name}</h3>
-                </div>
-                <p className="text-xs text-gray-400 mb-2">Quán Ngon Nhà Làm</p>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-sm font-bold text-[#EE501C]">{food.price.toLocaleString()}đ</span>
-                  <span className="text-sm font-bold text-gray-800 bg-gray-50 px-3 py-1 rounded-lg">x{quantity}</span>
-                </div>
+            ) : (
+              <div className="space-y-4">
+                {cartItems.map((item, index) => (
+                  <div key={item.food.id} className={`flex gap-4 ${index > 0 ? 'pt-4 border-t border-gray-100' : ''}`}>
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-gray-100 relative group">
+                      <img src={item.food.imageUrl} alt={item.food.name} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removeItemFromCart(item.food.id)}
+                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        title="Bỏ món này"
+                      >
+                        <X className="w-6 h-6 text-white" />
+                      </button>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-bold text-gray-800 truncate flex-1">{item.food.name}</h3>
+                        <button
+                          onClick={() => removeItemFromCart(item.food.id)}
+                          className="w-6 h-6 rounded-full bg-gray-100 hover:bg-red-100 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                          title="Bỏ món này"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-400 mb-2">Quán Ngon Nhà Làm</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-[#EE501C]">{formatNumber(item.food.price)}đ</span>
+                        <span className="text-sm font-bold text-gray-800 bg-gray-50 px-3 py-1 rounded-lg">x{item.quantity}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Payment Method */}
@@ -202,7 +316,6 @@ export const CheckoutPage: React.FC = () => {
               <CreditCard className="w-5 h-5" /> Phương thức thanh toán
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Wallet Option */}
               <button
                 onClick={() => setPaymentMethod('wallet')}
                 className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${paymentMethod === 'wallet' ? 'border-[#EE501C] bg-orange-50' : 'border-gray-100 hover:border-gray-200'}`}
@@ -212,12 +325,11 @@ export const CheckoutPage: React.FC = () => {
                 </div>
                 <div className="text-left flex-1">
                   <p className="text-sm font-bold text-gray-800">Ví điện tử</p>
-                  <p className="text-[10px] text-gray-400">Số dư: <span className="text-[#EE501C] font-bold">{userProfile.balance.toLocaleString()}đ</span></p>
+                  <p className="text-[10px] text-gray-400">Số dư: <span className="text-[#EE501C] font-bold">{formatNumber(userProfile.balance)}đ</span></p>
                 </div>
                 {paymentMethod === 'wallet' && <CheckCircle2 className="w-5 h-5 text-[#EE501C] ml-auto" />}
               </button>
 
-              {/* Cash Option */}
               <button
                 onClick={() => setPaymentMethod('cash')}
                 className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${paymentMethod === 'cash' ? 'border-[#EE501C] bg-orange-50' : 'border-gray-100 hover:border-gray-200'}`}
@@ -253,13 +365,22 @@ export const CheckoutPage: React.FC = () => {
             <div className="space-y-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gợi ý cho bạn</p>
               {availableVouchers.filter(v => !v.isExpired).map(v => {
-                const isEligible = subtotal >= v.minOrderValue;
+                const isFirstOrderEligible = v.eligibleFirstOrder !== false;
+                const meetsMinOrder = subtotal >= v.minOrderValue;
+                const isEligible = meetsMinOrder && isFirstOrderEligible;
+
+                let ineligibilityReason = '';
+                if (!meetsMinOrder) {
+                  ineligibilityReason = 'Chưa đủ điều kiện';
+                } else if (v.eligibleFirstOrder === false) {
+                  ineligibilityReason = 'Chỉ áp dụng cho đơn đầu tiên';
+                }
+
                 return (
                   <div
                     key={v.id}
                     onClick={() => {
                       if (isEligible) {
-                        // Toggle: nếu đang chọn voucher này thì bỏ chọn, ngược lại thì chọn
                         if (selectedVoucher?.id === v.id) {
                           setSelectedVoucher(null);
                         } else {
@@ -277,8 +398,8 @@ export const CheckoutPage: React.FC = () => {
                       <div className="flex-1">
                         <p className="text-xs font-bold text-gray-800">{v.title}</p>
                         <p className="text-[10px] text-gray-400">{v.condition}</p>
-                        {!isEligible && (
-                          <p className="text-[10px] text-red-500 font-bold mt-1">Chưa đủ điều kiện</p>
+                        {!isEligible && ineligibilityReason && (
+                          <p className="text-[10px] text-red-500 font-bold mt-1">{ineligibilityReason}</p>
                         )}
                       </div>
                       <div className="text-right">
@@ -294,22 +415,22 @@ export const CheckoutPage: React.FC = () => {
 
             <div className="mt-6 pt-6 border-t border-gray-100 space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Tạm tính ({quantity} món)</span>
-                <span className="font-bold text-gray-800">{subtotal.toLocaleString()}đ</span>
+                <span className="text-gray-400">Tạm tính ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} món)</span>
+                <span className="font-bold text-gray-800">{formatNumber(subtotal)}đ</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Phí giao hàng</span>
-                <span className="font-bold text-gray-800">{deliveryFee.toLocaleString()}đ</span>
+                <span className="font-bold text-gray-800">{formatNumber(deliveryFee)}đ</span>
               </div>
               {selectedVoucher && (
                 <div className="flex justify-between text-sm animate-in fade-in slide-in-from-right-4">
                   <span className="text-[#EE501C] font-bold">Voucher: {selectedVoucher.code}</span>
-                  <span className="font-bold text-[#EE501C]">-{discount.toLocaleString()}đ</span>
+                  <span className="font-bold text-[#EE501C]">-{formatNumber(discount)}đ</span>
                 </div>
               )}
               <div className="flex justify-between items-end pt-2 border-t border-gray-50 mt-2">
                 <span className="font-bold text-gray-800">Tổng thanh toán</span>
-                <span className="text-3xl font-black text-[#EE501C]">{total.toLocaleString()}đ</span>
+                <span className="text-3xl font-black text-[#EE501C]">{formatNumber(total)}đ</span>
               </div>
 
               <button
@@ -335,9 +456,7 @@ export const CheckoutPage: React.FC = () => {
         </div>
       </div>
 
-      {/* --- MODALS --- */}
-
-      {/* PASSWORD MODAL */}
+      {/* Modals */}
       <PasswordModal
         isOpen={showPasswordModal}
         onClose={() => setShowPasswordModal(false)}
@@ -345,36 +464,7 @@ export const CheckoutPage: React.FC = () => {
         isProcessing={isProcessing}
       />
 
-      {/* SUCCESS MODAL */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="bg-[#EE501C] py-12 px-6 flex items-center justify-center">
-              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-white shadow-inner animate-pulse">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-[#EE501C] shadow-lg"><Check className="w-8 h-8 stroke-[4]" /></div>
-              </div>
-            </div>
-            <div className="px-8 pb-10 pt-8 text-center">
-              <h2 className="text-2xl font-black text-gray-900 mb-3">Đặt hàng thành công!</h2>
-              <p className="text-sm text-gray-400 leading-relaxed font-medium mb-10 px-2">Cảm ơn bạn đã tin tưởng. Tài xế sẽ sớm liên hệ với bạn để xác nhận đơn hàng.</p>
-              <div className="space-y-4">
-                <button
-                  onClick={() => navigate('/orders', { state: { tab: 'pending' } })}
-                  className="w-full bg-[#EE501C] text-white font-black py-4 rounded-full shadow-[0_15px_30px_rgba(238,80,28,0.25)] hover:bg-[#d44719] transition-all transform active:scale-95 text-sm"
-                >
-                  Xem đơn hàng
-                </button>
-                <button
-                  onClick={() => navigate('/')}
-                  className="w-full bg-white border border-gray-100 text-gray-500 font-bold py-4 rounded-full hover:bg-gray-50 transition-all transform active:scale-95 text-sm shadow-sm"
-                >
-                  Trở về trang chủ
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <OrderSuccessModal isOpen={showSuccessModal} />
     </div>
   );
 };

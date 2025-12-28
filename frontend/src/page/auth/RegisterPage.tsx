@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { CheckCircle, Home, LogIn } from 'lucide-react';
 
-import { AuthLayout } from '../../components/common/AuthLayout';
+import { AuthLayout } from '../../layouts/AuthLayout';
+import { Modal } from '../../components/common/Modal';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { isValidPhone, validatePassword } from '../../utils';
+import { isValidPhone, validatePassword, clearAuthData } from '../../utils';
 
 type RegisterForm = {
   fullname: string;
   email: string;
   password: string;
   phoneNumber: string;
+  address: string;
   birthday: string;
   gender: string;
 };
@@ -19,15 +22,18 @@ const initialState: RegisterForm = {
   email: '',
   password: '',
   phoneNumber: '',
+  address: '',
   birthday: '',
   gender: '',
 };
 
 export const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
   const { register } = useAuthContext(); // Sử dụng register từ Context
   const [form, setForm] = useState<RegisterForm>(initialState);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [message, setMessage] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -62,14 +68,16 @@ export const RegisterPage: React.FC = () => {
       email: form.email.trim(),
       password: form.password,
       phone_number: form.phoneNumber ? form.phoneNumber.trim() : undefined,
+      address: form.address ? form.address.trim() : undefined,
       birthday: form.birthday || undefined,
-      gender: form.gender as 'Male' | 'Female' | undefined,
+      gender: form.gender ? (form.gender as 'Male' | 'Female') : undefined,
     });
 
     if (result.success) {
       setStatus('success');
       setMessage(result.message);
       setForm(initialState);
+      setShowSuccessModal(true);
     } else {
       setStatus('error');
       setMessage(result.message);
@@ -161,6 +169,21 @@ export const RegisterPage: React.FC = () => {
           />
         </div>
 
+        <div className="space-y-2">
+          <label htmlFor="address" className="text-sm font-semibold text-gray-600">
+            Địa chỉ (tùy chọn)
+          </label>
+          <input
+            id="address"
+            name="address"
+            type="text"
+            value={form.address}
+            onChange={handleChange}
+            placeholder="Nhập địa chỉ của bạn"
+            className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <label htmlFor="birthday" className="text-sm font-semibold text-gray-600">
@@ -195,9 +218,8 @@ export const RegisterPage: React.FC = () => {
 
         {message && (
           <p
-            className={`rounded-2xl px-4 py-3 text-sm ${
-              status === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
-            }`}
+            className={`rounded-2xl px-4 py-3 text-sm ${status === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+              }`}
           >
             {message}
           </p>
@@ -211,6 +233,45 @@ export const RegisterPage: React.FC = () => {
           {status === 'loading' ? 'Đang xử lý...' : 'Đăng ký'}
         </button>
       </form>
+
+      {/* Success Modal */}
+      <Modal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        maxWidth="sm"
+        hideCloseButton
+      >
+        <div className="text-center py-4">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-10 h-10 text-green-500" />
+            </div>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">Đăng ký thành công!</h3>
+          <p className="text-gray-600 mb-6">
+            Tài khoản của bạn đã được tạo. Bạn có thể đăng nhập ngay bây giờ.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/')}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+            >
+              <Home className="w-5 h-5" />
+              Trang chủ
+            </button>
+            <button
+              onClick={() => {
+                clearAuthData();
+                navigate('/login');
+              }}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-[#d43f0f] transition-colors shadow-lg shadow-primary/30"
+            >
+              <LogIn className="w-5 h-5" />
+              Đăng nhập
+            </button>
+          </div>
+        </div>
+      </Modal>
     </AuthLayout>
   );
 };

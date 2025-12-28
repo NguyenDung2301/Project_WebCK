@@ -62,6 +62,12 @@ def complete_delivery(order_id: str):
     """PUT /api/orders/<order_id>/completed - Shipper hoàn thành (SHIPPING → COMPLETED)"""
     return order_controller.complete_delivery(order_id)
 
+@order_router.route('/<order_id>/decline', methods=['PUT'])
+@shipper_required
+def decline_order(order_id: str):
+    """PUT /api/orders/<order_id>/decline - Shipper từ chối đơn PENDING (chưa nhận)"""
+    return order_controller.decline_order(order_id)
+
 @order_router.route('/<order_id>/reject', methods=['PUT'])
 @shipper_required
 def reject_order(order_id: str):

@@ -93,6 +93,7 @@ class Order(BaseModel):
     
     # === Trạng thái ===
     status: OrderStatus = OrderStatus.PENDING
+    is_reviewed: bool = Field(default=False, alias="isReviewed")  # Đã đánh giá chưa
     refunded: bool = False
     refunded_amount: float = 0.0
     refund_at: Optional[datetime] = None
@@ -138,6 +139,7 @@ class Order(BaseModel):
             "paymentId": str(self.payment_id) if self.payment_id else None,
             "paymentMethod": self.payment_method.value if self.payment_method else None,
             "status": self.status.value,
+            "isReviewed": self.is_reviewed,
             "refunded": self.refunded,
             "refunded_amount": float(self.refunded_amount),
             "refund_at": self.refund_at.isoformat() if self.refund_at else None,
@@ -171,6 +173,7 @@ class Order(BaseModel):
             "paymentId": self.payment_id,
             "paymentMethod": self.payment_method.value if self.payment_method else None,
             "status": self.status.value,
+            "isReviewed": self.is_reviewed,
             "refunded": self.refunded,
             "refunded_amount": float(self.refunded_amount),
             "refund_at": self.refund_at,
