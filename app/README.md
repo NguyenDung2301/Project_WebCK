@@ -390,7 +390,3 @@ DEBUG                          # Debug mode (true/false)
 HOST                           # Server host (default: 0.0.0.0)
 PORT                           # Server port (default: 5000)
 ```
-
-## 📞 Support & Troubleshooting
-
-Xem [DOCKER_README.md](../DOCKER_README.md) cho hướng dẫn Docker chi tiết.

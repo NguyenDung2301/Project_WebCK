@@ -356,6 +356,3 @@ VITE_BACKEND_URL               # Backend API URL (default: http://127.0.0.1:5000
 - Vite Docs: https://vitejs.dev
 - TypeScript: https://typescriptlang.org
 - Tailwind CSS: https://tailwindcss.com
-
-See [../DOCKER_README.md](../DOCKER_README.md) for Docker setup instructions.
-
