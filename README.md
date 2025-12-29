@@ -59,6 +59,9 @@ Hệ thống đặt đồ ăn trực tuyến đầy đủ tính năng, hỗ tr�
 
 ## 📁 Project Structure
 
+
+**📊 [View Database ERD](ERD.pdf)**
+
 ```
 Project_WebCK/
 ├── app/                          # Backend (Flask)
@@ -79,12 +82,9 @@ Project_WebCK/
 │   └── routes/                   # Route config
 ├── docker-compose.yml            # Container orchestration
 ├── requirements.txt              # Python dependencies
-├── database-schema.dbml          # Database schema
 ├── ERD.pdf                       # Entity Relationship Diagram
 └── .env.example                  # Environment template
 ```
-
-**📊 [View Database ERD](ERD.pdf)**
 
 ---
 
