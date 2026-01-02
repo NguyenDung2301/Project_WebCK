@@ -24,33 +24,50 @@ export function mapShipperOrderStatus(status: string): OrderStatus {
  * Transform backend order data to ShipperOrder format
  */
 export function transformToShipperOrder(order: any): ShipperOrder {
-    // Format time - Backend lưu UTC, convert sang Vietnam time (UTC+7)
-    let timeDisplay = '';
-    const dateStr = order.createdAt || order.created_at;
-    if (dateStr) {
+    const status = order.status || 'PENDING';
+
+    // Helper function to format date to Vietnam time
+    const formatToVietnamTime = (dateStr: string): string => {
+        if (!dateStr) return '';
         try {
             const date = new Date(dateStr);
-            if (!isNaN(date.getTime())) {
-                // Format sang Vietnam timezone
-                const time = date.toLocaleTimeString('vi-VN', {
-                    timeZone: 'Asia/Ho_Chi_Minh',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                });
-                const dateFormatted = date.toLocaleDateString('vi-VN', {
-                    timeZone: 'Asia/Ho_Chi_Minh',
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                });
-                timeDisplay = `${time} - ${dateFormatted}`;
-            } else {
-                timeDisplay = dateStr;
-            }
+            if (isNaN(date.getTime())) return dateStr;
+
+            const time = date.toLocaleTimeString('vi-VN', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            const dateFormatted = date.toLocaleDateString('vi-VN', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            return `${time} - ${dateFormatted}`;
         } catch {
-            timeDisplay = dateStr;
+            return dateStr;
         }
+    };
+
+    // Thời gian đặt đơn (luôn là createdAt)
+    const orderTimeStr = order.createdAt || order.created_at || '';
+    const orderTime = formatToVietnamTime(orderTimeStr);
+
+    // Thời gian hiển thị:
+    // - Đơn COMPLETED: dùng updatedAt (thời gian giao xong)
+    // - Đơn khác: dùng createdAt (thời gian đặt)
+    let timeDisplay = '';
+    const statusLower = status?.toLowerCase() || '';
+    const isCompleted = statusLower === 'completed';
+
+    if (isCompleted) {
+        const deliveryTimeStr = order.updatedAt || order.updated_at || orderTimeStr;
+        timeDisplay = formatToVietnamTime(deliveryTimeStr);
+        console.log('[DEBUG] Completed order:', order._id, 'status:', status, 'createdAt:', orderTimeStr, 'updatedAt:', order.updatedAt, 'display:', timeDisplay);
+    } else {
+        timeDisplay = orderTime;
     }
 
     // Transform items
@@ -81,7 +98,8 @@ export function transformToShipperOrder(order: any): ShipperOrder {
         deliveryAddress: order.address || '',
         status: mapShipperOrderStatus(order.status || 'PENDING'),
         paymentMethod: (order.paymentMethod || order.payment_method || 'Cash') === 'COD' ? 'Cash' : 'Wallet',
-        time: timeDisplay,
+        time: timeDisplay, // Thời gian giao (cho completed) hoặc thời gian đặt (cho pending/shipping)
+        orderTime: orderTime, // Thời gian đặt đơn (luôn có)
         totalAmount: order.total_amount || order.totalAmount || 0,
         items,
         customer,
