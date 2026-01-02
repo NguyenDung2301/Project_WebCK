@@ -1,55 +1,33 @@
 /**
  * Formatter Utils
  * Các hàm tiện ích để format dữ liệu hiển thị
+ * 
+ * QUAN TRỌNG: Backend lưu thời gian UTC, frontend convert sang Vietnam time (UTC+7)
  */
 
+// Vietnam timezone constant
+const VIETNAM_TIMEZONE = 'Asia/Ho_Chi_Minh';
+
 /**
- * Extract date components từ ISO string bằng regex
- * Không dùng Date object vì sẽ bị convert timezone
- * @param dateStr - Date string dạng ISO (2026-01-02T10:06:20.541+00:00)
- * @returns Object chứa các thành phần hoặc null
+ * Parse date string thành Date object
+ * @param date - Date string hoặc Date object
+ * @returns Date object hoặc null
  */
-const extractDateParts = (dateStr: string): { year: string; month: string; day: string; hours: string; minutes: string; seconds: string } | null => {
-  // ISO format: "2026-01-02T10:06:20.541+00:00" hoặc "2026-01-02T10:06:20.541Z" hoặc "2026-01-02T10:06:20"
-  const match = dateStr.match(/(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?/);
-  if (match) {
-    return {
-      year: match[1],
-      month: match[2],
-      day: match[3],
-      hours: match[4] || '00',
-      minutes: match[5] || '00',
-      seconds: match[6] || '00',
-    };
+export const parseLocalDate = (date: string | Date | null | undefined): Date | null => {
+  if (!date) return null;
+  if (date instanceof Date) return date;
+
+  try {
+    const parsed = new Date(date);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  } catch {
+    return null;
   }
-  return null;
 };
 
 /**
- * Parse date string từ backend - KHÔNG dùng Date object để tránh timezone conversion
- * @deprecated Sử dụng extractDateParts thay thế
- */
-export const parseLocalDate = (dateStr: string | Date | null | undefined): Date | null => {
-  if (!dateStr) return null;
-  if (dateStr instanceof Date) return dateStr;
-
-  const parts = extractDateParts(dateStr);
-  if (parts) {
-    // Tạo Date object từ các thành phần đã extract (sẽ được interpret là local time)
-    return new Date(
-      parseInt(parts.year),
-      parseInt(parts.month) - 1,
-      parseInt(parts.day),
-      parseInt(parts.hours),
-      parseInt(parts.minutes),
-      parseInt(parts.seconds)
-    );
-  }
-  return null;
-};
-
-/**
- * Format date to Vietnamese locale
+ * Format date to Vietnamese locale (dd/mm/yyyy)
+ * Converts UTC to Vietnam timezone automatically
  * @param date - Date string hoặc Date object
  * @returns Formatted date string (dd/mm/yyyy)
  */
@@ -57,20 +35,16 @@ export const formatDateVN = (date: string | Date | null | undefined): string => 
   if (!date) return 'Chưa cập nhật';
 
   try {
-    if (typeof date === 'string') {
-      const parts = extractDateParts(date);
-      if (parts) {
-        return `${parts.day}/${parts.month}/${parts.year}`;
-      }
-    }
-    // Fallback cho Date object
-    if (date instanceof Date) {
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
-    }
-    return 'Chưa cập nhật';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return 'Chưa cập nhật';
+
+    // Format sang Vietnam timezone
+    return dateObj.toLocaleDateString('vi-VN', {
+      timeZone: VIETNAM_TIMEZONE,
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
   } catch {
     return 'Chưa cập nhật';
   }
@@ -78,6 +52,7 @@ export const formatDateVN = (date: string | Date | null | undefined): string => 
 
 /**
  * Format date and time to Vietnamese locale
+ * Converts UTC to Vietnam timezone automatically
  * @param date - Date string hoặc Date object
  * @returns Formatted date time string (HH:mm:ss dd/mm/yyyy)
  */
@@ -85,23 +60,24 @@ export const formatDateTimeVN = (date: string | Date | null | undefined): string
   if (!date) return 'Chưa cập nhật';
 
   try {
-    if (typeof date === 'string') {
-      const parts = extractDateParts(date);
-      if (parts) {
-        return `${parts.hours}:${parts.minutes}:${parts.seconds} ${parts.day}/${parts.month}/${parts.year}`;
-      }
-    }
-    // Fallback cho Date object
-    if (date instanceof Date) {
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
-    }
-    return 'Chưa cập nhật';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return 'Chưa cập nhật';
+
+    // Format sang Vietnam timezone
+    const time = dateObj.toLocaleTimeString('vi-VN', {
+      timeZone: VIETNAM_TIMEZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    const dateFormatted = dateObj.toLocaleDateString('vi-VN', {
+      timeZone: VIETNAM_TIMEZONE,
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    return `${time} ${dateFormatted}`;
   } catch {
     return 'Chưa cập nhật';
   }
@@ -109,6 +85,7 @@ export const formatDateTimeVN = (date: string | Date | null | undefined): string
 
 /**
  * Format date to ISO format (YYYY-MM-DD)
+ * Uses Vietnam timezone for date extraction
  * @param date - Date string hoặc Date object
  * @returns ISO date string
  */
@@ -116,20 +93,18 @@ export const formatDateISO = (date: string | Date | null | undefined): string =>
   if (!date) return '';
 
   try {
-    if (typeof date === 'string') {
-      const parts = extractDateParts(date);
-      if (parts) {
-        return `${parts.year}-${parts.month}-${parts.day}`;
-      }
-    }
-    // Fallback cho Date object
-    if (date instanceof Date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-    return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+
+    // Extract date parts in Vietnam timezone
+    const options: Intl.DateTimeFormatOptions = { timeZone: VIETNAM_TIMEZONE };
+    const year = dateObj.toLocaleDateString('en-CA', { ...options, year: 'numeric' }).split('/')[0] ||
+      String(new Date(dateObj.toLocaleString('en-US', options)).getFullYear());
+    const month = String(new Date(dateObj.toLocaleString('en-US', options)).getMonth() + 1).padStart(2, '0');
+    const day = String(new Date(dateObj.toLocaleString('en-US', options)).getDate()).padStart(2, '0');
+
+    // Simpler approach: use en-CA locale which gives YYYY-MM-DD format
+    return dateObj.toLocaleDateString('en-CA', { timeZone: VIETNAM_TIMEZONE });
   } catch {
     return '';
   }

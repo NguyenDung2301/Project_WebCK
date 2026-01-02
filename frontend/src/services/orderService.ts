@@ -35,25 +35,32 @@ export function transformOrderData(order: any): Order {
         ? items.map((item: any) => `${item.food_name} x${item.quantity}`).join(', ')
         : 'Không có thông tin món';
 
-    // Parse date - Backend lưu local time nhưng MongoDB đánh dấu là UTC
-    // Cần extract trực tiếp các thành phần từ ISO string, không dùng Date object
-    // vì JavaScript Date vẫn sẽ convert timezone
+    // Parse date - Backend lưu UTC, frontend convert sang Vietnam time (UTC+7)
+    // Dùng JavaScript Date để parse và convert timezone tự động
     let orderTime = '';
     const dateStr = order.createdAt || order.created_at;
     if (dateStr) {
         try {
-            // ISO format: "2026-01-02T10:06:20.541+00:00" hoặc "2026-01-02T10:06:20.541Z"
-            // Extract trực tiếp: year, month, day, hour, minute, second
-            const match = dateStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/);
-            if (match) {
-                const [, year, month, day, hours, minutes, seconds] = match;
-                orderTime = `Đặt lúc ${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
+            // Parse date string - JavaScript sẽ tự động hiểu timezone từ ISO/RFC format
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                // Format sang Vietnam timezone
+                const vietnamTime = date.toLocaleString('vi-VN', {
+                    timeZone: 'Asia/Ho_Chi_Minh',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour12: false
+                });
+                orderTime = `Đặt lúc ${vietnamTime}`;
             } else {
-                // Fallback nếu không match ISO format
-                orderTime = dateStr;
+                orderTime = `Đặt lúc ${dateStr}`;
             }
         } catch {
-            orderTime = dateStr;
+            orderTime = `Đặt lúc ${dateStr}`;
         }
     }
 

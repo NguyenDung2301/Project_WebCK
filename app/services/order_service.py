@@ -9,6 +9,7 @@ from db.models.payment import PaymentMethod, PaymentStatus
 from services.voucher_service import voucher_service
 from services.payment_service import payment_service
 from utils.mongo_parser import parse_mongo_document
+from utils.timezone_utils import get_vietnam_now
 from schemas.order_schema import (
     CreateOrderRequest,
     UpdateOrderStatusRequest,
@@ -305,8 +306,8 @@ class OrderService:
                 promo_id=ObjectId(req.promo_id) if req.promo_id else None,
                 payment_method=req.payment_method,
                 status=OrderStatus.PENDING,
-                created_at=datetime.now(),
-                updated_at=datetime.now(),
+                created_at=get_vietnam_now(),
+                updated_at=get_vietnam_now(),
             )
             
             # Insert vào MongoDB
@@ -334,7 +335,7 @@ class OrderService:
         try:
             update_data = {
                 'status': new_status,
-                'updatedAt': datetime.now()
+                'updatedAt': get_vietnam_now()
             }
             
             # Nếu shipper nhận đơn
@@ -357,7 +358,7 @@ class OrderService:
                 'status': OrderStatus.CANCELLED.value,
                 'cancelled_by': cancelled_by,
                 'cancellation_reason': reason,
-                'updatedAt': datetime.now()
+                'updatedAt': get_vietnam_now()
             }
             
             result = self.collection.update_one(
@@ -601,7 +602,7 @@ class OrderService:
                 raise ValueError(f'Chỉ có thể nhận đơn ở trạng thái PENDING, hiện tại: {order.status.value}')
             
             # Cập nhật status và lưu thời gian nhận đơn
-            now = datetime.now()
+            now = get_vietnam_now()
             result = self.collection.update_one(
                 {'_id': ObjectId(order_id)},
                 {
@@ -683,13 +684,13 @@ class OrderService:
                         'status': OrderStatus.PENDING.value,
                         'shipperId': None,
                         'pickedAt': None,  # Xóa thời gian nhận đơn của shipper cũ
-                        'updatedAt': datetime.now()
+                        'updatedAt': get_vietnam_now()
                     },
                     '$push': {
                         'shipperRejections': {
                             'shipperId': ObjectId(shipper_id),
                             'reason': reason,
-                            'timestamp': datetime.now()
+                            'timestamp': get_vietnam_now()
                         }
                     }
                 }
@@ -727,11 +728,11 @@ class OrderService:
                         'shipperRejections': {
                             'shipperId': ObjectId(shipper_id),
                             'reason': reason,
-                            'timestamp': datetime.now()
+                            'timestamp': get_vietnam_now()
                         }
                     },
                     '$set': {
-                        'updatedAt': datetime.now()
+                        'updatedAt': get_vietnam_now()
                     }
                 }
             )

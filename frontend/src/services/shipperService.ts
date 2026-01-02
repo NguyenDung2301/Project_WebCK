@@ -24,18 +24,27 @@ export function mapShipperOrderStatus(status: string): OrderStatus {
  * Transform backend order data to ShipperOrder format
  */
 export function transformToShipperOrder(order: any): ShipperOrder {
-    // Format time from ISO string to "HH:mm - DD/MM/YYYY"
-    // Extract trực tiếp từ ISO string, không dùng Date object vì sẽ bị convert timezone
+    // Format time - Backend lưu UTC, convert sang Vietnam time (UTC+7)
     let timeDisplay = '';
     const dateStr = order.createdAt || order.created_at;
     if (dateStr) {
         try {
-            // ISO format: "2026-01-02T10:06:20.541+00:00"
-            // Extract trực tiếp: year, month, day, hour, minute
-            const match = dateStr.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-            if (match) {
-                const [, year, month, day, hours, minutes] = match;
-                timeDisplay = `${hours}:${minutes} - ${day}/${month}/${year}`;
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                // Format sang Vietnam timezone
+                const time = date.toLocaleTimeString('vi-VN', {
+                    timeZone: 'Asia/Ho_Chi_Minh',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                const dateFormatted = date.toLocaleDateString('vi-VN', {
+                    timeZone: 'Asia/Ho_Chi_Minh',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                timeDisplay = `${time} - ${dateFormatted}`;
             } else {
                 timeDisplay = dateStr;
             }
