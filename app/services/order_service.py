@@ -566,10 +566,94 @@ class OrderService:
             raise ValueError(f'Lỗi khi lấy đơn của shipper: {str(e)}')
 
     def get_all_orders(self) -> List[Dict]:
-        """Lấy tất cả đơn (Admin only)"""
+        """Lấy tất cả đơn (Admin only) - Optimized với batch lookup"""
         try:
             orders = self.find_all()
-            return [self._to_simple_response(o) for o in orders]
+            if not orders:
+                return []
+            
+            # Batch lookup: Thu thập tất cả IDs cần query
+            restaurant_ids = set()
+            user_ids = set()
+            shipper_ids = set()
+            
+            for order in orders:
+                restaurant_ids.add(order.restaurant_id)
+                user_ids.add(order.user_id)
+                if order.shipper_id:
+                    shipper_ids.add(order.shipper_id)
+            
+            # Batch query restaurants (1 query thay vì N queries)
+            restaurant_cache = {}
+            try:
+                restaurants = self.restaurant_service.find_by_ids(list(restaurant_ids))
+                for r in restaurants:
+                    restaurant_cache[str(r.id)] = r
+            except Exception:
+                pass
+            
+            # Batch query users (1 query thay vì N queries)
+            user_cache = {}
+            try:
+                users = self.user_service.find_by_ids(list(user_ids | shipper_ids))
+                for u in users:
+                    user_cache[str(u.id)] = u
+            except Exception:
+                pass
+            
+            # Transform orders với cached data
+            results = []
+            for order in orders:
+                data = order.to_dict()
+                
+                # Thêm foodName
+                if order.items and len(order.items) > 0:
+                    data['foodName'] = order.items[0].food_name
+                
+                # Thêm imageUrl từ cached restaurant
+                try:
+                    restaurant = restaurant_cache.get(str(order.restaurant_id))
+                    if restaurant and restaurant.menu and order.items:
+                        first_food_name = order.items[0].food_name.lower().strip()
+                        for category in restaurant.menu:
+                            for food_item in category.items:
+                                if food_item.name.lower().strip() == first_food_name:
+                                    if hasattr(food_item, 'image') and food_item.image:
+                                        data['imageUrl'] = food_item.image
+                                        break
+                                    elif hasattr(food_item, 'imageUrl') and food_item.imageUrl:
+                                        data['imageUrl'] = food_item.imageUrl
+                                        break
+                            if 'imageUrl' in data:
+                                break
+                except Exception:
+                    pass
+                
+                # Thêm userEmail từ cached user
+                try:
+                    user = user_cache.get(str(order.user_id))
+                    if user:
+                        data['userEmail'] = user.email
+                except Exception:
+                    pass
+                
+                # Thêm shipper info từ cached user
+                try:
+                    if order.shipper_id:
+                        shipper = user_cache.get(str(order.shipper_id))
+                        if shipper:
+                            data['shipper'] = {
+                                'shipperId': str(order.shipper_id),
+                                'fullname': shipper.fullname,
+                                'phone_number': shipper.phone_number,
+                                'email': shipper.email
+                            }
+                except Exception:
+                    pass
+                
+                results.append(OrderSimpleResponse(**data).model_dump(by_alias=True))
+            
+            return results
         except Exception as e:
             raise ValueError(f'Lỗi khi lấy danh sách đơn: {str(e)}')
 
